@@ -1,0 +1,43 @@
+# Build output
+bin/
+obj/
+artifacts/
+TestResults/
+
+# IDE state
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Logs and diagnostics
+*.log
+logs/
+
+# Local persistence and settings
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.local.json
+appsettings.Local.json
+
+# Windows packaging output
+AppPackages/
+BundleArtifacts/
+Generated Files/
+
+# User audio/media files
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.m4a
+
+# OS files
+Thumbs.db
+Desktop.ini
