@@ -1,4 +1,7 @@
+using EchoBoard.Application.Interfaces;
+using EchoBoard.Application.Library;
 using EchoBoard.Infrastructure.Persistence;
+using EchoBoard.Infrastructure.Persistence.Repositories;
 using EchoBoard.Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +16,9 @@ public static class DependencyInjection
 
         services.AddSingleton(settings);
         services.AddDbContext<EchoBoardDbContext>(options => options.UseSqlite(settings.DatabaseConnectionString));
+        services.AddScoped<ISoundLibraryRepository, EfSoundLibraryRepository>();
+        services.AddScoped<ICategoryRepository, EfCategoryRepository>();
+        services.AddScoped<IDatabaseInitializer, EfDatabaseInitializer>();
 
         return services;
     }
