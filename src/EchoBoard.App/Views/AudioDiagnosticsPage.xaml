@@ -27,40 +27,23 @@
                             Style="{StaticResource EchoBoardBodyTextStyle}" />
                     </StackPanel>
 
-                    <ItemsControl ItemsSource="{Binding PreviewDevices}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <controls:DeviceStatusBadge
-                                    Label="{Binding Label}"
-                                    DeviceName="{Binding DeviceName}"
-                                    Icon="{Binding Icon}"
-                                    Status="{Binding Status}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <controls:DeviceStatusBadge
+                        Label="{Binding MicrophoneDevice.Label}"
+                        DeviceName="{Binding MicrophoneDevice.DeviceName}"
+                        Icon="{Binding MicrophoneDevice.Icon}"
+                        Status="{Binding MicrophoneDevice.Status}" />
 
-                    <ItemsControl ItemsSource="{Binding PreviewMeters}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace16}" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <controls:AudioLevelMeter
-                                    Width="180"
-                                    Label="{Binding Label}"
-                                    Level="{Binding Level}"
-                                    Variant="{Binding Variant}"
-                                    ValueText="{Binding ValueText}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <controls:AudioLevelMeter
+                        Width="240"
+                        Label="{Binding MicrophoneMeter.Label}"
+                        Level="{Binding MicrophoneMeter.Level}"
+                        Variant="{Binding MicrophoneMeter.Variant}"
+                        ValueText="{Binding MicrophoneMeter.ValueText}" />
+
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace4}">
+                        <TextBlock Text="{Binding FormatText}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                        <TextBlock Text="{Binding LastErrorText}" Style="{StaticResource EchoBoardBodyTextStyle}" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </StackPanel>

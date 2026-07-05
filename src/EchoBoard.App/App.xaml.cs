@@ -25,6 +25,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             await host.StartAsync().ConfigureAwait(true);
             await AppHost.InitializeDatabaseAsync(host.Services, CancellationToken.None).ConfigureAwait(true);
             mainWindow = host.Services.GetRequiredService<MainWindow>();
+            mainWindow.Closed += OnMainWindowClosed;
             await AppHost.RestoreHotkeysAsync(host.Services, CancellationToken.None).ConfigureAwait(true);
             mainWindow.Activate();
         }
@@ -38,5 +39,16 @@ public partial class App : Microsoft.UI.Xaml.Application
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         Log.Error(e.Exception, "Unhandled UI exception.");
+    }
+
+    private async void OnMainWindowClosed(object sender, WindowEventArgs args)
+    {
+        if (mainWindow is not null)
+        {
+            mainWindow.Closed -= OnMainWindowClosed;
+        }
+
+        await host.StopAsync().ConfigureAwait(true);
+        host.Dispose();
     }
 }

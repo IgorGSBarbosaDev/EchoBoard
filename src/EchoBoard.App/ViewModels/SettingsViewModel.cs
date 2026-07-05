@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EchoBoard.App.Controls;
+using EchoBoard.Application.Audio;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Domain.Enums;
 using EchoBoard.Domain.Exceptions;
@@ -15,18 +16,50 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly AssignGlobalHotkeyUseCase assignGlobalHotkey;
     private readonly RemoveHotkeyBindingUseCase removeHotkeyBinding;
     private readonly SetHotkeyBindingEnabledUseCase setHotkeyBindingEnabled;
+    private readonly ListMicrophoneDevicesUseCase listMicrophoneDevices;
+    private readonly LoadMicrophoneSettingsUseCase loadMicrophoneSettings;
+    private readonly SelectMicrophoneDeviceUseCase selectMicrophoneDevice;
+    private readonly SetMicrophoneGainUseCase setMicrophoneGain;
+    private readonly SetMicrophoneMuteUseCase setMicrophoneMute;
+    private readonly StartMicrophoneCaptureUseCase startMicrophoneCapture;
+    private readonly StopMicrophoneCaptureUseCase stopMicrophoneCapture;
+    private readonly GetMicrophoneCaptureSnapshotUseCase getMicrophoneCaptureSnapshot;
     private ToastPreviewModel? feedbackToast;
+    private MicrophoneDeviceOptionViewModel? selectedMicrophoneDevice;
+    private string microphoneStatusText = "Stopped";
+    private string selectedMicrophoneName = "No microphone selected";
+    private DeviceStatusKind microphoneStatusKind = DeviceStatusKind.Unavailable;
+    private double microphoneLevel;
+    private string microphoneLevelText = "Idle";
+    private double microphoneGainPercent = 100;
+    private bool isMicrophoneMuted;
 
     public SettingsViewModel(
         ListHotkeyBindingsUseCase listHotkeys,
         AssignGlobalHotkeyUseCase assignGlobalHotkey,
         RemoveHotkeyBindingUseCase removeHotkeyBinding,
-        SetHotkeyBindingEnabledUseCase setHotkeyBindingEnabled)
+        SetHotkeyBindingEnabledUseCase setHotkeyBindingEnabled,
+        ListMicrophoneDevicesUseCase listMicrophoneDevices,
+        LoadMicrophoneSettingsUseCase loadMicrophoneSettings,
+        SelectMicrophoneDeviceUseCase selectMicrophoneDevice,
+        SetMicrophoneGainUseCase setMicrophoneGain,
+        SetMicrophoneMuteUseCase setMicrophoneMute,
+        StartMicrophoneCaptureUseCase startMicrophoneCapture,
+        StopMicrophoneCaptureUseCase stopMicrophoneCapture,
+        GetMicrophoneCaptureSnapshotUseCase getMicrophoneCaptureSnapshot)
     {
         this.listHotkeys = listHotkeys;
         this.assignGlobalHotkey = assignGlobalHotkey;
         this.removeHotkeyBinding = removeHotkeyBinding;
         this.setHotkeyBindingEnabled = setHotkeyBindingEnabled;
+        this.listMicrophoneDevices = listMicrophoneDevices;
+        this.loadMicrophoneSettings = loadMicrophoneSettings;
+        this.selectMicrophoneDevice = selectMicrophoneDevice;
+        this.setMicrophoneGain = setMicrophoneGain;
+        this.setMicrophoneMute = setMicrophoneMute;
+        this.startMicrophoneCapture = startMicrophoneCapture;
+        this.stopMicrophoneCapture = stopMicrophoneCapture;
+        this.getMicrophoneCaptureSnapshot = getMicrophoneCaptureSnapshot;
 
         GlobalHotkeys =
         [
@@ -34,6 +67,12 @@ public sealed class SettingsViewModel : ObservableObject
             CreateRow(GlobalHotkeyCommand.PauseResumePlayback, "Pause/resume playback", "Toggles current playback when playback is available."),
             CreateRow(GlobalHotkeyCommand.ShowHideMainWindow, "Show/hide main window", "Toggles EchoBoard without focusing the app first.")
         ];
+
+        MicrophoneDevices = [];
+        RefreshMicrophoneDevicesCommand = new AsyncRelayCommand(RefreshMicrophoneDevicesAsync);
+        StartMicrophoneCaptureCommand = new AsyncRelayCommand(StartMicrophoneCaptureAsync);
+        StopMicrophoneCaptureCommand = new AsyncRelayCommand(StopMicrophoneCaptureAsync);
+        ToggleMicrophoneMuteCommand = new AsyncRelayCommand(ToggleMicrophoneMuteAsync);
     }
 
     public string Title => "Settings";
@@ -41,6 +80,78 @@ public sealed class SettingsViewModel : ObservableObject
     public string Subtitle => "Application preferences and daily-use behavior.";
 
     public ObservableCollection<GlobalHotkeySettingViewModel> GlobalHotkeys { get; }
+
+    public ObservableCollection<MicrophoneDeviceOptionViewModel> MicrophoneDevices { get; }
+
+    public MicrophoneDeviceOptionViewModel? SelectedMicrophoneDevice
+    {
+        get => selectedMicrophoneDevice;
+        set
+        {
+            if (SetProperty(ref selectedMicrophoneDevice, value) && value is not null)
+            {
+                _ = SelectMicrophoneDeviceAsync(value.Id, CancellationToken.None);
+            }
+        }
+    }
+
+    public string MicrophoneStatusText
+    {
+        get => microphoneStatusText;
+        private set => SetProperty(ref microphoneStatusText, value);
+    }
+
+    public string SelectedMicrophoneName
+    {
+        get => selectedMicrophoneName;
+        private set => SetProperty(ref selectedMicrophoneName, value);
+    }
+
+    public DeviceStatusKind MicrophoneStatusKind
+    {
+        get => microphoneStatusKind;
+        private set => SetProperty(ref microphoneStatusKind, value);
+    }
+
+    public double MicrophoneLevel
+    {
+        get => microphoneLevel;
+        private set => SetProperty(ref microphoneLevel, value);
+    }
+
+    public string MicrophoneLevelText
+    {
+        get => microphoneLevelText;
+        private set => SetProperty(ref microphoneLevelText, value);
+    }
+
+    public double MicrophoneGainPercent
+    {
+        get => microphoneGainPercent;
+        set
+        {
+            if (SetProperty(ref microphoneGainPercent, value))
+            {
+                _ = SetMicrophoneGainAsync(value / 100.0, CancellationToken.None);
+            }
+        }
+    }
+
+    public bool IsMicrophoneMuted
+    {
+        get => isMicrophoneMuted;
+        private set => SetProperty(ref isMicrophoneMuted, value);
+    }
+
+    public string MicrophoneMuteButtonText => IsMicrophoneMuted ? "Unmute" : "Mute";
+
+    public IAsyncRelayCommand RefreshMicrophoneDevicesCommand { get; }
+
+    public IAsyncRelayCommand StartMicrophoneCaptureCommand { get; }
+
+    public IAsyncRelayCommand StopMicrophoneCaptureCommand { get; }
+
+    public IAsyncRelayCommand ToggleMicrophoneMuteCommand { get; }
 
     public ToastPreviewModel? FeedbackToast
     {
@@ -64,6 +175,53 @@ public sealed class SettingsViewModel : ObservableObject
             var binding = bindings.SingleOrDefault(item => item.GlobalCommand == row.Command);
             row.Apply(binding);
         }
+
+        await RefreshMicrophoneDevicesAsync(cancellationToken);
+        await loadMicrophoneSettings.ExecuteAsync(cancellationToken);
+        ApplyMicrophoneSnapshot(getMicrophoneCaptureSnapshot.Execute());
+    }
+
+    public async Task RefreshMicrophoneDevicesAsync(CancellationToken cancellationToken)
+    {
+        var devices = await listMicrophoneDevices.ExecuteAsync(cancellationToken);
+        MicrophoneDevices.Clear();
+        foreach (var device in devices)
+        {
+            MicrophoneDevices.Add(new MicrophoneDeviceOptionViewModel(device.Id, device.Name, device.IsDefault, device.IsAvailable));
+        }
+    }
+
+    public async Task SelectMicrophoneDeviceAsync(string deviceId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var snapshot = await selectMicrophoneDevice.ExecuteAsync(deviceId, cancellationToken);
+            ApplyMicrophoneSnapshot(snapshot);
+            FeedbackToast = new ToastPreviewModel(ToastNotificationKind.Success, "Microphone selected", snapshot.SelectedDeviceName ?? "Selected input device.");
+        }
+        catch (Exception exception)
+        {
+            FeedbackToast = new ToastPreviewModel(ToastNotificationKind.Error, "Microphone not selected", exception.Message);
+        }
+    }
+
+    public async Task StartMicrophoneCaptureAsync(CancellationToken cancellationToken)
+    {
+        var snapshot = await startMicrophoneCapture.ExecuteAsync(cancellationToken);
+        ApplyMicrophoneSnapshot(snapshot);
+        FeedbackToast = ToastForMicrophone(snapshot);
+    }
+
+    public async Task StopMicrophoneCaptureAsync(CancellationToken cancellationToken)
+    {
+        var snapshot = await stopMicrophoneCapture.ExecuteAsync(cancellationToken);
+        ApplyMicrophoneSnapshot(snapshot);
+        FeedbackToast = new ToastPreviewModel(ToastNotificationKind.Info, "Microphone stopped", "Capture stopped and input level cleared.");
+    }
+
+    public void RefreshMicrophoneSnapshot()
+    {
+        ApplyMicrophoneSnapshot(getMicrophoneCaptureSnapshot.Execute());
     }
 
     private GlobalHotkeySettingViewModel CreateRow(GlobalHotkeyCommand command, string title, string description)
@@ -75,6 +233,68 @@ public sealed class SettingsViewModel : ObservableObject
             new AsyncRelayCommand<GlobalHotkeySettingViewModel>(SaveGlobalHotkeyAsync),
             new AsyncRelayCommand<GlobalHotkeySettingViewModel>(RemoveGlobalHotkeyAsync),
             new AsyncRelayCommand<GlobalHotkeySettingViewModel>(ToggleGlobalHotkeyEnabledAsync));
+    }
+
+    private async Task SetMicrophoneGainAsync(double gain, CancellationToken cancellationToken)
+    {
+        var snapshot = await setMicrophoneGain.ExecuteAsync(gain, cancellationToken);
+        ApplyMicrophoneSnapshot(snapshot);
+    }
+
+    private async Task ToggleMicrophoneMuteAsync(CancellationToken cancellationToken)
+    {
+        var snapshot = await setMicrophoneMute.ExecuteAsync(!IsMicrophoneMuted, cancellationToken);
+        ApplyMicrophoneSnapshot(snapshot);
+        FeedbackToast = new ToastPreviewModel(
+            snapshot.IsMuted ? ToastNotificationKind.Warning : ToastNotificationKind.Success,
+            snapshot.IsMuted ? "Microphone muted" : "Microphone unmuted",
+            snapshot.IsMuted ? "Microphone input is muted for capture." : "Microphone input is active when capture is running.");
+    }
+
+    private void ApplyMicrophoneSnapshot(MicrophoneCaptureSnapshot snapshot)
+    {
+        SelectedMicrophoneName = string.IsNullOrWhiteSpace(snapshot.SelectedDeviceName)
+            ? "No microphone selected"
+            : snapshot.SelectedDeviceName;
+        MicrophoneStatusText = snapshot.State.ToString();
+        MicrophoneStatusKind = ToDeviceStatus(snapshot.State);
+        MicrophoneLevel = Math.Clamp(snapshot.Level, 0, 1);
+        MicrophoneLevelText = snapshot.IsMuted ? "Muted" : snapshot.State == MicrophoneCaptureState.Active ? $"{MicrophoneLevel:P0}" : "Idle";
+        isMicrophoneMuted = snapshot.IsMuted;
+        OnPropertyChanged(nameof(IsMicrophoneMuted));
+        OnPropertyChanged(nameof(MicrophoneMuteButtonText));
+        microphoneGainPercent = Math.Clamp(snapshot.Gain * 100.0, 0, 100);
+        OnPropertyChanged(nameof(MicrophoneGainPercent));
+
+        var selected = MicrophoneDevices.SingleOrDefault(device => device.Id == snapshot.SelectedDeviceId);
+        if (selectedMicrophoneDevice != selected)
+        {
+            selectedMicrophoneDevice = selected;
+            OnPropertyChanged(nameof(SelectedMicrophoneDevice));
+        }
+    }
+
+    private static DeviceStatusKind ToDeviceStatus(MicrophoneCaptureState state)
+    {
+        return state switch
+        {
+            MicrophoneCaptureState.Active => DeviceStatusKind.Connected,
+            MicrophoneCaptureState.Starting => DeviceStatusKind.Loading,
+            MicrophoneCaptureState.Unavailable => DeviceStatusKind.Unavailable,
+            MicrophoneCaptureState.Failed => DeviceStatusKind.Warning,
+            _ => DeviceStatusKind.Disconnected
+        };
+    }
+
+    private static ToastPreviewModel ToastForMicrophone(MicrophoneCaptureSnapshot snapshot)
+    {
+        return snapshot.State switch
+        {
+            MicrophoneCaptureState.Active => new ToastPreviewModel(ToastNotificationKind.Success, "Microphone active", snapshot.StatusMessage),
+            MicrophoneCaptureState.Unavailable => new ToastPreviewModel(ToastNotificationKind.Warning, "Microphone unavailable", snapshot.StatusMessage),
+            MicrophoneCaptureState.Failed => new ToastPreviewModel(ToastNotificationKind.Error, "Microphone failed", snapshot.ErrorMessage ?? snapshot.StatusMessage),
+            _ => new ToastPreviewModel(ToastNotificationKind.Info, "Microphone", snapshot.StatusMessage)
+        };
     }
 
     private async Task SaveGlobalHotkeyAsync(GlobalHotkeySettingViewModel? row, CancellationToken cancellationToken)
@@ -135,6 +355,11 @@ public sealed class SettingsViewModel : ObservableObject
 
         return new ToastPreviewModel(kind, title, binding.RegistrationMessage);
     }
+}
+
+public sealed record MicrophoneDeviceOptionViewModel(string Id, string Name, bool IsDefault, bool IsAvailable)
+{
+    public string DisplayName => IsDefault ? $"{Name} (Default)" : Name;
 }
 
 public sealed class GlobalHotkeySettingViewModel : ObservableObject

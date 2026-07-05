@@ -1,38 +1,88 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using EchoBoard.App.Controls;
+using EchoBoard.Application.Audio;
+using Microsoft.UI.Xaml.Controls;
 
 namespace EchoBoard.App.ViewModels;
 
 public sealed class AudioDiagnosticsViewModel : ObservableObject
 {
-    public AudioDiagnosticsViewModel()
-    {
-        PreviewDevices =
-        [
-            new("Microphone", "HyperX SoloCast", Microsoft.UI.Xaml.Controls.Symbol.Microphone, DeviceStatusKind.Connected),
-            new("Monitor", "Headphones", Microsoft.UI.Xaml.Controls.Symbol.Volume, DeviceStatusKind.Warning),
-            new("Virtual output", "VB-CABLE input", Microsoft.UI.Xaml.Controls.Symbol.Audio, DeviceStatusKind.Unavailable),
-            new("Audio engine", "Waiting for configuration", Microsoft.UI.Xaml.Controls.Symbol.Sync, DeviceStatusKind.Loading)
-        ];
+    private readonly GetMicrophoneCaptureSnapshotUseCase getMicrophoneCaptureSnapshot;
+    private DevicePreviewModel microphoneDevice = new("Microphone", "No microphone selected", Symbol.Microphone, DeviceStatusKind.Unavailable);
+    private AudioMeterPreviewModel microphoneMeter = new("Mic", 0, AudioLevelMeterVariant.Microphone, "Idle");
+    private string formatText = "No active microphone format";
+    private string lastErrorText = "No microphone errors";
 
-        PreviewMeters =
-        [
-            new("Mic", 0.64, AudioLevelMeterVariant.Microphone),
-            new("Effects", 0.42, AudioLevelMeterVariant.Effects),
-            new("Monitor", 0.28, AudioLevelMeterVariant.Monitor),
-            new("Virtual output", 0.0, AudioLevelMeterVariant.VirtualOutput, "Idle")
-        ];
+    public AudioDiagnosticsViewModel(GetMicrophoneCaptureSnapshotUseCase getMicrophoneCaptureSnapshot)
+    {
+        this.getMicrophoneCaptureSnapshot = getMicrophoneCaptureSnapshot;
+        Refresh();
     }
 
     public string Title => "Audio Diagnostics";
 
-    public string Subtitle => "Device state and routing diagnostics placeholder.";
+    public string Subtitle => "Live microphone capture state for the future mixer input.";
 
-    public string EmptyStateTitle => "No live audio engine yet";
+    public string EmptyStateTitle => "Microphone capture is stopped";
 
-    public string EmptyStateMessage => "Microphone, monitor, virtual output, format, and engine status will appear here.";
+    public string EmptyStateMessage => "Select a microphone in Settings and start capture to see input level.";
 
-    public IReadOnlyList<DevicePreviewModel> PreviewDevices { get; }
+    public DevicePreviewModel MicrophoneDevice
+    {
+        get => microphoneDevice;
+        private set => SetProperty(ref microphoneDevice, value);
+    }
 
-    public IReadOnlyList<AudioMeterPreviewModel> PreviewMeters { get; }
+    public AudioMeterPreviewModel MicrophoneMeter
+    {
+        get => microphoneMeter;
+        private set => SetProperty(ref microphoneMeter, value);
+    }
+
+    public string FormatText
+    {
+        get => formatText;
+        private set => SetProperty(ref formatText, value);
+    }
+
+    public string LastErrorText
+    {
+        get => lastErrorText;
+        private set => SetProperty(ref lastErrorText, value);
+    }
+
+    public IReadOnlyList<DevicePreviewModel> PreviewDevices => [MicrophoneDevice];
+
+    public IReadOnlyList<AudioMeterPreviewModel> PreviewMeters => [MicrophoneMeter];
+
+    public void Refresh()
+    {
+        Apply(getMicrophoneCaptureSnapshot.Execute());
+    }
+
+    private void Apply(MicrophoneCaptureSnapshot snapshot)
+    {
+        MicrophoneDevice = new DevicePreviewModel(
+            "Microphone",
+            string.IsNullOrWhiteSpace(snapshot.SelectedDeviceName) ? "No microphone selected" : snapshot.SelectedDeviceName,
+            Symbol.Microphone,
+            snapshot.State switch
+            {
+                MicrophoneCaptureState.Active => DeviceStatusKind.Connected,
+                MicrophoneCaptureState.Starting => DeviceStatusKind.Loading,
+                MicrophoneCaptureState.Unavailable => DeviceStatusKind.Unavailable,
+                MicrophoneCaptureState.Failed => DeviceStatusKind.Warning,
+                _ => DeviceStatusKind.Disconnected
+            });
+
+        MicrophoneMeter = new AudioMeterPreviewModel(
+            "Mic",
+            snapshot.IsMuted ? 0 : snapshot.Level,
+            AudioLevelMeterVariant.Microphone,
+            snapshot.IsMuted ? "Muted" : snapshot.State == MicrophoneCaptureState.Active ? $"{snapshot.Level:P0}" : "Idle");
+        FormatText = snapshot.Format?.DisplayText ?? "No active microphone format";
+        LastErrorText = snapshot.ErrorMessage ?? snapshot.StatusMessage;
+        OnPropertyChanged(nameof(PreviewDevices));
+        OnPropertyChanged(nameof(PreviewMeters));
+    }
 }
