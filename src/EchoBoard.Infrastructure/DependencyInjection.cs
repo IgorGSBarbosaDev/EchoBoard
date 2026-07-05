@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<ISoundLibraryRepository, EfSoundLibraryRepository>();
         services.AddScoped<ICategoryRepository, EfCategoryRepository>();
         services.AddScoped<IAudioFileMetadataReader, AudioFileMetadataReader>();
+        services.AddScoped<ISoundFileAvailabilityReader, SoundFileAvailabilityReader>();
         services.AddScoped<IDatabaseInitializer, EfDatabaseInitializer>();
 
         return services;

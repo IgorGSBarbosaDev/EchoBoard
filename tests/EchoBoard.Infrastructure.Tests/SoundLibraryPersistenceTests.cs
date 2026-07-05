@@ -1,5 +1,6 @@
 using EchoBoard.Application.Library;
 using EchoBoard.Domain.Entities;
+using EchoBoard.Infrastructure.Files;
 using EchoBoard.Infrastructure.Persistence;
 using EchoBoard.Infrastructure.Persistence.Repositories;
 using EchoBoard.Infrastructure.Settings;
@@ -113,6 +114,31 @@ public sealed class SoundLibraryPersistenceTests
             if (File.Exists(databasePath))
             {
                 File.Delete(databasePath);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task SoundFileAvailabilityReaderReportsExistingAndMissingFiles()
+    {
+        var existingPath = Path.Combine(Path.GetTempPath(), $"echoboard-{Guid.NewGuid():N}.wav");
+        var missingPath = Path.Combine(Path.GetTempPath(), $"echoboard-{Guid.NewGuid():N}.wav");
+        await File.WriteAllTextAsync(existingPath, "not audio", TestContext.Current.CancellationToken);
+        try
+        {
+            var reader = new SoundFileAvailabilityReader();
+
+            var existing = await reader.ExistsAsync(existingPath, TestContext.Current.CancellationToken);
+            var missing = await reader.ExistsAsync(missingPath, TestContext.Current.CancellationToken);
+
+            existing.Should().BeTrue();
+            missing.Should().BeFalse();
+        }
+        finally
+        {
+            if (File.Exists(existingPath))
+            {
+                File.Delete(existingPath);
             }
         }
     }

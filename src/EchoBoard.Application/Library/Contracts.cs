@@ -18,6 +18,46 @@ public sealed record SoundDto(
 
 public sealed record CategoryDto(Guid Id, string Name, int SortOrder, DateTimeOffset CreatedAt);
 
+public sealed record SoundLibraryFilter(
+    string? SearchText,
+    Guid? CategoryId,
+    bool IncludeUncategorizedOnly,
+    bool FavoritesOnly)
+{
+    public static SoundLibraryFilter All { get; } = new(null, null, IncludeUncategorizedOnly: false, FavoritesOnly: false);
+}
+
+public sealed record SoundLibraryItemDto(
+    Guid Id,
+    string Name,
+    string FilePath,
+    string Extension,
+    TimeSpan Duration,
+    long FileSize,
+    double Volume,
+    bool IsFavorite,
+    Guid? CategoryId,
+    string? CategoryName,
+    int? CategorySortOrder,
+    int SortOrder,
+    bool IsMissingFile,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
+
+public sealed record SoundLibraryCategoryDto(
+    Guid Id,
+    string Name,
+    int SortOrder,
+    int SoundCount,
+    DateTimeOffset CreatedAt);
+
+public sealed record SoundLibraryResult(
+    IReadOnlyList<SoundLibraryItemDto> Sounds,
+    IReadOnlyList<SoundLibraryCategoryDto> Categories,
+    int TotalSoundCount,
+    int UncategorizedSoundCount,
+    string ActiveFilterSummary);
+
 public sealed record CreateSoundRequest(
     string Name,
     string FilePath,
@@ -40,6 +80,10 @@ public sealed record UpdateSoundRequest(
     Guid? CategoryId,
     int SortOrder,
     DateTimeOffset UpdatedAt);
+
+public sealed record SetSoundFavoriteRequest(Guid Id, bool IsFavorite, DateTimeOffset UpdatedAt);
+
+public sealed record AssignSoundCategoryRequest(Guid Id, Guid? CategoryId, DateTimeOffset UpdatedAt);
 
 public sealed record CreateCategoryRequest(string Name, int SortOrder, DateTimeOffset CreatedAt);
 
@@ -70,6 +114,11 @@ public enum ImportSoundStatus
 public interface IAudioFileMetadataReader
 {
     Task<AudioFileMetadata> ReadAsync(string filePath, CancellationToken cancellationToken);
+}
+
+public interface ISoundFileAvailabilityReader
+{
+    Task<bool> ExistsAsync(string filePath, CancellationToken cancellationToken);
 }
 
 public interface ISoundLibraryRepository

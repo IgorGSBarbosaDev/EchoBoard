@@ -1,6 +1,7 @@
 using EchoBoard.App.Controls;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using System.Windows.Input;
 
 namespace EchoBoard.App.ViewModels;
 
@@ -15,7 +16,13 @@ public sealed record SoundCardPreviewModel(
     bool IsPlaying = false,
     bool IsFavorite = false,
     bool IsCompact = false,
-    bool IsEnabled = true);
+    bool IsEnabled = true,
+    Guid Id = default,
+    bool IsMissingFile = false,
+    string StatusText = "",
+    ICommand? SelectCommand = null,
+    ICommand? FavoriteCommand = null,
+    ICommand? AssignCategoryCommand = null);
 
 public sealed record CategoryPreviewModel(
     string Name,
@@ -23,7 +30,10 @@ public sealed record CategoryPreviewModel(
     Symbol Icon,
     Brush? IndicatorBrush,
     bool IsSelected = false,
-    bool IsEnabled = true);
+    bool IsEnabled = true,
+    Guid? Id = null,
+    string FilterKind = "Category",
+    ICommand? SelectCommand = null);
 
 public sealed record DevicePreviewModel(
     string Label,
