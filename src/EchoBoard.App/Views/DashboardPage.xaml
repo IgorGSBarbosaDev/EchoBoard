@@ -1,0 +1,59 @@
+<Page
+    x:Class="EchoBoard.App.Views.DashboardPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer>
+        <StackPanel Spacing="{StaticResource EchoBoardSpace24}">
+            <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
+                <TextBlock
+                    Text="{Binding Title}"
+                    Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
+                    FontSize="{StaticResource EchoBoardFontSizeTitle}"
+                    FontWeight="SemiBold" />
+                <TextBlock
+                    Text="{Binding Subtitle}"
+                    Style="{StaticResource EchoBoardCaptionTextStyle}" />
+            </StackPanel>
+
+            <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}" RowSpacing="{StaticResource EchoBoardSpace16}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Style="{StaticResource EchoBoardCardStyle}">
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
+                        <TextBlock Style="{StaticResource EchoBoardCaptionTextStyle}" Text="Library" />
+                        <TextBlock Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" FontSize="28" FontWeight="SemiBold" Text="0 sounds" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource EchoBoardCardStyle}">
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
+                        <TextBlock Style="{StaticResource EchoBoardCaptionTextStyle}" Text="Hotkeys" />
+                        <TextBlock Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" FontSize="28" FontWeight="SemiBold" Text="Not set" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource EchoBoardCardStyle}">
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
+                        <TextBlock Style="{StaticResource EchoBoardCaptionTextStyle}" Text="Routing" />
+                        <TextBlock Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" FontSize="28" FontWeight="SemiBold" Text="Idle" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Style="{StaticResource EchoBoardPanelStyle}">
+                <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
+                    <TextBlock
+                        Text="{Binding EmptyStateTitle}"
+                        Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                    <TextBlock
+                        Text="{Binding EmptyStateMessage}"
+                        Style="{StaticResource EchoBoardBodyTextStyle}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

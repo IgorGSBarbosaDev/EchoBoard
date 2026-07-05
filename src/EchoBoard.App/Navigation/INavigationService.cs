@@ -2,5 +2,9 @@ namespace EchoBoard.App.Navigation;
 
 public interface INavigationService
 {
-    string CurrentRoute { get; }
+    event EventHandler<ShellRoute>? RouteChanged;
+
+    ShellRoute CurrentRoute { get; }
+
+    void NavigateTo(ShellRoute route);
 }

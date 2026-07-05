@@ -39,6 +39,12 @@ public static class AppHost
                 services.AddAudio();
                 services.AddInfrastructure(settings);
                 services.AddSingleton<INavigationService, NavigationService>();
+                services.AddTransient<DashboardViewModel>();
+                services.AddTransient<LibraryViewModel>();
+                services.AddTransient<FavoritesViewModel>();
+                services.AddTransient<RecentViewModel>();
+                services.AddTransient<SettingsViewModel>();
+                services.AddTransient<AudioDiagnosticsViewModel>();
                 services.AddTransient<MainShellViewModel>();
                 services.AddTransient<MainShellPage>();
                 services.AddSingleton<MainWindow>();
