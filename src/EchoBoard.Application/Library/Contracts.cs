@@ -45,6 +45,33 @@ public sealed record CreateCategoryRequest(string Name, int SortOrder, DateTimeO
 
 public sealed record UpdateCategoryRequest(Guid Id, string Name, int SortOrder);
 
+public sealed record ImportSoundsRequest(IReadOnlyList<string> FilePaths, DateTimeOffset ImportedAt);
+
+public sealed record ImportSoundsResult(IReadOnlyList<ImportSoundItemResult> Items);
+
+public sealed record ImportSoundItemResult(string FilePath, ImportSoundStatus Status, string Message, SoundDto? Sound);
+
+public sealed record AudioFileMetadata(
+    string DisplayName,
+    string FullPath,
+    string Extension,
+    TimeSpan Duration,
+    long FileSize);
+
+public enum ImportSoundStatus
+{
+    Imported,
+    SkippedDuplicate,
+    InvalidExtension,
+    Unreadable,
+    MetadataFailed
+}
+
+public interface IAudioFileMetadataReader
+{
+    Task<AudioFileMetadata> ReadAsync(string filePath, CancellationToken cancellationToken);
+}
+
 public interface ISoundLibraryRepository
 {
     Task<IReadOnlyList<Sound>> ListSoundsAsync(CancellationToken cancellationToken);

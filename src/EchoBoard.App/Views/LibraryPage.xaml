@@ -2,9 +2,14 @@
     x:Class="EchoBoard.App.Views.LibraryPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:EchoBoard.App.Controls">
+    xmlns:controls="using:EchoBoard.App.Controls"
+    Loaded="OnLoaded">
     <ScrollViewer>
-        <StackPanel Spacing="{StaticResource EchoBoardSpace24}">
+        <StackPanel
+            AllowDrop="True"
+            DragOver="OnDragOver"
+            Drop="OnDrop"
+            Spacing="{StaticResource EchoBoardSpace24}">
             <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
                 <TextBlock
                     Text="{Binding Title}"
@@ -25,7 +30,7 @@
                 <Border Style="{StaticResource EchoBoardPanelStyle}">
                     <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
                         <TextBlock Text="Categories" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                        <ItemsControl ItemsSource="{Binding PreviewCategories}">
+                        <ItemsControl ItemsSource="{Binding Categories}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <controls:CategoryItem
@@ -52,14 +57,54 @@
                             <TextBlock Text="Sound cards" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
                             <Button
                                 Grid.Column="1"
-                                Content="Import placeholder"
-                                IsEnabled="False"
+                                AutomationProperties.Name="Import sounds"
+                                Click="OnImportClicked"
+                                Content="{Binding ImportButtonText}"
+                                IsEnabled="{Binding IsImportEnabled}"
                                 Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
                         </Grid>
+
+                        <controls:ToastNotification
+                            Kind="{Binding ImportToast.Kind}"
+                            Title="{Binding ImportToast.Title}"
+                            Description="{Binding ImportToast.Description}"
+                            DismissCommand="{Binding DismissImportFeedbackCommand}"
+                            Visibility="{Binding ImportToastVisibility}" />
+
+                        <Border
+                            Style="{StaticResource EchoBoardCardStyle}"
+                            Visibility="{Binding ImportFeedbackVisibility}">
+                            <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
+                                <TextBlock Text="Import details" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                                <ItemsControl ItemsSource="{Binding ImportFeedbackItems}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,0,0,8" Spacing="{StaticResource EchoBoardSpace4}">
+                                                <TextBlock
+                                                    Text="{Binding FileName}"
+                                                    Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
+                                                    FontWeight="SemiBold" />
+                                                <TextBlock
+                                                    Text="{Binding Message}"
+                                                    Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <controls:EmptyState
+                            Icon="Audio"
+                            Title="{Binding EmptyStateTitle}"
+                            Description="{Binding EmptyStateMessage}"
+                            Visibility="{Binding EmptyStateVisibility}" />
+
                         <GridView
-                            ItemsSource="{Binding PreviewSounds}"
+                            ItemsSource="{Binding Sounds}"
                             IsItemClickEnabled="False"
-                            SelectionMode="None">
+                            SelectionMode="None"
+                            Visibility="{Binding SoundGridVisibility}">
                             <GridView.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" />

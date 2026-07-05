@@ -12,6 +12,7 @@ public static class DependencyInjection
         services.AddTransient<ListSoundsUseCase>();
         services.AddTransient<UpdateSoundUseCase>();
         services.AddTransient<DeleteSoundUseCase>();
+        services.AddTransient<ImportSoundsUseCase>();
         services.AddTransient<CreateCategoryUseCase>();
         services.AddTransient<GetCategoryUseCase>();
         services.AddTransient<ListCategoriesUseCase>();

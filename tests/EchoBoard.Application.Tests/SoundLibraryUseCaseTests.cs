@@ -68,6 +68,120 @@ public sealed class SoundLibraryUseCaseTests
     }
 
     [Fact]
+    public async Task ImportSoundsCreatesValidMp3AndWavSounds()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var metadata = new FakeAudioFileMetadataReader();
+        metadata.Add("C:\\Audio\\intro.mp3", "Intro", ".mp3", TimeSpan.FromSeconds(3), 123);
+        metadata.Add("C:\\Audio\\alert.wav", "Alert", ".wav", TimeSpan.FromSeconds(1), 456);
+        var useCase = new ImportSoundsUseCase(sounds, metadata);
+
+        var result = await useCase.ExecuteAsync(
+            new ImportSoundsRequest(["C:\\Audio\\intro.mp3", "C:\\Audio\\alert.wav"], Now),
+            CancellationToken.None);
+
+        result.Items.Select(item => item.Status).Should().Equal(ImportSoundStatus.Imported, ImportSoundStatus.Imported);
+        sounds.Items.Should().HaveCount(2);
+        sounds.Items.Select(sound => sound.SortOrder).Should().Equal(0, 1);
+        sounds.Items.Select(sound => sound.Extension).Should().Equal(".mp3", ".wav");
+    }
+
+    [Fact]
+    public async Task ImportSoundsRejectsUnsupportedExtensionBeforeReadingMetadata()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var metadata = new FakeAudioFileMetadataReader();
+        var useCase = new ImportSoundsUseCase(sounds, metadata);
+
+        var result = await useCase.ExecuteAsync(
+            new ImportSoundsRequest(["C:\\Audio\\clip.flac"], Now),
+            CancellationToken.None);
+
+        result.Items.Should().ContainSingle()
+            .Which.Status.Should().Be(ImportSoundStatus.InvalidExtension);
+        metadata.ReadCount.Should().Be(0);
+        sounds.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ImportSoundsSkipsDuplicateFilePath()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        await sounds.AddSoundAsync(CreateSound("C:\\Audio\\intro.mp3"), CancellationToken.None);
+        var metadata = new FakeAudioFileMetadataReader();
+        metadata.Add("C:\\Audio\\INTRO.mp3", "Intro", ".mp3", TimeSpan.FromSeconds(1), 100);
+        var useCase = new ImportSoundsUseCase(sounds, metadata);
+
+        var result = await useCase.ExecuteAsync(
+            new ImportSoundsRequest([" c:\\audio\\INTRO.mp3 "], Now),
+            CancellationToken.None);
+
+        result.Items.Should().ContainSingle()
+            .Which.Status.Should().Be(ImportSoundStatus.SkippedDuplicate);
+        metadata.ReadCount.Should().Be(0);
+        sounds.Items.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task ImportSoundsReportsUnreadableFile()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var metadata = new FakeAudioFileMetadataReader();
+        metadata.AddUnreadable("C:\\Audio\\missing.wav", "The file does not exist or cannot be read.");
+        var useCase = new ImportSoundsUseCase(sounds, metadata);
+
+        var result = await useCase.ExecuteAsync(
+            new ImportSoundsRequest(["C:\\Audio\\missing.wav"], Now),
+            CancellationToken.None);
+
+        result.Items.Should().ContainSingle()
+            .Which.Status.Should().Be(ImportSoundStatus.Unreadable);
+        sounds.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ImportSoundsReportsMetadataFailure()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var metadata = new FakeAudioFileMetadataReader();
+        metadata.AddMetadataFailure("C:\\Audio\\broken.mp3", "Audio metadata could not be read.");
+        var useCase = new ImportSoundsUseCase(sounds, metadata);
+
+        var result = await useCase.ExecuteAsync(
+            new ImportSoundsRequest(["C:\\Audio\\broken.mp3"], Now),
+            CancellationToken.None);
+
+        result.Items.Should().ContainSingle()
+            .Which.Status.Should().Be(ImportSoundStatus.MetadataFailed);
+        sounds.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ImportSoundsAllowsPartialSuccess()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        await sounds.AddSoundAsync(CreateSound("C:\\Audio\\existing.mp3"), CancellationToken.None);
+        var metadata = new FakeAudioFileMetadataReader();
+        metadata.Add("C:\\Audio\\valid.wav", "Valid", ".wav", TimeSpan.FromSeconds(5), 500);
+        metadata.AddMetadataFailure("C:\\Audio\\broken.mp3", "Audio metadata could not be read.");
+        var useCase = new ImportSoundsUseCase(sounds, metadata);
+
+        var result = await useCase.ExecuteAsync(
+            new ImportSoundsRequest(
+                ["C:\\Audio\\valid.wav", "C:\\Audio\\existing.mp3", "C:\\Audio\\notes.txt", "C:\\Audio\\broken.mp3"],
+                Now),
+            CancellationToken.None);
+
+        result.Items.Select(item => item.Status).Should().Equal(
+            ImportSoundStatus.Imported,
+            ImportSoundStatus.SkippedDuplicate,
+            ImportSoundStatus.InvalidExtension,
+            ImportSoundStatus.MetadataFailed);
+        sounds.Items.Should().HaveCount(2);
+        sounds.Items.Should().Contain(sound => sound.FilePath.EndsWith("valid.wav", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task CreateCategoryRejectsDuplicateName()
     {
         var categories = new FakeCategoryRepository();
@@ -112,6 +226,8 @@ public sealed class SoundLibraryUseCaseTests
     private sealed class FakeSoundLibraryRepository : ISoundLibraryRepository
     {
         private readonly List<Sound> sounds = [];
+
+        public IReadOnlyList<Sound> Items => sounds;
 
         public Task<IReadOnlyList<Sound>> ListSoundsAsync(CancellationToken cancellationToken)
         {
@@ -189,6 +305,47 @@ public sealed class SoundLibraryUseCaseTests
         {
             categories.RemoveAll(category => category.Id == id);
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeAudioFileMetadataReader : IAudioFileMetadataReader
+    {
+        private readonly Dictionary<string, AudioFileMetadata> metadataByPath = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Exception> failuresByPath = new(StringComparer.OrdinalIgnoreCase);
+
+        public int ReadCount { get; private set; }
+
+        public void Add(string filePath, string displayName, string extension, TimeSpan duration, long fileSize)
+        {
+            var normalized = PathNormalizer.NormalizeFilePath(filePath);
+            metadataByPath[normalized] = new AudioFileMetadata(displayName, normalized, extension, duration, fileSize);
+        }
+
+        public void AddUnreadable(string filePath, string message)
+        {
+            failuresByPath[PathNormalizer.NormalizeFilePath(filePath)] = new AudioFileUnreadableException(filePath, message);
+        }
+
+        public void AddMetadataFailure(string filePath, string message)
+        {
+            failuresByPath[PathNormalizer.NormalizeFilePath(filePath)] = new AudioFileMetadataException(filePath, message);
+        }
+
+        public Task<AudioFileMetadata> ReadAsync(string filePath, CancellationToken cancellationToken)
+        {
+            ReadCount++;
+            var normalized = PathNormalizer.NormalizeFilePath(filePath);
+            if (failuresByPath.TryGetValue(normalized, out var failure))
+            {
+                throw failure;
+            }
+
+            if (metadataByPath.TryGetValue(normalized, out var metadata))
+            {
+                return Task.FromResult(metadata);
+            }
+
+            throw new AudioFileMetadataException(filePath, "Audio metadata could not be read.");
         }
     }
 }

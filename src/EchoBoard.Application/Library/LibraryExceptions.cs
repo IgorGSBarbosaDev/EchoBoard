@@ -31,3 +31,25 @@ public sealed class CategoryNotFoundException : Exception
     {
     }
 }
+
+public sealed class AudioFileUnreadableException : Exception
+{
+    public AudioFileUnreadableException(string filePath, string message)
+        : base(message)
+    {
+        FilePath = filePath;
+    }
+
+    public string FilePath { get; }
+}
+
+public sealed class AudioFileMetadataException : Exception
+{
+    public AudioFileMetadataException(string filePath, string message)
+        : base(message)
+    {
+        FilePath = filePath;
+    }
+
+    public string FilePath { get; }
+}

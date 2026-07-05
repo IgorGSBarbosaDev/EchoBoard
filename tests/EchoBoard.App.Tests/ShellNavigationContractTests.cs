@@ -1,6 +1,8 @@
 using EchoBoard.Application.Interfaces;
+using EchoBoard.Application.Library;
 using EchoBoard.App.Navigation;
 using EchoBoard.App.ViewModels;
+using EchoBoard.Domain.Entities;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -118,11 +120,20 @@ public sealed class ShellNavigationContractTests
         return new MainShellViewModel(
             new NavigationService(),
             new DashboardViewModel(),
-            new LibraryViewModel(),
+            CreateLibraryViewModel(),
             new FavoritesViewModel(),
             new RecentViewModel(),
             new SettingsViewModel(),
             new AudioDiagnosticsViewModel());
+    }
+
+    private static LibraryViewModel CreateLibraryViewModel()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+
+        return new LibraryViewModel(
+            new ListSoundsUseCase(sounds),
+            new ImportSoundsUseCase(sounds, new FakeAudioFileMetadataReader()));
     }
 
     private sealed class FakeDatabaseInitializer : IDatabaseInitializer
@@ -140,6 +151,47 @@ public sealed class ShellNavigationContractTests
         {
             CallCount++;
             return exception is null ? Task.CompletedTask : Task.FromException(exception);
+        }
+    }
+
+    private sealed class FakeSoundLibraryRepository : ISoundLibraryRepository
+    {
+        public Task<IReadOnlyList<Sound>> ListSoundsAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<IReadOnlyList<Sound>>([]);
+        }
+
+        public Task<Sound?> GetSoundAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<Sound?>(null);
+        }
+
+        public Task<bool> SoundFilePathExistsAsync(string filePath, Guid? excludingSoundId, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(false);
+        }
+
+        public Task AddSoundAsync(Sound sound, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateSoundAsync(Sound sound, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteSoundAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeAudioFileMetadataReader : IAudioFileMetadataReader
+    {
+        public Task<AudioFileMetadata> ReadAsync(string filePath, CancellationToken cancellationToken)
+        {
+            throw new AudioFileMetadataException(filePath, "Audio metadata could not be read.");
         }
     }
 }
