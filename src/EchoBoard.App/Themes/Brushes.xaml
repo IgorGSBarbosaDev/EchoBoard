@@ -1,0 +1,22 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="EchoBoardBackgroundPrimaryBrush" Color="{ThemeResource EchoBoardBackgroundPrimaryColor}" />
+    <SolidColorBrush x:Key="EchoBoardBackgroundSurfaceBrush" Color="{ThemeResource EchoBoardBackgroundSurfaceColor}" />
+    <SolidColorBrush x:Key="EchoBoardCardBrush" Color="{ThemeResource EchoBoardCardColor}" />
+    <SolidColorBrush x:Key="EchoBoardCardActiveBrush" Color="{ThemeResource EchoBoardCardActiveColor}" />
+    <SolidColorBrush x:Key="EchoBoardBorderBrush" Color="{ThemeResource EchoBoardBorderColor}" />
+    <SolidColorBrush x:Key="EchoBoardActionBrush" Color="{ThemeResource EchoBoardActionColor}" />
+    <SolidColorBrush x:Key="EchoBoardActionHoverBrush" Color="{ThemeResource EchoBoardActionHoverColor}" />
+    <SolidColorBrush x:Key="EchoBoardActionPressedBrush" Color="{ThemeResource EchoBoardActionPressedColor}" />
+    <SolidColorBrush x:Key="EchoBoardDisabledBrush" Color="{ThemeResource EchoBoardDisabledColor}" />
+    <SolidColorBrush x:Key="EchoBoardSelectedBrush" Color="{ThemeResource EchoBoardSelectedColor}" />
+    <SolidColorBrush x:Key="EchoBoardFocusBrush" Color="{ThemeResource EchoBoardFocusColor}" />
+    <SolidColorBrush x:Key="EchoBoardTextPrimaryBrush" Color="{ThemeResource EchoBoardTextPrimaryColor}" />
+    <SolidColorBrush x:Key="EchoBoardTextSecondaryBrush" Color="{ThemeResource EchoBoardTextSecondaryColor}" />
+    <SolidColorBrush x:Key="EchoBoardTextDisabledBrush" Color="{ThemeResource EchoBoardTextDisabledColor}" />
+    <SolidColorBrush x:Key="EchoBoardSuccessBrush" Color="{ThemeResource EchoBoardSuccessColor}" />
+    <SolidColorBrush x:Key="EchoBoardWarningBrush" Color="{ThemeResource EchoBoardWarningColor}" />
+    <SolidColorBrush x:Key="EchoBoardErrorBrush" Color="{ThemeResource EchoBoardErrorColor}" />
+    <SolidColorBrush x:Key="EchoBoardOverlayBrush" Color="{ThemeResource EchoBoardOverlayColor}" />
+</ResourceDictionary>

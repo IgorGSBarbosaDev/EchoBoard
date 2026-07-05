@@ -2,10 +2,157 @@
     x:Class="EchoBoard.App.Views.MainShellPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid Padding="24">
-        <TextBlock
-            Text="{Binding Title}"
-            FontSize="24"
-            FontWeight="SemiBold" />
+    <Grid
+        Padding="{StaticResource EchoBoardPagePadding}"
+        Background="{ThemeResource EchoBoardBackgroundPrimaryBrush}"
+        RequestedTheme="{Binding RequestedTheme}">
+        <ScrollViewer>
+            <StackPanel MaxWidth="980" Spacing="{StaticResource EchoBoardSpace24}">
+                <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
+                    <TextBlock
+                        Text="{Binding Title}"
+                        Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
+                        FontSize="{StaticResource EchoBoardFontSizeTitle}"
+                        FontWeight="SemiBold" />
+                    <TextBlock
+                        Style="{StaticResource EchoBoardCaptionTextStyle}"
+                        Text="Design foundation preview for EchoBoard screens." />
+                </StackPanel>
+
+                <Border Style="{StaticResource EchoBoardPanelStyle}">
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
+                        <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
+                                <TextBlock
+                                    Style="{StaticResource EchoBoardSectionTitleTextStyle}"
+                                    Text="Audio control visual language" />
+                                <TextBlock
+                                    Style="{StaticResource EchoBoardBodyTextStyle}"
+                                    Text="Reusable tokens keep future screens consistent without defining product features yet." />
+                            </StackPanel>
+
+                            <Border
+                                Grid.Column="1"
+                                VerticalAlignment="Top"
+                                Style="{StaticResource EchoBoardStatusBadgeStyle}">
+                                <TextBlock
+                                    Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
+                                    FontSize="{StaticResource EchoBoardFontSizeBadge}"
+                                    FontWeight="SemiBold"
+                                    Text="{Binding SelectedThemeLabel}" />
+                            </Border>
+                        </Grid>
+
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="{StaticResource EchoBoardSpace8}">
+                            <Button
+                                Command="{Binding ChangeThemeCommand}"
+                                CommandParameter="Default"
+                                Content="System"
+                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                            <Button
+                                Command="{Binding ChangeThemeCommand}"
+                                CommandParameter="Dark"
+                                Content="Dark"
+                                Style="{StaticResource EchoBoardPrimaryButtonStyle}" />
+                            <Button
+                                Command="{Binding ChangeThemeCommand}"
+                                CommandParameter="Light"
+                                Content="Light"
+                                Style="{StaticResource EchoBoardGhostButtonStyle}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}" RowSpacing="{StaticResource EchoBoardSpace16}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource EchoBoardCardStyle}">
+                        <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
+                            <TextBlock
+                                Style="{StaticResource EchoBoardSectionTitleTextStyle}"
+                                Text="Controls" />
+                            <TextBox
+                                PlaceholderText="Search sounds"
+                                Style="{StaticResource EchoBoardSearchTextBoxStyle}" />
+                            <StackPanel
+                                Orientation="Horizontal"
+                                Spacing="{StaticResource EchoBoardSpace8}">
+                                <Button
+                                    Content="Primary"
+                                    Style="{StaticResource EchoBoardPrimaryButtonStyle}" />
+                                <Button
+                                    Content="Secondary"
+                                    Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                                <Button
+                                    Content="Danger"
+                                    Style="{StaticResource EchoBoardDangerButtonStyle}" />
+                            </StackPanel>
+                            <StackPanel
+                                Orientation="Horizontal"
+                                Spacing="{StaticResource EchoBoardSpace8}">
+                                <Button
+                                    Content="Ghost"
+                                    Style="{StaticResource EchoBoardGhostButtonStyle}" />
+                                <Button
+                                    AutomationProperties.Name="Preview icon button"
+                                    Content="..."
+                                    Style="{StaticResource EchoBoardIconButtonStyle}" />
+                                <ToggleButton
+                                    Content="Monitor"
+                                    IsChecked="True"
+                                    Style="{StaticResource EchoBoardToggleButtonStyle}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource EchoBoardCardStyle}">
+                        <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
+                            <TextBlock
+                                Style="{StaticResource EchoBoardSectionTitleTextStyle}"
+                                Text="Signal sample" />
+                            <TextBlock
+                                Style="{StaticResource EchoBoardBodyTextStyle}"
+                                Text="Body text stays readable on dark and light backgrounds." />
+                            <TextBlock
+                                Style="{StaticResource EchoBoardCaptionTextStyle}"
+                                Text="Caption text supports secondary metadata and quieter labels." />
+                            <Slider
+                                Maximum="100"
+                                Minimum="0"
+                                Style="{StaticResource EchoBoardSliderStyle}"
+                                Value="72" />
+                            <StackPanel
+                                Orientation="Horizontal"
+                                Spacing="{StaticResource EchoBoardSpace8}">
+                                <Border Style="{StaticResource EchoBoardStatusBadgeStyle}">
+                                    <TextBlock
+                                        Foreground="{ThemeResource EchoBoardSuccessBrush}"
+                                        FontSize="{StaticResource EchoBoardFontSizeBadge}"
+                                        FontWeight="SemiBold"
+                                        Text="Ready" />
+                                </Border>
+                                <Border Style="{StaticResource EchoBoardStatusBadgeStyle}">
+                                    <TextBlock
+                                        Foreground="{ThemeResource EchoBoardWarningBrush}"
+                                        FontSize="{StaticResource EchoBoardFontSizeBadge}"
+                                        FontWeight="SemiBold"
+                                        Text="Check device" />
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Page>

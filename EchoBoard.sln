@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EchoBoard.Audio.Tests", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EchoBoard.Infrastructure.Tests", "tests\EchoBoard.Infrastructure.Tests\EchoBoard.Infrastructure.Tests.csproj", "{F526874A-1E8F-4BAD-A55A-EE9364088E5D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EchoBoard.App.Tests", "tests\EchoBoard.App.Tests\EchoBoard.App.Tests.csproj", "{ADD75745-20E7-4B36-985E-C989F7CCEF74}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -143,6 +145,18 @@ Global
 		{F526874A-1E8F-4BAD-A55A-EE9364088E5D}.Release|x64.Build.0 = Release|x64
 		{F526874A-1E8F-4BAD-A55A-EE9364088E5D}.Release|x86.ActiveCfg = Release|x64
 		{F526874A-1E8F-4BAD-A55A-EE9364088E5D}.Release|x86.Build.0 = Release|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Debug|Any CPU.Build.0 = Debug|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Debug|x64.ActiveCfg = Debug|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Debug|x64.Build.0 = Debug|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Debug|x86.ActiveCfg = Debug|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Debug|x86.Build.0 = Debug|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Release|Any CPU.ActiveCfg = Release|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Release|Any CPU.Build.0 = Release|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Release|x64.ActiveCfg = Release|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Release|x64.Build.0 = Release|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Release|x86.ActiveCfg = Release|x64
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -157,5 +171,6 @@ Global
 		{486906B0-641A-45DD-B1EE-AC0CEEB29323} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{A3FDFCB5-5BF9-4653-AE38-06A73C941AE4} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{F526874A-1E8F-4BAD-A55A-EE9364088E5D} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{ADD75745-20E7-4B36-985E-C989F7CCEF74} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
