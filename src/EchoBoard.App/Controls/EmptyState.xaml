@@ -1,0 +1,33 @@
+<UserControl
+    x:Class="EchoBoard.App.Controls.EmptyState"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    AutomationProperties.Name="{x:Bind Title, Mode=OneTime}">
+    <Border Style="{StaticResource EchoBoardPanelStyle}">
+        <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
+            <SymbolIcon
+                Symbol="{x:Bind Icon, Mode=OneTime}"
+                Foreground="{ThemeResource EchoBoardActionBrush}" />
+            <TextBlock
+                Text="{x:Bind Title, Mode=OneTime}"
+                Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+            <TextBlock
+                Text="{x:Bind Description, Mode=OneTime}"
+                Style="{StaticResource EchoBoardBodyTextStyle}" />
+            <StackPanel
+                Orientation="Horizontal"
+                Spacing="{StaticResource EchoBoardSpace8}">
+                <Button
+                    Content="{x:Bind PrimaryActionText, Mode=OneTime}"
+                    Command="{x:Bind PrimaryCommand, Mode=OneTime}"
+                    Style="{StaticResource EchoBoardSecondaryButtonStyle}"
+                    Visibility="{x:Bind PrimaryActionVisibility, Mode=OneTime}" />
+                <Button
+                    Content="{x:Bind SecondaryActionText, Mode=OneTime}"
+                    Command="{x:Bind SecondaryCommand, Mode=OneTime}"
+                    Style="{StaticResource EchoBoardGhostButtonStyle}"
+                    Visibility="{x:Bind SecondaryActionVisibility, Mode=OneTime}" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

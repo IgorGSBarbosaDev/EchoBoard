@@ -1,0 +1,31 @@
+<UserControl
+    x:Class="EchoBoard.App.Controls.DeviceStatusBadge"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    AutomationProperties.Name="{x:Bind AccessibleLabel, Mode=OneTime}">
+    <Border
+        Padding="{StaticResource EchoBoardBadgePadding}"
+        Background="{ThemeResource EchoBoardCardActiveBrush}"
+        BorderBrush="{x:Bind StatusBrush, Mode=OneTime}"
+        BorderThickness="1"
+        CornerRadius="{StaticResource EchoBoardRadiusPill}">
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}">
+            <SymbolIcon
+                Symbol="{x:Bind Icon, Mode=OneTime}"
+                Foreground="{x:Bind StatusBrush, Mode=OneTime}" />
+            <StackPanel>
+                <TextBlock
+                    Text="{x:Bind DisplayLabel, Mode=OneTime}"
+                    Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
+                    FontSize="{StaticResource EchoBoardFontSizeBadge}"
+                    FontWeight="SemiBold"
+                    TextTrimming="CharacterEllipsis" />
+                <TextBlock
+                    Text="{x:Bind StatusText, Mode=OneTime}"
+                    Foreground="{x:Bind StatusBrush, Mode=OneTime}"
+                    FontSize="{StaticResource EchoBoardFontSizeCaption}"
+                    TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

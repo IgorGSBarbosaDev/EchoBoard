@@ -1,0 +1,40 @@
+<UserControl
+    x:Class="EchoBoard.App.Controls.ToastNotification"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    AutomationProperties.LiveSetting="Polite"
+    AutomationProperties.Name="{x:Bind AccessibleLabel, Mode=OneTime}">
+    <Border
+        Padding="{StaticResource EchoBoardPanelPadding}"
+        Background="{ThemeResource EchoBoardCardBrush}"
+        BorderBrush="{x:Bind KindBrush, Mode=OneTime}"
+        BorderThickness="1"
+        CornerRadius="{StaticResource EchoBoardRadiusLarge}">
+        <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <SymbolIcon
+                Symbol="{x:Bind Icon, Mode=OneTime}"
+                Foreground="{x:Bind KindBrush, Mode=OneTime}" />
+            <StackPanel Grid.Column="1" Spacing="{StaticResource EchoBoardSpace4}">
+                <TextBlock
+                    Text="{x:Bind Title, Mode=OneTime}"
+                    Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                <TextBlock
+                    Text="{x:Bind Description, Mode=OneTime}"
+                    Style="{StaticResource EchoBoardCaptionTextStyle}"
+                    Visibility="{x:Bind DescriptionVisibility, Mode=OneTime}" />
+            </StackPanel>
+            <Button
+                Grid.Column="2"
+                AutomationProperties.Name="Dismiss notification"
+                Command="{x:Bind DismissCommand, Mode=OneTime}"
+                Style="{StaticResource EchoBoardIconButtonStyle}">
+                <SymbolIcon Symbol="Cancel" />
+            </Button>
+        </Grid>
+    </Border>
+</UserControl>

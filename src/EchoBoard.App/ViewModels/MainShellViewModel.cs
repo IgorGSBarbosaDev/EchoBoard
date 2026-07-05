@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EchoBoard.App.Controls;
 using EchoBoard.App.Navigation;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -56,6 +57,43 @@ public sealed partial class MainShellViewModel : ObservableObject
         OpenSettingsCommand = new RelayCommand(() => Navigate(ShellRoute.Settings));
         ChangeThemeCommand = new RelayCommand<string>(ChangeTheme);
 
+        ContextSound = new(
+            "BRB bumper",
+            "Mock queue item",
+            "0:07",
+            "Ctrl+B",
+            "Stream",
+            null,
+            IsPlaying: true,
+            IsFavorite: true,
+            IsCompact: true);
+
+        ContextDevices =
+        [
+            new("Mic", "HyperX SoloCast", Symbol.Microphone, DeviceStatusKind.Connected),
+            new("Output", "Virtual output not set", Symbol.Audio, DeviceStatusKind.Warning)
+        ];
+
+        MixerVolumes =
+        [
+            new("Mic", Symbol.Microphone, 75),
+            new("Effects", Symbol.Audio, 80),
+            new("Monitor", Symbol.Volume, 60),
+            new("Output", Symbol.Volume, 0)
+        ];
+
+        MixerMeters =
+        [
+            new("Mic", 0.54, AudioLevelMeterVariant.Microphone),
+            new("Effects", 0.35, AudioLevelMeterVariant.Effects),
+            new("Output", 0.0, AudioLevelMeterVariant.VirtualOutput, "Idle")
+        ];
+
+        PreviewToast = new(
+            ToastNotificationKind.Warning,
+            "Virtual output not configured",
+            "This is a non-blocking mock notification preview.");
+
         navigationService.RouteChanged += OnRouteChanged;
     }
 
@@ -76,6 +114,16 @@ public sealed partial class MainShellViewModel : ObservableObject
     public string ContextPanelTitle => "Session Panel";
 
     public string ContextPanelSubtitle => "Queue, active sounds, device state, and sound details will appear here.";
+
+    public SoundCardPreviewModel ContextSound { get; }
+
+    public IReadOnlyList<DevicePreviewModel> ContextDevices { get; }
+
+    public IReadOnlyList<VolumePreviewModel> MixerVolumes { get; }
+
+    public IReadOnlyList<AudioMeterPreviewModel> MixerMeters { get; }
+
+    public ToastPreviewModel PreviewToast { get; }
 
     public ObservableCollection<ShellNavigationItemViewModel> NavigationItems { get; }
 

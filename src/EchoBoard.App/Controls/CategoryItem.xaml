@@ -1,0 +1,44 @@
+<UserControl
+    x:Class="EchoBoard.App.Controls.CategoryItem"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    AutomationProperties.Name="{x:Bind AccessibleLabel, Mode=OneTime}">
+    <Button
+        Command="{x:Bind Command, Mode=OneTime}"
+        CommandParameter="{x:Bind CommandParameter, Mode=OneTime}"
+        IsEnabled="{x:Bind IsEnabled, Mode=OneTime}"
+        HorizontalAlignment="Stretch"
+        HorizontalContentAlignment="Stretch"
+        Background="{x:Bind ItemBackground, Mode=OneTime}"
+        BorderBrush="{x:Bind ItemBorderBrush, Mode=OneTime}"
+        BorderThickness="1"
+        CornerRadius="{StaticResource EchoBoardRadiusMedium}"
+        Padding="{StaticResource EchoBoardControlPadding}">
+        <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid Width="20" Height="20">
+                <Ellipse Fill="{x:Bind DisplayIndicatorBrush, Mode=OneTime}" />
+                <SymbolIcon
+                    Symbol="{x:Bind Icon, Mode=OneTime}"
+                    Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" />
+            </Grid>
+            <TextBlock
+                Grid.Column="1"
+                Text="{x:Bind CategoryName, Mode=OneTime}"
+                Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
+                FontSize="{StaticResource EchoBoardFontSizeControl}"
+                FontWeight="SemiBold"
+                TextTrimming="CharacterEllipsis" />
+            <TextBlock
+                Grid.Column="2"
+                Text="{x:Bind CountText, Mode=OneTime}"
+                Foreground="{ThemeResource EchoBoardTextSecondaryBrush}"
+                FontSize="{StaticResource EchoBoardFontSizeBadge}"
+                Visibility="{x:Bind CountVisibility, Mode=OneTime}" />
+        </Grid>
+    </Button>
+</UserControl>

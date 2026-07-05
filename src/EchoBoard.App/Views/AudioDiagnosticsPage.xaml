@@ -1,7 +1,8 @@
 <Page
     x:Class="EchoBoard.App.Views.AudioDiagnosticsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:EchoBoard.App.Controls">
     <ScrollViewer>
         <StackPanel Spacing="{StaticResource EchoBoardSpace24}">
             <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
@@ -25,26 +26,41 @@
                             Text="{Binding EmptyStateMessage}"
                             Style="{StaticResource EchoBoardBodyTextStyle}" />
                     </StackPanel>
-                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}" RowSpacing="{StaticResource EchoBoardSpace12}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Border Style="{StaticResource EchoBoardStatusBadgeStyle}">
-                            <TextBlock
-                                Foreground="{ThemeResource EchoBoardWarningBrush}"
-                                FontSize="{StaticResource EchoBoardFontSizeBadge}"
-                                FontWeight="SemiBold"
-                                Text="Mic mock state" />
-                        </Border>
-                        <Border Grid.Column="1" Style="{StaticResource EchoBoardStatusBadgeStyle}">
-                            <TextBlock
-                                Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
-                                FontSize="{StaticResource EchoBoardFontSizeBadge}"
-                                FontWeight="SemiBold"
-                                Text="Engine offline" />
-                        </Border>
-                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding PreviewDevices}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <controls:DeviceStatusBadge
+                                    Label="{Binding Label}"
+                                    DeviceName="{Binding DeviceName}"
+                                    Icon="{Binding Icon}"
+                                    Status="{Binding Status}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <ItemsControl ItemsSource="{Binding PreviewMeters}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace16}" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <controls:AudioLevelMeter
+                                    Width="180"
+                                    Label="{Binding Label}"
+                                    Level="{Binding Level}"
+                                    Variant="{Binding Variant}"
+                                    ValueText="{Binding ValueText}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </Border>
         </StackPanel>
