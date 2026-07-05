@@ -20,6 +20,16 @@ public sealed class ShellPageTemplateSelector : DataTemplateSelector
 
     protected override DataTemplate? SelectTemplateCore(object item)
     {
+        return SelectTemplateFor(item) ?? base.SelectTemplateCore(item);
+    }
+
+    protected override DataTemplate? SelectTemplateCore(object item, DependencyObject container)
+    {
+        return SelectTemplateFor(item) ?? base.SelectTemplateCore(item, container);
+    }
+
+    private DataTemplate? SelectTemplateFor(object item)
+    {
         return item switch
         {
             DashboardViewModel => DashboardTemplate,
@@ -28,7 +38,7 @@ public sealed class ShellPageTemplateSelector : DataTemplateSelector
             RecentViewModel => RecentTemplate,
             SettingsViewModel => SettingsTemplate,
             AudioDiagnosticsViewModel => AudioDiagnosticsTemplate,
-            _ => base.SelectTemplateCore(item)
+            _ => null
         };
     }
 }

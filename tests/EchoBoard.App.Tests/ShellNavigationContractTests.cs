@@ -4,10 +4,12 @@ using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 using EchoBoard.App.Navigation;
 using EchoBoard.App.ViewModels;
+using EchoBoard.App.Views;
 using EchoBoard.Domain.Entities;
 using EchoBoard.Domain.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
 using Xunit;
 
 namespace EchoBoard.App.Tests;
@@ -67,6 +69,20 @@ public sealed class ShellNavigationContractTests
 
         viewModel.SelectedNavigationItem.Route.Should().Be(ShellRoute.Settings);
         viewModel.CurrentPage.Should().BeOfType<SettingsViewModel>();
+    }
+
+    [Fact]
+    public void ShellPageTemplateSelectorOverridesContentControlSelectionOverload()
+    {
+        var overload = typeof(ShellPageTemplateSelector).GetMethod(
+            "SelectTemplateCore",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
+            binder: null,
+            [typeof(object), typeof(DependencyObject)],
+            modifiers: null);
+
+        overload.Should().NotBeNull();
+        overload!.DeclaringType.Should().Be<ShellPageTemplateSelector>();
     }
 
     [Fact]
