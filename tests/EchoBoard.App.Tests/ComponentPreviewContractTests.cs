@@ -37,18 +37,78 @@ public sealed class ComponentPreviewContractTests
     public async Task LibraryViewModelLoadsPersistedSounds()
     {
         var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var category = Category.Create("Memes", 0, Now);
+        await categories.AddCategoryAsync(category, CancellationToken.None);
         await sounds.AddSoundAsync(
-            Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, null, 0, Now),
+            Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, category.Id, 0, Now),
             CancellationToken.None);
-        var viewModel = CreateLibraryViewModel(sounds);
+        var files = new FakeSoundFileAvailabilityReader(DefaultExists: true);
+        var viewModel = CreateLibraryViewModel(sounds, categories: categories, files: files);
 
         await viewModel.LoadAsync(CancellationToken.None);
 
-        viewModel.Categories.Should().Contain(category => category.IsSelected);
+        viewModel.Categories.Should().Contain(item => item.Name == "All sounds" && item.CountText == "1" && item.IsSelected);
+        viewModel.Categories.Should().Contain(item => item.Name == "Memes" && item.CountText == "1");
         viewModel.Sounds.Should().ContainSingle(sound =>
             sound.Title == "Intro" &&
             sound.DurationText == "0:03" &&
-            sound.CategoryLabel == "Uncategorized");
+            sound.CategoryLabel == "Memes" &&
+            !sound.IsMissingFile);
+    }
+
+    [Fact]
+    public async Task LibraryViewModelSeparatesEmptyLibraryFromFilteredNoResults()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        await sounds.AddSoundAsync(
+            Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, null, 0, Now),
+            CancellationToken.None);
+        var viewModel = CreateLibraryViewModel(sounds, files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
+
+        await viewModel.LoadAsync(CancellationToken.None);
+        await viewModel.UpdateSearchTextAsync("missing", CancellationToken.None);
+
+        viewModel.EmptyStateTitle.Should().Be("No results");
+        viewModel.EmptyStateVisibility.Should().Be(Microsoft.UI.Xaml.Visibility.Visible);
+        viewModel.SoundGridVisibility.Should().Be(Microsoft.UI.Xaml.Visibility.Collapsed);
+        viewModel.ClearFiltersVisibility.Should().Be(Microsoft.UI.Xaml.Visibility.Visible);
+    }
+
+    [Fact]
+    public async Task LibraryViewModelTogglesFavoriteAndRefreshesSound()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var viewModel = CreateLibraryViewModel(sounds, files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        await viewModel.ToggleFavoriteAsync(sound.Id, CancellationToken.None);
+
+        sounds.Items.Single().IsFavorite.Should().BeTrue();
+        viewModel.Sounds.Should().ContainSingle(item => item.IsFavorite);
+    }
+
+    [Fact]
+    public async Task FavoritesViewModelLoadsOnlyFavoriteSounds()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var favorite = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, null, 0, Now);
+        favorite.SetFavorite(true, Now.AddMinutes(1));
+        var regular = Sound.Create("Alert", "C:\\Audio\\alert.wav", ".wav", TimeSpan.FromSeconds(2), 456, null, 1, Now);
+        await sounds.AddSoundAsync(favorite, CancellationToken.None);
+        await sounds.AddSoundAsync(regular, CancellationToken.None);
+        var categories = new FakeCategoryRepository();
+        var files = new FakeSoundFileAvailabilityReader(DefaultExists: true);
+        var viewModel = new FavoritesViewModel(
+            new QuerySoundLibraryUseCase(sounds, categories, files),
+            new SetSoundFavoriteUseCase(sounds));
+
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        viewModel.Sounds.Should().ContainSingle(item => item.Id == favorite.Id);
+        viewModel.EmptyStateVisibility.Should().Be(Microsoft.UI.Xaml.Visibility.Collapsed);
     }
 
     [Fact]
@@ -124,14 +184,23 @@ public sealed class ComponentPreviewContractTests
 
     private static LibraryViewModel CreateLibraryViewModel(
         FakeSoundLibraryRepository? sounds = null,
-        FakeAudioFileMetadataReader? metadata = null)
+        FakeAudioFileMetadataReader? metadata = null,
+        FakeCategoryRepository? categories = null,
+        FakeSoundFileAvailabilityReader? files = null)
     {
         sounds ??= new FakeSoundLibraryRepository();
         metadata ??= new FakeAudioFileMetadataReader();
+        categories ??= new FakeCategoryRepository();
+        files ??= new FakeSoundFileAvailabilityReader();
 
         return new LibraryViewModel(
-            new ListSoundsUseCase(sounds),
-            new ImportSoundsUseCase(sounds, metadata));
+            new QuerySoundLibraryUseCase(sounds, categories, files),
+            new ImportSoundsUseCase(sounds, metadata),
+            new CreateCategoryUseCase(categories),
+            new UpdateCategoryUseCase(categories),
+            new DeleteCategoryUseCase(categories),
+            new SetSoundFavoriteUseCase(sounds),
+            new AssignSoundCategoryUseCase(sounds, categories));
     }
 
     private sealed class FakeSoundLibraryRepository : ISoundLibraryRepository
@@ -197,6 +266,71 @@ public sealed class ComponentPreviewContractTests
             }
 
             throw new AudioFileMetadataException(filePath, "Audio metadata could not be read.");
+        }
+    }
+
+    private sealed class FakeCategoryRepository : ICategoryRepository
+    {
+        private readonly List<Category> categories = [];
+
+        public Task<IReadOnlyList<Category>> ListCategoriesAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<IReadOnlyList<Category>>(categories.OrderBy(category => category.SortOrder).ToArray());
+        }
+
+        public Task<Category?> GetCategoryAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(categories.SingleOrDefault(category => category.Id == id));
+        }
+
+        public Task<bool> CategoryNameExistsAsync(string name, Guid? excludingCategoryId, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(categories.Any(category =>
+                category.Id != excludingCategoryId &&
+                string.Equals(category.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase)));
+        }
+
+        public Task AddCategoryAsync(Category category, CancellationToken cancellationToken)
+        {
+            categories.Add(category);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateCategoryAsync(Category category, CancellationToken cancellationToken)
+        {
+            var index = categories.FindIndex(item => item.Id == category.Id);
+            if (index >= 0)
+            {
+                categories[index] = category;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteCategoryAsync(Guid id, CancellationToken cancellationToken)
+        {
+            categories.RemoveAll(category => category.Id == id);
+            foreach (var category in categories)
+            {
+                _ = category;
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeSoundFileAvailabilityReader : ISoundFileAvailabilityReader
+    {
+        public FakeSoundFileAvailabilityReader(bool DefaultExists = false)
+        {
+            this.DefaultExists = DefaultExists;
+        }
+
+        public bool DefaultExists { get; }
+
+        public Task<bool> ExistsAsync(string filePath, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(DefaultExists);
         }
     }
 }

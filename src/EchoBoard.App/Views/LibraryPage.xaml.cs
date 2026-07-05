@@ -86,4 +86,47 @@ public sealed partial class LibraryPage : Page
 
         await ViewModel.ImportFilePathsAsync(paths, CancellationToken.None);
     }
+
+    private async void OnCreateCategoryClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        await ViewModel.CreateCategoryAsync(CreateCategoryNameTextBox.Text, CancellationToken.None);
+        CreateCategoryNameTextBox.Text = string.Empty;
+    }
+
+    private async void OnRenameCategoryClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        await ViewModel.RenameSelectedCategoryAsync(RenameCategoryNameTextBox.Text, CancellationToken.None);
+        RenameCategoryNameTextBox.Text = string.Empty;
+    }
+
+    private async void OnDeleteCategoryClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        await ViewModel.DeleteSelectedCategoryAsync(CancellationToken.None);
+    }
+
+    private async void OnAssignSelectedCategoryClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.SelectedSoundId is not Guid soundId)
+        {
+            return;
+        }
+
+        var selectedCategory = AssignCategoryComboBox.SelectedItem as SoundLibraryCategoryOptionViewModel;
+        await ViewModel.AssignSoundCategoryAsync(soundId, selectedCategory?.Id, CancellationToken.None);
+    }
 }

@@ -61,6 +61,18 @@ public sealed partial class SoundCard : UserControl
         typeof(SoundCard),
         new PropertyMetadata(false, OnDisplayPropertyChanged));
 
+    public static readonly DependencyProperty IsMissingFileProperty = DependencyProperty.Register(
+        nameof(IsMissingFile),
+        typeof(bool),
+        typeof(SoundCard),
+        new PropertyMetadata(false, OnDisplayPropertyChanged));
+
+    public static readonly DependencyProperty StatusTextProperty = DependencyProperty.Register(
+        nameof(StatusText),
+        typeof(string),
+        typeof(SoundCard),
+        new PropertyMetadata(string.Empty, OnDisplayPropertyChanged));
+
     public static readonly DependencyProperty IsCompactProperty = DependencyProperty.Register(
         nameof(IsCompact),
         typeof(bool),
@@ -75,6 +87,18 @@ public sealed partial class SoundCard : UserControl
 
     public static readonly DependencyProperty CommandParameterProperty = DependencyProperty.Register(
         nameof(CommandParameter),
+        typeof(object),
+        typeof(SoundCard),
+        new PropertyMetadata(null));
+
+    public static readonly DependencyProperty FavoriteCommandProperty = DependencyProperty.Register(
+        nameof(FavoriteCommand),
+        typeof(ICommand),
+        typeof(SoundCard),
+        new PropertyMetadata(null));
+
+    public static readonly DependencyProperty FavoriteCommandParameterProperty = DependencyProperty.Register(
+        nameof(FavoriteCommandParameter),
         typeof(object),
         typeof(SoundCard),
         new PropertyMetadata(null));
@@ -138,6 +162,18 @@ public sealed partial class SoundCard : UserControl
         set => SetValue(IsFavoriteProperty, value);
     }
 
+    public bool IsMissingFile
+    {
+        get => (bool)GetValue(IsMissingFileProperty);
+        set => SetValue(IsMissingFileProperty, value);
+    }
+
+    public string StatusText
+    {
+        get => (string)GetValue(StatusTextProperty);
+        set => SetValue(StatusTextProperty, value);
+    }
+
     public bool IsCompact
     {
         get => (bool)GetValue(IsCompactProperty);
@@ -156,6 +192,18 @@ public sealed partial class SoundCard : UserControl
         set => SetValue(CommandParameterProperty, value);
     }
 
+    public ICommand? FavoriteCommand
+    {
+        get => (ICommand?)GetValue(FavoriteCommandProperty);
+        set => SetValue(FavoriteCommandProperty, value);
+    }
+
+    public object? FavoriteCommandParameter
+    {
+        get => GetValue(FavoriteCommandParameterProperty);
+        set => SetValue(FavoriteCommandParameterProperty, value);
+    }
+
     public Brush CardBackground => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsSelected || IsPlaying ? "EchoBoardCardActiveBrush" : "EchoBoardCardBrush"];
 
     public Brush CardBorderBrush => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsPlaying ? "EchoBoardSuccessBrush" : IsSelected ? "EchoBoardActionBrush" : "EchoBoardBorderBrush"];
@@ -166,13 +214,19 @@ public sealed partial class SoundCard : UserControl
 
     public Visibility FavoriteVisibility => IsFavorite ? Visibility.Visible : Visibility.Collapsed;
 
+    public Visibility StatusVisibility => IsMissingFile || !string.IsNullOrWhiteSpace(StatusText) ? Visibility.Visible : Visibility.Collapsed;
+
+    public Symbol FavoriteSymbol => Symbol.Favorite;
+
+    public string FavoriteLabel => IsFavorite ? "Remove from favorites" : "Add to favorites";
+
     public Visibility PlayingVisibility => IsPlaying ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility SubtitleVisibility => IsCompact || string.IsNullOrWhiteSpace(Subtitle) ? Visibility.Collapsed : Visibility.Visible;
 
     public Visibility DurationVisibility => string.IsNullOrWhiteSpace(DurationText) ? Visibility.Collapsed : Visibility.Visible;
 
-    public string AccessibleLabel => $"{Title} {CategoryLabel} {DurationText}".Trim();
+    public string AccessibleLabel => $"{Title} {CategoryLabel} {DurationText} {StatusText}".Trim();
 
     public Brush DisplayCategoryBrush => CategoryBrush ?? (Brush)Microsoft.UI.Xaml.Application.Current.Resources["EchoBoardActionBrush"];
 

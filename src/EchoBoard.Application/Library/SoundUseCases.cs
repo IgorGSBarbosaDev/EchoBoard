@@ -147,6 +147,74 @@ public sealed class UpdateSoundUseCase
     }
 }
 
+public sealed class SetSoundFavoriteUseCase
+{
+    private readonly ISoundLibraryRepository sounds;
+
+    public SetSoundFavoriteUseCase(ISoundLibraryRepository sounds)
+    {
+        this.sounds = sounds;
+    }
+
+    public async Task<SoundDto> ExecuteAsync(SetSoundFavoriteRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var sound = await sounds.GetSoundAsync(request.Id, cancellationToken);
+        if (sound is null)
+        {
+            throw new SoundNotFoundException(request.Id);
+        }
+
+        sound.SetFavorite(request.IsFavorite, request.UpdatedAt);
+        await sounds.UpdateSoundAsync(sound, cancellationToken);
+
+        return LibraryMapper.ToDto(sound);
+    }
+}
+
+public sealed class AssignSoundCategoryUseCase
+{
+    private readonly ISoundLibraryRepository sounds;
+    private readonly ICategoryRepository categories;
+
+    public AssignSoundCategoryUseCase(ISoundLibraryRepository sounds, ICategoryRepository categories)
+    {
+        this.sounds = sounds;
+        this.categories = categories;
+    }
+
+    public async Task<SoundDto> ExecuteAsync(AssignSoundCategoryRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var sound = await sounds.GetSoundAsync(request.Id, cancellationToken);
+        if (sound is null)
+        {
+            throw new SoundNotFoundException(request.Id);
+        }
+
+        if (request.CategoryId is null)
+        {
+            sound.ClearCategory(request.UpdatedAt);
+        }
+        else
+        {
+            var category = await categories.GetCategoryAsync(request.CategoryId.Value, cancellationToken);
+            if (category is null)
+            {
+                throw new CategoryNotFoundException(request.CategoryId.Value);
+            }
+
+            sound.MoveToCategory(request.CategoryId.Value, request.UpdatedAt);
+        }
+
+        await sounds.UpdateSoundAsync(sound, cancellationToken);
+
+        return LibraryMapper.ToDto(sound);
+    }
+}
+
 public sealed class DeleteSoundUseCase
 {
     private readonly ISoundLibraryRepository sounds;

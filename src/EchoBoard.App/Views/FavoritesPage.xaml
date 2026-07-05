@@ -1,7 +1,9 @@
 <Page
     x:Class="EchoBoard.App.Views.FavoritesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:EchoBoard.App.Controls"
+    Loaded="OnLoaded">
     <ScrollViewer>
         <StackPanel Spacing="{StaticResource EchoBoardSpace24}">
             <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
@@ -16,13 +18,69 @@
             </StackPanel>
 
             <Border Style="{StaticResource EchoBoardPanelStyle}">
-                <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
-                    <TextBlock
-                        Text="{Binding EmptyStateTitle}"
-                        Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                    <TextBlock
-                        Text="{Binding EmptyStateMessage}"
-                        Style="{StaticResource EchoBoardBodyTextStyle}" />
+                <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
+                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox
+                            Header="Search favorites"
+                            PlaceholderText="Find favorite sounds by name"
+                            Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button
+                            Grid.Column="1"
+                            Content="Clear search"
+                            Command="{Binding ClearFiltersCommand}"
+                            Visibility="{Binding ClearFiltersVisibility}"
+                            Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                    </Grid>
+
+                    <controls:ToastNotification
+                        Kind="{Binding FeedbackToast.Kind}"
+                        Title="{Binding FeedbackToast.Title}"
+                        Description="{Binding FeedbackToast.Description}"
+                        Visibility="{Binding FeedbackToastVisibility}" />
+
+                    <controls:EmptyState
+                        Icon="Favorite"
+                        Title="{Binding EmptyStateTitle}"
+                        Description="{Binding EmptyStateMessage}"
+                        Visibility="{Binding EmptyStateVisibility}" />
+
+                    <GridView
+                        ItemsSource="{Binding Sounds}"
+                        IsItemClickEnabled="False"
+                        SelectionMode="None"
+                        Visibility="{Binding SoundGridVisibility}">
+                        <GridView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" />
+                            </ItemsPanelTemplate>
+                        </GridView.ItemsPanel>
+                        <GridView.ItemTemplate>
+                            <DataTemplate>
+                                <controls:SoundCard
+                                    Width="236"
+                                    Margin="0,0,12,12"
+                                    Title="{Binding Title}"
+                                    Subtitle="{Binding Subtitle}"
+                                    DurationText="{Binding DurationText}"
+                                    HotkeyText="{Binding HotkeyText}"
+                                    CategoryLabel="{Binding CategoryLabel}"
+                                    CategoryBrush="{Binding CategoryBrush}"
+                                    IsSelected="{Binding IsSelected}"
+                                    IsPlaying="{Binding IsPlaying}"
+                                    IsFavorite="{Binding IsFavorite}"
+                                    IsMissingFile="{Binding IsMissingFile}"
+                                    StatusText="{Binding StatusText}"
+                                    IsCompact="{Binding IsCompact}"
+                                    IsEnabled="{Binding IsEnabled}"
+                                    FavoriteCommand="{Binding FavoriteCommand}"
+                                    FavoriteCommandParameter="{Binding Id}" />
+                            </DataTemplate>
+                        </GridView.ItemTemplate>
+                    </GridView>
                 </StackPanel>
             </Border>
         </StackPanel>

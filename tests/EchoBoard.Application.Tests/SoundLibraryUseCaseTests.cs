@@ -209,6 +209,124 @@ public sealed class SoundLibraryUseCaseTests
     }
 
     [Fact]
+    public async Task QuerySoundLibraryReturnsCategoryNamesCountsAndMissingFileState()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var files = new FakeSoundFileAvailabilityReader();
+        var memes = Category.Create("Memes", 0, Now);
+        await categories.AddCategoryAsync(memes, CancellationToken.None);
+        var intro = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, memes.Id, 1, Now);
+        var alert = Sound.Create("Alert", "C:\\Audio\\alert.wav", ".wav", TimeSpan.FromSeconds(2), 456, null, 0, Now);
+        await sounds.AddSoundAsync(intro, CancellationToken.None);
+        await sounds.AddSoundAsync(alert, CancellationToken.None);
+        files.SetExists(intro.FilePath, true);
+        files.SetExists(alert.FilePath, false);
+        var useCase = new QuerySoundLibraryUseCase(sounds, categories, files);
+
+        var result = await useCase.ExecuteAsync(SoundLibraryFilter.All, CancellationToken.None);
+
+        result.TotalSoundCount.Should().Be(2);
+        result.Categories.Should().ContainSingle(category =>
+            category.Id == memes.Id &&
+            category.Name == "Memes" &&
+            category.SoundCount == 1);
+        result.Sounds.Should().Contain(item =>
+            item.Id == intro.Id &&
+            item.CategoryName == "Memes" &&
+            !item.IsMissingFile);
+        result.Sounds.Should().Contain(item =>
+            item.Id == alert.Id &&
+            item.CategoryName == null &&
+            item.IsMissingFile);
+    }
+
+    [Fact]
+    public async Task QuerySoundLibraryCombinesSearchCategoryAndFavoritesFilters()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var files = new FakeSoundFileAvailabilityReader(DefaultExists: true);
+        var memes = Category.Create("Memes", 0, Now);
+        var games = Category.Create("Games", 1, Now);
+        await categories.AddCategoryAsync(memes, CancellationToken.None);
+        await categories.AddCategoryAsync(games, CancellationToken.None);
+        var favoriteIntro = Sound.Create("Funny Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, memes.Id, 0, Now);
+        favoriteIntro.SetFavorite(true, Now.AddMinutes(1));
+        var otherFavorite = Sound.Create("Funny Alert", "C:\\Audio\\alert.wav", ".wav", TimeSpan.FromSeconds(2), 456, games.Id, 1, Now);
+        otherFavorite.SetFavorite(true, Now.AddMinutes(1));
+        var nonFavorite = Sound.Create("Funny Button", "C:\\Audio\\button.wav", ".wav", TimeSpan.FromSeconds(1), 789, memes.Id, 2, Now);
+        await sounds.AddSoundAsync(favoriteIntro, CancellationToken.None);
+        await sounds.AddSoundAsync(otherFavorite, CancellationToken.None);
+        await sounds.AddSoundAsync(nonFavorite, CancellationToken.None);
+        var useCase = new QuerySoundLibraryUseCase(sounds, categories, files);
+
+        var result = await useCase.ExecuteAsync(
+            new SoundLibraryFilter("funny", memes.Id, IncludeUncategorizedOnly: false, FavoritesOnly: true),
+            CancellationToken.None);
+
+        result.Sounds.Should().ContainSingle()
+            .Which.Id.Should().Be(favoriteIntro.Id);
+        result.ActiveFilterSummary.Should().Be("Favorites, Memes, \"funny\"");
+    }
+
+    [Fact]
+    public async Task QuerySoundLibraryFiltersUncategorizedSounds()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var files = new FakeSoundFileAvailabilityReader(DefaultExists: true);
+        var memes = Category.Create("Memes", 0, Now);
+        await categories.AddCategoryAsync(memes, CancellationToken.None);
+        var categorized = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, memes.Id, 0, Now);
+        var uncategorized = Sound.Create("Alert", "C:\\Audio\\alert.wav", ".wav", TimeSpan.FromSeconds(2), 456, null, 1, Now);
+        await sounds.AddSoundAsync(categorized, CancellationToken.None);
+        await sounds.AddSoundAsync(uncategorized, CancellationToken.None);
+        var useCase = new QuerySoundLibraryUseCase(sounds, categories, files);
+
+        var result = await useCase.ExecuteAsync(
+            new SoundLibraryFilter(SearchText: null, CategoryId: null, IncludeUncategorizedOnly: true, FavoritesOnly: false),
+            CancellationToken.None);
+
+        result.Sounds.Should().ContainSingle()
+            .Which.Id.Should().Be(uncategorized.Id);
+        result.UncategorizedSoundCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task SetSoundFavoritePersistsFavoriteState()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var useCase = new SetSoundFavoriteUseCase(sounds);
+
+        var result = await useCase.ExecuteAsync(new SetSoundFavoriteRequest(sound.Id, true, Now.AddMinutes(1)), CancellationToken.None);
+
+        result.IsFavorite.Should().BeTrue();
+        sounds.Items.Single().IsFavorite.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AssignSoundCategoryPersistsCategoryChanges()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var category = Category.Create("Memes", 0, Now);
+        await categories.AddCategoryAsync(category, CancellationToken.None);
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var useCase = new AssignSoundCategoryUseCase(sounds, categories);
+
+        var assigned = await useCase.ExecuteAsync(new AssignSoundCategoryRequest(sound.Id, category.Id, Now.AddMinutes(1)), CancellationToken.None);
+        var unassigned = await useCase.ExecuteAsync(new AssignSoundCategoryRequest(sound.Id, null, Now.AddMinutes(2)), CancellationToken.None);
+
+        assigned.CategoryId.Should().Be(category.Id);
+        unassigned.CategoryId.Should().BeNull();
+        sounds.Items.Single().CategoryId.Should().BeNull();
+    }
+
+    [Fact]
     public async Task DeleteSoundRejectsMissingSound()
     {
         var useCase = new DeleteSoundUseCase(new FakeSoundLibraryRepository());
@@ -346,6 +464,30 @@ public sealed class SoundLibraryUseCaseTests
             }
 
             throw new AudioFileMetadataException(filePath, "Audio metadata could not be read.");
+        }
+    }
+
+    private sealed class FakeSoundFileAvailabilityReader : ISoundFileAvailabilityReader
+    {
+        private readonly Dictionary<string, bool> existsByPath = new(StringComparer.OrdinalIgnoreCase);
+
+        public FakeSoundFileAvailabilityReader(bool DefaultExists = false)
+        {
+            this.DefaultExists = DefaultExists;
+        }
+
+        public bool DefaultExists { get; }
+
+        public void SetExists(string filePath, bool exists)
+        {
+            existsByPath[PathNormalizer.NormalizeFilePath(filePath)] = exists;
+        }
+
+        public Task<bool> ExistsAsync(string filePath, CancellationToken cancellationToken)
+        {
+            var normalized = PathNormalizer.NormalizeFilePath(filePath);
+
+            return Task.FromResult(existsByPath.TryGetValue(normalized, out var exists) ? exists : DefaultExists);
         }
     }
 }

@@ -23,12 +23,12 @@
 
             <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="240" />
+                    <ColumnDefinition Width="260" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
                 <Border Style="{StaticResource EchoBoardPanelStyle}">
-                    <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
                         <TextBlock Text="Categories" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
                         <ItemsControl ItemsSource="{Binding Categories}">
                             <ItemsControl.ItemTemplate>
@@ -40,23 +40,78 @@
                                         Icon="{Binding Icon}"
                                         IndicatorBrush="{Binding IndicatorBrush}"
                                         IsSelected="{Binding IsSelected}"
-                                        IsEnabled="{Binding IsEnabled}" />
+                                        IsEnabled="{Binding IsEnabled}"
+                                        Command="{Binding SelectCommand}"
+                                        CommandParameter="{Binding}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+
+                        <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
+                            <TextBlock Text="Create category" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                            <TextBox
+                                x:Name="CreateCategoryNameTextBox"
+                                Header="Name"
+                                PlaceholderText="Memes" />
+                            <Button
+                                Content="Create"
+                                Click="OnCreateCategoryClicked"
+                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
+                            <TextBlock Text="Selected category" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                            <TextBox
+                                x:Name="RenameCategoryNameTextBox"
+                                Header="New name"
+                                PlaceholderText="Rename selected category" />
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}">
+                                <Button
+                                    Content="Rename"
+                                    Click="OnRenameCategoryClicked"
+                                    Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                                <Button
+                                    Content="Delete"
+                                    Click="OnDeleteCategoryClicked"
+                                    Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
+                            <TextBlock Text="Selected sound" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                            <ComboBox
+                                x:Name="AssignCategoryComboBox"
+                                Header="Assign category"
+                                DisplayMemberPath="Name"
+                                ItemsSource="{Binding AssignableCategories}" />
+                            <Button
+                                Content="Apply category"
+                                Click="OnAssignSelectedCategoryClicked"
+                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 
                 <Border Grid.Column="1" Style="{StaticResource EchoBoardPanelStyle}">
                     <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
-                        <Grid>
+                        <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Sound cards" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                            <TextBox
+                                Header="Search"
+                                PlaceholderText="Find sounds by name"
+                                Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             <Button
                                 Grid.Column="1"
+                                Content="Clear filters"
+                                Command="{Binding ClearFiltersCommand}"
+                                Visibility="{Binding ClearFiltersVisibility}"
+                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                            <Button
+                                Grid.Column="2"
                                 AutomationProperties.Name="Import sounds"
                                 Click="OnImportClicked"
                                 Content="{Binding ImportButtonText}"
@@ -124,8 +179,14 @@
                                         IsSelected="{Binding IsSelected}"
                                         IsPlaying="{Binding IsPlaying}"
                                         IsFavorite="{Binding IsFavorite}"
+                                        IsMissingFile="{Binding IsMissingFile}"
+                                        StatusText="{Binding StatusText}"
                                         IsCompact="{Binding IsCompact}"
-                                        IsEnabled="{Binding IsEnabled}" />
+                                        IsEnabled="{Binding IsEnabled}"
+                                        Command="{Binding SelectCommand}"
+                                        CommandParameter="{Binding Id}"
+                                        FavoriteCommand="{Binding FavoriteCommand}"
+                                        FavoriteCommandParameter="{Binding Id}" />
                                 </DataTemplate>
                             </GridView.ItemTemplate>
                         </GridView>

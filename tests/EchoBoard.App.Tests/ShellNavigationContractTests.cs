@@ -121,7 +121,7 @@ public sealed class ShellNavigationContractTests
             new NavigationService(),
             new DashboardViewModel(),
             CreateLibraryViewModel(),
-            new FavoritesViewModel(),
+            CreateFavoritesViewModel(),
             new RecentViewModel(),
             new SettingsViewModel(),
             new AudioDiagnosticsViewModel());
@@ -130,10 +130,28 @@ public sealed class ShellNavigationContractTests
     private static LibraryViewModel CreateLibraryViewModel()
     {
         var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var files = new FakeSoundFileAvailabilityReader();
 
         return new LibraryViewModel(
-            new ListSoundsUseCase(sounds),
-            new ImportSoundsUseCase(sounds, new FakeAudioFileMetadataReader()));
+            new QuerySoundLibraryUseCase(sounds, categories, files),
+            new ImportSoundsUseCase(sounds, new FakeAudioFileMetadataReader()),
+            new CreateCategoryUseCase(categories),
+            new UpdateCategoryUseCase(categories),
+            new DeleteCategoryUseCase(categories),
+            new SetSoundFavoriteUseCase(sounds),
+            new AssignSoundCategoryUseCase(sounds, categories));
+    }
+
+    private static FavoritesViewModel CreateFavoritesViewModel()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var files = new FakeSoundFileAvailabilityReader();
+
+        return new FavoritesViewModel(
+            new QuerySoundLibraryUseCase(sounds, categories, files),
+            new SetSoundFavoriteUseCase(sounds));
     }
 
     private sealed class FakeDatabaseInitializer : IDatabaseInitializer
@@ -192,6 +210,47 @@ public sealed class ShellNavigationContractTests
         public Task<AudioFileMetadata> ReadAsync(string filePath, CancellationToken cancellationToken)
         {
             throw new AudioFileMetadataException(filePath, "Audio metadata could not be read.");
+        }
+    }
+
+    private sealed class FakeCategoryRepository : ICategoryRepository
+    {
+        public Task<IReadOnlyList<Category>> ListCategoriesAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<IReadOnlyList<Category>>([]);
+        }
+
+        public Task<Category?> GetCategoryAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<Category?>(null);
+        }
+
+        public Task<bool> CategoryNameExistsAsync(string name, Guid? excludingCategoryId, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(false);
+        }
+
+        public Task AddCategoryAsync(Category category, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateCategoryAsync(Category category, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteCategoryAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeSoundFileAvailabilityReader : ISoundFileAvailabilityReader
+    {
+        public Task<bool> ExistsAsync(string filePath, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(true);
         }
     }
 }

@@ -35,5 +35,6 @@ Circular dependencies are not allowed. The architecture tests read project files
 - WinUI startup uses `Microsoft.Extensions.Hosting` for dependency injection.
 - `EchoBoard.App` registers the application, audio, and infrastructure modules from the composition root.
 - Serilog writes rolling file logs under local application data.
-- SQLite is prepared through an empty EF Core `DbContext` and design-time factory, but there are no product entities, tables, or migrations yet.
-- The main window hosts an empty shell only. Feature screens and final visual design are intentionally deferred.
+- SQLite is active through EF Core with `Sound` and `Category` tables, repository implementations, migrations, and a design-time factory.
+- The library application layer contains import, listing/query, category management, favorite toggling, and sound category assignment use cases.
+- The main shell hosts Dashboard, Library, Favorites, Recent, Settings, and Audio Diagnostics routes. Library and Favorites render persisted local sounds; Recent remains a placeholder until playback history exists.

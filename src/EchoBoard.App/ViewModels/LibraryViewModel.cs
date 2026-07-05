@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EchoBoard.App.Controls;
 using EchoBoard.Application.Library;
+using EchoBoard.Domain.Exceptions;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -10,37 +11,102 @@ namespace EchoBoard.App.ViewModels;
 
 public sealed partial class LibraryViewModel : ObservableObject
 {
-    private readonly ListSoundsUseCase listSounds;
+    private readonly QuerySoundLibraryUseCase queryLibrary;
     private readonly ImportSoundsUseCase importSounds;
+    private readonly CreateCategoryUseCase createCategory;
+    private readonly UpdateCategoryUseCase updateCategory;
+    private readonly DeleteCategoryUseCase deleteCategory;
+    private readonly SetSoundFavoriteUseCase setSoundFavorite;
+    private readonly AssignSoundCategoryUseCase assignSoundCategory;
     private bool isBusy;
+    private string searchText = string.Empty;
+    private Guid? selectedCategoryId;
+    private bool includeUncategorizedOnly;
+    private string? loadError;
     private ToastPreviewModel? importToast;
 
-    public LibraryViewModel(ListSoundsUseCase listSounds, ImportSoundsUseCase importSounds)
+    public LibraryViewModel(
+        QuerySoundLibraryUseCase queryLibrary,
+        ImportSoundsUseCase importSounds,
+        CreateCategoryUseCase createCategory,
+        UpdateCategoryUseCase updateCategory,
+        DeleteCategoryUseCase deleteCategory,
+        SetSoundFavoriteUseCase setSoundFavorite,
+        AssignSoundCategoryUseCase assignSoundCategory)
     {
-        this.listSounds = listSounds;
+        this.queryLibrary = queryLibrary;
         this.importSounds = importSounds;
+        this.createCategory = createCategory;
+        this.updateCategory = updateCategory;
+        this.deleteCategory = deleteCategory;
+        this.setSoundFavorite = setSoundFavorite;
+        this.assignSoundCategory = assignSoundCategory;
 
         Categories = [];
         Sounds = [];
         ImportFeedbackItems = [];
         DismissImportFeedbackCommand = new RelayCommand(ClearImportFeedback);
+        ClearFiltersCommand = new AsyncRelayCommand(ct => ClearFiltersAsync(ct));
+        SelectCategoryCommand = new AsyncRelayCommand<CategoryPreviewModel>(SelectCategoryAsync);
+        SelectSoundCommand = new RelayCommand<Guid>(SelectSound);
 
-        UpdateCategories(soundCount: 0);
+        UpdateCategoryFilters([], totalSoundCount: 0, uncategorizedCount: 0);
     }
 
     public string Title => "Library";
 
-    public string Subtitle => "Import local MP3 and WAV files and keep their original paths in your sound library.";
+    public string Subtitle => "Import local MP3 and WAV files, organize categories, and mark favorites.";
 
-    public string EmptyStateTitle => "No sounds imported";
+    public string EmptyStateTitle
+    {
+        get
+        {
+            if (IsBusy)
+            {
+                return "Loading library";
+            }
 
-    public string EmptyStateMessage => "Import MP3 or WAV files to add them to EchoBoard without copying or changing the originals.";
+            if (loadError is not null)
+            {
+                return "Library unavailable";
+            }
+
+            return HasActiveFilters ? "No results" : "No sounds imported";
+        }
+    }
+
+    public string EmptyStateMessage
+    {
+        get
+        {
+            if (IsBusy)
+            {
+                return "Loading persisted sounds from the local library.";
+            }
+
+            if (loadError is not null)
+            {
+                return loadError;
+            }
+
+            return HasActiveFilters
+                ? "Try clearing search or category filters."
+                : "Import MP3 or WAV files to add them to EchoBoard without copying or changing the originals.";
+        }
+    }
 
     public ObservableCollection<CategoryPreviewModel> Categories { get; }
 
     public ObservableCollection<SoundCardPreviewModel> Sounds { get; }
 
     public ObservableCollection<ImportFeedbackItemViewModel> ImportFeedbackItems { get; }
+
+    public IReadOnlyList<SoundLibraryCategoryOptionViewModel> AssignableCategories =>
+        Categories
+            .Where(category => category.Id is not null)
+            .Select(category => new SoundLibraryCategoryOptionViewModel(category.Id!.Value, category.Name))
+            .Prepend(SoundLibraryCategoryOptionViewModel.Unassigned)
+            .ToArray();
 
     public ToastPreviewModel? ImportToast
     {
@@ -63,18 +129,39 @@ public sealed partial class LibraryViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(ImportButtonText));
                 OnPropertyChanged(nameof(IsImportEnabled));
-                OnPropertyChanged(nameof(EmptyStateVisibility));
+                NotifyStatePropertiesChanged();
             }
         }
     }
 
-    public string ImportButtonText => IsBusy ? "Importing..." : "Import";
+    public string SearchText
+    {
+        get => searchText;
+        set
+        {
+            if (SetProperty(ref searchText, value))
+            {
+                _ = RefreshAsync(CancellationToken.None);
+            }
+        }
+    }
+
+    public Guid? SelectedSoundId { get; private set; }
+
+    public string ImportButtonText => IsBusy ? "Working..." : "Import";
 
     public bool IsImportEnabled => !IsBusy;
 
-    public Visibility EmptyStateVisibility => Sounds.Count == 0 && !IsBusy ? Visibility.Visible : Visibility.Collapsed;
+    public bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(SearchText) ||
+        selectedCategoryId is not null ||
+        includeUncategorizedOnly;
 
-    public Visibility SoundGridVisibility => Sounds.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility EmptyStateVisibility => IsBusy || loadError is not null || Sounds.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility SoundGridVisibility => !IsBusy && loadError is null && Sounds.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility ClearFiltersVisibility => HasActiveFilters ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility ImportFeedbackVisibility => ImportFeedbackItems.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -82,18 +169,22 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     public IRelayCommand DismissImportFeedbackCommand { get; }
 
+    public IAsyncRelayCommand ClearFiltersCommand { get; }
+
+    public IAsyncRelayCommand<CategoryPreviewModel> SelectCategoryCommand { get; }
+
+    public IRelayCommand<Guid> SelectSoundCommand { get; }
+
     public async Task LoadAsync(CancellationToken cancellationToken)
     {
-        IsBusy = true;
-        try
-        {
-            var sounds = await listSounds.ExecuteAsync(cancellationToken);
-            ReplaceSounds(sounds);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
+        await RefreshAsync(cancellationToken);
+    }
+
+    public async Task UpdateSearchTextAsync(string value, CancellationToken cancellationToken)
+    {
+        searchText = value;
+        OnPropertyChanged(nameof(SearchText));
+        await RefreshAsync(cancellationToken);
     }
 
     public async Task ImportFilePathsAsync(IReadOnlyList<string> filePaths, CancellationToken cancellationToken)
@@ -113,13 +204,17 @@ public sealed partial class LibraryViewModel : ObservableObject
 
             ReplaceImportFeedback(result.Items);
             ImportToast = BuildImportToast(result.Items);
-
-            await LoadAsync(cancellationToken);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or ArgumentException)
+        {
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Error, "Import failed", exception.Message);
         }
         finally
         {
             IsBusy = false;
         }
+
+        await RefreshAsync(cancellationToken);
     }
 
     public void ReportImportCancelled()
@@ -132,7 +227,148 @@ public sealed partial class LibraryViewModel : ObservableObject
         NotifyImportFeedbackChanged();
     }
 
-    private void ReplaceSounds(IReadOnlyList<SoundDto> sounds)
+    public async Task CreateCategoryAsync(string name, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var sortOrder = Categories.Count(category => category.Id is not null);
+            await createCategory.ExecuteAsync(new CreateCategoryRequest(name, sortOrder, DateTimeOffset.UtcNow), cancellationToken);
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Success, "Category created", $"Created {name.Trim()}.");
+            await RefreshAsync(cancellationToken);
+        }
+        catch (Exception exception) when (exception is DuplicateCategoryNameException or DomainValidationException)
+        {
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Error, "Category not saved", exception.Message);
+        }
+    }
+
+    public async Task RenameSelectedCategoryAsync(string name, CancellationToken cancellationToken)
+    {
+        if (selectedCategoryId is null)
+        {
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Warning, "Select a category", "Choose a category before renaming it.");
+            return;
+        }
+
+        var selected = Categories.SingleOrDefault(category => category.Id == selectedCategoryId);
+        if (selected is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await updateCategory.ExecuteAsync(new UpdateCategoryRequest(selectedCategoryId.Value, name, GetCategorySortOrder(selectedCategoryId.Value)), cancellationToken);
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Success, "Category renamed", $"Renamed to {name.Trim()}.");
+            await RefreshAsync(cancellationToken);
+        }
+        catch (Exception exception) when (exception is DuplicateCategoryNameException or DomainValidationException)
+        {
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Error, "Category not saved", exception.Message);
+        }
+    }
+
+    public async Task DeleteSelectedCategoryAsync(CancellationToken cancellationToken)
+    {
+        if (selectedCategoryId is null)
+        {
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Warning, "Select a category", "Choose a category before deleting it.");
+            return;
+        }
+
+        await deleteCategory.ExecuteAsync(selectedCategoryId.Value, cancellationToken);
+        selectedCategoryId = null;
+        includeUncategorizedOnly = false;
+        ImportToast = new ToastPreviewModel(ToastNotificationKind.Success, "Category deleted", "Sounds in that category are now unassigned.");
+        await RefreshAsync(cancellationToken);
+    }
+
+    public async Task ToggleFavoriteAsync(Guid soundId, CancellationToken cancellationToken)
+    {
+        var sound = Sounds.SingleOrDefault(item => item.Id == soundId);
+        if (sound is null)
+        {
+            return;
+        }
+
+        await setSoundFavorite.ExecuteAsync(new SetSoundFavoriteRequest(soundId, !sound.IsFavorite, DateTimeOffset.UtcNow), cancellationToken);
+        ImportToast = new ToastPreviewModel(
+            ToastNotificationKind.Success,
+            !sound.IsFavorite ? "Added to favorites" : "Removed from favorites",
+            sound.Title);
+        await RefreshAsync(cancellationToken);
+    }
+
+    public async Task AssignSoundCategoryAsync(Guid soundId, Guid? categoryId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await assignSoundCategory.ExecuteAsync(new AssignSoundCategoryRequest(soundId, categoryId, DateTimeOffset.UtcNow), cancellationToken);
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Success, "Category updated", "Sound category was updated.");
+            await RefreshAsync(cancellationToken);
+        }
+        catch (CategoryNotFoundException exception)
+        {
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Error, "Category not found", exception.Message);
+        }
+    }
+
+    private async Task RefreshAsync(CancellationToken cancellationToken)
+    {
+        IsBusy = true;
+        try
+        {
+            loadError = null;
+            var result = await queryLibrary.ExecuteAsync(
+                new SoundLibraryFilter(SearchText, selectedCategoryId, includeUncategorizedOnly, FavoritesOnly: false),
+                cancellationToken);
+            ReplaceSounds(result.Sounds);
+            UpdateCategoryFilters(result.Categories, result.TotalSoundCount, result.UncategorizedSoundCount);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException)
+        {
+            loadError = exception.Message;
+            Sounds.Clear();
+        }
+        finally
+        {
+            IsBusy = false;
+            NotifyStatePropertiesChanged();
+        }
+    }
+
+    private async Task ClearFiltersAsync(CancellationToken cancellationToken)
+    {
+        searchText = string.Empty;
+        selectedCategoryId = null;
+        includeUncategorizedOnly = false;
+        OnPropertyChanged(nameof(SearchText));
+        await RefreshAsync(cancellationToken);
+    }
+
+    private async Task SelectCategoryAsync(CategoryPreviewModel? category)
+    {
+        if (category is null)
+        {
+            return;
+        }
+
+        selectedCategoryId = category.FilterKind == SoundLibraryCategoryFilterKinds.Category ? category.Id : null;
+        includeUncategorizedOnly = category.FilterKind == SoundLibraryCategoryFilterKinds.Uncategorized;
+        await RefreshAsync(CancellationToken.None);
+    }
+
+    private void SelectSound(Guid soundId)
+    {
+        SelectedSoundId = soundId;
+        for (var index = 0; index < Sounds.Count; index++)
+        {
+            var item = Sounds[index];
+            Sounds[index] = item with { IsSelected = item.Id == soundId };
+        }
+    }
+
+    private void ReplaceSounds(IReadOnlyList<SoundLibraryItemDto> sounds)
     {
         Sounds.Clear();
         foreach (var sound in sounds)
@@ -141,15 +377,20 @@ public sealed partial class LibraryViewModel : ObservableObject
                 sound.Name,
                 BuildSoundSubtitle(sound),
                 FormatDuration(sound.Duration),
-                string.Empty,
-                "Uncategorized",
+                "No hotkey",
+                sound.CategoryName ?? "Uncategorized",
                 null,
-                IsFavorite: sound.IsFavorite));
+                IsSelected: sound.Id == SelectedSoundId,
+                IsFavorite: sound.IsFavorite,
+                IsEnabled: true,
+                Id: sound.Id,
+                IsMissingFile: sound.IsMissingFile,
+                StatusText: sound.IsMissingFile ? "File missing" : string.Empty,
+                SelectCommand: SelectSoundCommand,
+                FavoriteCommand: new AsyncRelayCommand(_ => ToggleFavoriteAsync(sound.Id, CancellationToken.None))));
         }
 
-        UpdateCategories(sounds.Count);
-        OnPropertyChanged(nameof(EmptyStateVisibility));
-        OnPropertyChanged(nameof(SoundGridVisibility));
+        NotifyStatePropertiesChanged();
     }
 
     private void ReplaceImportFeedback(IReadOnlyList<ImportSoundItemResult> items)
@@ -173,17 +414,71 @@ public sealed partial class LibraryViewModel : ObservableObject
         NotifyImportFeedbackChanged();
     }
 
+    private void UpdateCategoryFilters(
+        IReadOnlyList<SoundLibraryCategoryDto> categories,
+        int totalSoundCount,
+        int uncategorizedCount)
+    {
+        Categories.Clear();
+        Categories.Add(new CategoryPreviewModel(
+            "All sounds",
+            FormatCount(totalSoundCount),
+            Symbol.Library,
+            null,
+            IsSelected: selectedCategoryId is null && !includeUncategorizedOnly,
+            Id: null,
+            FilterKind: SoundLibraryCategoryFilterKinds.All,
+            SelectCommand: SelectCategoryCommand));
+        Categories.Add(new CategoryPreviewModel(
+            "Uncategorized",
+            FormatCount(uncategorizedCount),
+            Symbol.Audio,
+            null,
+            IsSelected: includeUncategorizedOnly,
+            Id: null,
+            FilterKind: SoundLibraryCategoryFilterKinds.Uncategorized,
+            SelectCommand: SelectCategoryCommand));
+
+        foreach (var category in categories)
+        {
+            Categories.Add(new CategoryPreviewModel(
+                category.Name,
+                FormatCount(category.SoundCount),
+                Symbol.Tag,
+                null,
+                IsSelected: selectedCategoryId == category.Id,
+                Id: category.Id,
+                FilterKind: SoundLibraryCategoryFilterKinds.Category,
+                SelectCommand: SelectCategoryCommand));
+        }
+
+        OnPropertyChanged(nameof(AssignableCategories));
+        NotifyStatePropertiesChanged();
+    }
+
+    private int GetCategorySortOrder(Guid categoryId)
+    {
+        var index = Categories
+            .Where(category => category.Id is not null)
+            .Select((category, index) => new { category.Id, Index = index })
+            .SingleOrDefault(item => item.Id == categoryId);
+
+        return index?.Index ?? 0;
+    }
+
     private void NotifyImportFeedbackChanged()
     {
         OnPropertyChanged(nameof(ImportFeedbackVisibility));
     }
 
-    private void UpdateCategories(int soundCount)
+    private void NotifyStatePropertiesChanged()
     {
-        Categories.Clear();
-        var countText = soundCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        Categories.Add(new CategoryPreviewModel("All sounds", countText, Symbol.Library, null, IsSelected: true));
-        Categories.Add(new CategoryPreviewModel("Uncategorized", countText, Symbol.Audio, null));
+        OnPropertyChanged(nameof(EmptyStateTitle));
+        OnPropertyChanged(nameof(EmptyStateMessage));
+        OnPropertyChanged(nameof(EmptyStateVisibility));
+        OnPropertyChanged(nameof(SoundGridVisibility));
+        OnPropertyChanged(nameof(ClearFiltersVisibility));
+        OnPropertyChanged(nameof(HasActiveFilters));
     }
 
     private static ToastPreviewModel BuildImportToast(IReadOnlyList<ImportSoundItemResult> items)
@@ -203,7 +498,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         return new ToastPreviewModel(kind, imported > 0 ? "Import complete" : "No sounds imported", description);
     }
 
-    private static string BuildSoundSubtitle(SoundDto sound)
+    private static string BuildSoundSubtitle(SoundLibraryItemDto sound)
     {
         var sizeText = FormatFileSize(sound.FileSize);
         var extension = sound.Extension.TrimStart('.').ToUpperInvariant();
@@ -227,6 +522,23 @@ public sealed partial class LibraryViewModel : ObservableObject
             ? $"{fileSize / mb:0.#} MB"
             : $"{Math.Max(fileSize / kb, 0.1):0.#} KB";
     }
+
+    private static string FormatCount(int count)
+    {
+        return count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+}
+
+public static class SoundLibraryCategoryFilterKinds
+{
+    public const string All = "All";
+    public const string Uncategorized = "Uncategorized";
+    public const string Category = "Category";
+}
+
+public sealed record SoundLibraryCategoryOptionViewModel(Guid? Id, string Name)
+{
+    public static SoundLibraryCategoryOptionViewModel Unassigned { get; } = new(null, "Unassigned");
 }
 
 public sealed record ImportFeedbackItemViewModel(string FileName, string Status, string Message);
