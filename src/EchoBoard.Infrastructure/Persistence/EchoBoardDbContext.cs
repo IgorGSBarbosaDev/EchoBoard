@@ -14,6 +14,8 @@ public sealed class EchoBoardDbContext : DbContext
 
     public DbSet<Category> Categories => Set<Category>();
 
+    public DbSet<HotkeyBinding> HotkeyBindings => Set<HotkeyBinding>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(EchoBoardDbContext).Assembly);

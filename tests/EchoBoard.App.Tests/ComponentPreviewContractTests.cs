@@ -1,7 +1,10 @@
 using EchoBoard.App.Controls;
 using EchoBoard.App.ViewModels;
+using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 using EchoBoard.Domain.Entities;
+using EchoBoard.Domain.Enums;
+using EchoBoard.Domain.ValueObjects;
 using FluentAssertions;
 using Xunit;
 
@@ -54,7 +57,49 @@ public sealed class ComponentPreviewContractTests
             sound.Title == "Intro" &&
             sound.DurationText == "0:03" &&
             sound.CategoryLabel == "Memes" &&
+            sound.HotkeyText == "No hotkey" &&
             !sound.IsMissingFile);
+    }
+
+    [Fact]
+    public async Task LibraryViewModelDisplaysSoundHotkeyBindings()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var hotkeys = new FakeHotkeyBindingRepository();
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        await hotkeys.AddAsync(
+            HotkeyBinding.CreateForSound(
+                sound.Id,
+                HotkeyCombination.Create(HotkeyModifiers.Control | HotkeyModifiers.Alt, "F8"),
+                isEnabled: true,
+                Now),
+            CancellationToken.None);
+        var viewModel = CreateLibraryViewModel(sounds, hotkeys: hotkeys, files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
+
+        await viewModel.LoadAsync(CancellationToken.None);
+        viewModel.SelectSoundCommand.Execute(sound.Id);
+
+        viewModel.Sounds.Should().ContainSingle(item => item.HotkeyText == "Ctrl+Alt+F8");
+        viewModel.HotkeyPrimaryKey.Should().Be("F8");
+        viewModel.SaveSoundHotkeyCommand.Should().NotBeNull();
+        viewModel.RemoveSoundHotkeyCommand.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void SettingsViewModelExposesRequiredGlobalHotkeyRows()
+    {
+        var hotkeys = new FakeHotkeyBindingRepository();
+        var viewModel = new SettingsViewModel(
+            new ListHotkeyBindingsUseCase(hotkeys, new FakeHotkeyRuntime()),
+            new AssignGlobalHotkeyUseCase(hotkeys, new FakeHotkeyRuntime()),
+            new RemoveHotkeyBindingUseCase(hotkeys, new FakeHotkeyRuntime()),
+            new SetHotkeyBindingEnabledUseCase(hotkeys, new FakeHotkeyRuntime()));
+
+        viewModel.GlobalHotkeys.Select(item => item.Command).Should().Equal(
+            GlobalHotkeyCommand.StopAllSounds,
+            GlobalHotkeyCommand.PauseResumePlayback,
+            GlobalHotkeyCommand.ShowHideMainWindow);
     }
 
     [Fact]
@@ -186,12 +231,15 @@ public sealed class ComponentPreviewContractTests
         FakeSoundLibraryRepository? sounds = null,
         FakeAudioFileMetadataReader? metadata = null,
         FakeCategoryRepository? categories = null,
+        FakeHotkeyBindingRepository? hotkeys = null,
         FakeSoundFileAvailabilityReader? files = null)
     {
         sounds ??= new FakeSoundLibraryRepository();
         metadata ??= new FakeAudioFileMetadataReader();
         categories ??= new FakeCategoryRepository();
+        hotkeys ??= new FakeHotkeyBindingRepository();
         files ??= new FakeSoundFileAvailabilityReader();
+        var runtime = new FakeHotkeyRuntime();
 
         return new LibraryViewModel(
             new QuerySoundLibraryUseCase(sounds, categories, files),
@@ -200,7 +248,11 @@ public sealed class ComponentPreviewContractTests
             new UpdateCategoryUseCase(categories),
             new DeleteCategoryUseCase(categories),
             new SetSoundFavoriteUseCase(sounds),
-            new AssignSoundCategoryUseCase(sounds, categories));
+            new AssignSoundCategoryUseCase(sounds, categories),
+            new ListHotkeyBindingsUseCase(hotkeys, runtime),
+            new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
+            new RemoveHotkeyBindingUseCase(hotkeys, runtime),
+            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime));
     }
 
     private sealed class FakeSoundLibraryRepository : ISoundLibraryRepository
@@ -331,6 +383,75 @@ public sealed class ComponentPreviewContractTests
         public Task<bool> ExistsAsync(string filePath, CancellationToken cancellationToken)
         {
             return Task.FromResult(DefaultExists);
+        }
+    }
+
+    private sealed class FakeHotkeyBindingRepository : IHotkeyBindingRepository
+    {
+        private readonly List<HotkeyBinding> bindings = [];
+
+        public Task<IReadOnlyList<HotkeyBinding>> ListAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<IReadOnlyList<HotkeyBinding>>(bindings.ToArray());
+        }
+
+        public Task<HotkeyBinding?> GetAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(bindings.SingleOrDefault(binding => binding.Id == id));
+        }
+
+        public Task<HotkeyBinding?> GetForSoundAsync(Guid soundId, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(bindings.SingleOrDefault(binding => binding.SoundId == soundId));
+        }
+
+        public Task<HotkeyBinding?> GetForGlobalCommandAsync(GlobalHotkeyCommand command, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(bindings.SingleOrDefault(binding => binding.GlobalCommand == command));
+        }
+
+        public Task<bool> CombinationExistsAsync(string normalizedKeyCombination, Guid? excludingBindingId, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(bindings.Any(binding =>
+                binding.Id != excludingBindingId &&
+                string.Equals(binding.NormalizedKeyCombination, normalizedKeyCombination, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        public Task AddAsync(HotkeyBinding binding, CancellationToken cancellationToken)
+        {
+            bindings.Add(binding);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(HotkeyBinding binding, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+        {
+            bindings.RemoveAll(binding => binding.Id == id);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeHotkeyRuntime : IHotkeyRuntimeService
+    {
+        public Task<HotkeyRegistrationResult> RegisterBindingAsync(HotkeyBinding binding, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(binding.IsEnabled
+                ? HotkeyRegistrationResult.Active("Registered.")
+                : HotkeyRegistrationResult.Disabled("Disabled."));
+        }
+
+        public Task UnregisterBindingAsync(Guid bindingId, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public HotkeyRegistrationState GetRegistrationState(Guid bindingId)
+        {
+            return HotkeyRegistrationState.Active;
         }
     }
 }

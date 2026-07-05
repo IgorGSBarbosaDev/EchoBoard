@@ -1,7 +1,9 @@
 <Page
     x:Class="EchoBoard.App.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:EchoBoard.App.Controls"
+    Loaded="OnLoaded">
     <ScrollViewer>
         <StackPanel Spacing="{StaticResource EchoBoardSpace24}">
             <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
@@ -17,12 +19,66 @@
 
             <Border Style="{StaticResource EchoBoardPanelStyle}">
                 <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
+                    <TextBlock Text="Global hotkeys" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
                     <TextBlock
-                        Text="{Binding EmptyStateTitle}"
-                        Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                    <TextBlock
-                        Text="{Binding EmptyStateMessage}"
-                        Style="{StaticResource EchoBoardBodyTextStyle}" />
+                        Text="Keyboard shortcuts work while EchoBoard is minimized or out of focus. Use at least one modifier plus one primary key."
+                        Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                    <controls:ToastNotification
+                        Kind="{Binding FeedbackToast.Kind}"
+                        Title="{Binding FeedbackToast.Title}"
+                        Description="{Binding FeedbackToast.Description}"
+                        Visibility="{Binding FeedbackToastVisibility}" />
+                    <ItemsControl ItemsSource="{Binding GlobalHotkeys}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border
+                                    Margin="0,0,0,12"
+                                    Style="{StaticResource EchoBoardCardStyle}">
+                                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="280" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="{StaticResource EchoBoardSpace4}">
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                                            <TextBlock Text="{Binding Description}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                                            <controls:HotkeyBadge Text="{Binding HotkeyText}" />
+                                            <TextBlock Text="{Binding StatusText}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="{StaticResource EchoBoardSpace8}">
+                                            <controls:HotkeyCaptureBox
+                                                Ctrl="{Binding Ctrl, Mode=TwoWay}"
+                                                Alt="{Binding Alt, Mode=TwoWay}"
+                                                Shift="{Binding Shift, Mode=TwoWay}"
+                                                Win="{Binding Win, Mode=TwoWay}"
+                                                PrimaryKey="{Binding PrimaryKey, Mode=TwoWay}" />
+                                        </StackPanel>
+                                        <StackPanel
+                                            Grid.Column="2"
+                                            VerticalAlignment="Center"
+                                            Spacing="{StaticResource EchoBoardSpace8}">
+                                            <Button
+                                                Content="Save"
+                                                Command="{Binding SaveCommand}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                                            <Button
+                                                Content="{Binding ToggleEnabledText}"
+                                                Command="{Binding ToggleEnabledCommand}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                                            <Button
+                                                Content="Remove"
+                                                Command="{Binding RemoveCommand}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </Border>
         </StackPanel>

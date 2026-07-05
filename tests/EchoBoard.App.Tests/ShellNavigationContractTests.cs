@@ -1,8 +1,10 @@
 using EchoBoard.Application.Interfaces;
+using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 using EchoBoard.App.Navigation;
 using EchoBoard.App.ViewModels;
 using EchoBoard.Domain.Entities;
+using EchoBoard.Domain.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -123,7 +125,7 @@ public sealed class ShellNavigationContractTests
             CreateLibraryViewModel(),
             CreateFavoritesViewModel(),
             new RecentViewModel(),
-            new SettingsViewModel(),
+            CreateSettingsViewModel(),
             new AudioDiagnosticsViewModel());
     }
 
@@ -132,6 +134,8 @@ public sealed class ShellNavigationContractTests
         var sounds = new FakeSoundLibraryRepository();
         var categories = new FakeCategoryRepository();
         var files = new FakeSoundFileAvailabilityReader();
+        var hotkeys = new FakeHotkeyBindingRepository();
+        var runtime = new FakeHotkeyRuntime();
 
         return new LibraryViewModel(
             new QuerySoundLibraryUseCase(sounds, categories, files),
@@ -140,7 +144,23 @@ public sealed class ShellNavigationContractTests
             new UpdateCategoryUseCase(categories),
             new DeleteCategoryUseCase(categories),
             new SetSoundFavoriteUseCase(sounds),
-            new AssignSoundCategoryUseCase(sounds, categories));
+            new AssignSoundCategoryUseCase(sounds, categories),
+            new ListHotkeyBindingsUseCase(hotkeys, runtime),
+            new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
+            new RemoveHotkeyBindingUseCase(hotkeys, runtime),
+            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime));
+    }
+
+    private static SettingsViewModel CreateSettingsViewModel()
+    {
+        var hotkeys = new FakeHotkeyBindingRepository();
+        var runtime = new FakeHotkeyRuntime();
+
+        return new SettingsViewModel(
+            new ListHotkeyBindingsUseCase(hotkeys, runtime),
+            new AssignGlobalHotkeyUseCase(hotkeys, runtime),
+            new RemoveHotkeyBindingUseCase(hotkeys, runtime),
+            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime));
     }
 
     private static FavoritesViewModel CreateFavoritesViewModel()
@@ -251,6 +271,67 @@ public sealed class ShellNavigationContractTests
         public Task<bool> ExistsAsync(string filePath, CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
+        }
+    }
+
+    private sealed class FakeHotkeyBindingRepository : IHotkeyBindingRepository
+    {
+        public Task<IReadOnlyList<HotkeyBinding>> ListAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<IReadOnlyList<HotkeyBinding>>([]);
+        }
+
+        public Task<HotkeyBinding?> GetAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<HotkeyBinding?>(null);
+        }
+
+        public Task<HotkeyBinding?> GetForSoundAsync(Guid soundId, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<HotkeyBinding?>(null);
+        }
+
+        public Task<HotkeyBinding?> GetForGlobalCommandAsync(GlobalHotkeyCommand command, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<HotkeyBinding?>(null);
+        }
+
+        public Task<bool> CombinationExistsAsync(string normalizedKeyCombination, Guid? excludingBindingId, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(false);
+        }
+
+        public Task AddAsync(HotkeyBinding binding, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(HotkeyBinding binding, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeHotkeyRuntime : IHotkeyRuntimeService
+    {
+        public Task<HotkeyRegistrationResult> RegisterBindingAsync(HotkeyBinding binding, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(HotkeyRegistrationResult.Active("Registered."));
+        }
+
+        public Task UnregisterBindingAsync(Guid bindingId, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public HotkeyRegistrationState GetRegistrationState(Guid bindingId)
+        {
+            return HotkeyRegistrationState.Active;
         }
     }
 }

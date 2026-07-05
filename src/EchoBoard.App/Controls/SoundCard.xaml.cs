@@ -210,7 +210,7 @@ public sealed partial class SoundCard : UserControl
 
     public double CardMinHeight => IsCompact ? 116 : 168;
 
-    public bool HotkeyUnavailable => string.IsNullOrWhiteSpace(HotkeyText);
+    public bool HotkeyUnavailable => string.IsNullOrWhiteSpace(HotkeyText) || string.Equals(HotkeyText, "No hotkey", StringComparison.OrdinalIgnoreCase);
 
     public Visibility FavoriteVisibility => IsFavorite ? Visibility.Visible : Visibility.Collapsed;
 

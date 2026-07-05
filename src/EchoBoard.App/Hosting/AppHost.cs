@@ -1,6 +1,8 @@
 using System.Globalization;
 using EchoBoard.Application;
+using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Interfaces;
+using EchoBoard.App.Hotkeys;
 using EchoBoard.App.Navigation;
 using EchoBoard.App.ViewModels;
 using EchoBoard.App.Views;
@@ -39,6 +41,10 @@ public static class AppHost
                 services.AddApplication();
                 services.AddAudio();
                 services.AddInfrastructure(settings);
+                services.AddSingleton<UnavailablePlaybackCommandPorts>();
+                services.AddSingleton<ISoundPlaybackCommandPort>(services => services.GetRequiredService<UnavailablePlaybackCommandPorts>());
+                services.AddSingleton<IPlaybackControlCommandPort>(services => services.GetRequiredService<UnavailablePlaybackCommandPorts>());
+                services.AddSingleton<IShellWindowCommandPort, ShellWindowCommandPort>();
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddTransient<DashboardViewModel>();
                 services.AddTransient<LibraryViewModel>();
@@ -72,5 +78,14 @@ public static class AppHost
             Log.Error(exception, "EchoBoard database initialization failed.");
             throw;
         }
+    }
+
+    public static async Task RestoreHotkeysAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        await using var scope = services.CreateAsyncScope();
+        var restoreHotkeys = scope.ServiceProvider.GetRequiredService<RestoreHotkeyBindingsUseCase>();
+        await restoreHotkeys.ExecuteAsync(cancellationToken);
     }
 }

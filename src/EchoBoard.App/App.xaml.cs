@@ -25,6 +25,7 @@ public partial class App : Microsoft.UI.Xaml.Application
             await host.StartAsync().ConfigureAwait(true);
             await AppHost.InitializeDatabaseAsync(host.Services, CancellationToken.None).ConfigureAwait(true);
             mainWindow = host.Services.GetRequiredService<MainWindow>();
+            await AppHost.RestoreHotkeysAsync(host.Services, CancellationToken.None).ConfigureAwait(true);
             mainWindow.Activate();
         }
         catch (Exception exception)

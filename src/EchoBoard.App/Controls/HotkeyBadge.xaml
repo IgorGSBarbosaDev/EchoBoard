@@ -8,6 +8,18 @@
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="AvailabilityStates">
                 <VisualState x:Name="Available" />
+                <VisualState x:Name="Disabled">
+                    <VisualState.Setters>
+                        <Setter Target="BadgeText.Foreground" Value="{ThemeResource EchoBoardTextSecondaryBrush}" />
+                        <Setter Target="BadgeBorder.BorderBrush" Value="{ThemeResource EchoBoardBorderBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Conflicting">
+                    <VisualState.Setters>
+                        <Setter Target="BadgeText.Foreground" Value="{ThemeResource EchoBoardWarningBrush}" />
+                        <Setter Target="BadgeBorder.BorderBrush" Value="{ThemeResource EchoBoardWarningBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
                 <VisualState x:Name="Unavailable">
                     <VisualState.Setters>
                         <Setter Target="BadgeText.Foreground" Value="{ThemeResource EchoBoardTextDisabledBrush}" />

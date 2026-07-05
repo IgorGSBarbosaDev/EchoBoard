@@ -89,6 +89,30 @@
                                 Click="OnAssignSelectedCategoryClicked"
                                 Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
                         </StackPanel>
+
+                        <StackPanel
+                            Spacing="{StaticResource EchoBoardSpace8}"
+                            Visibility="{Binding SoundHotkeyEditorVisibility}">
+                            <TextBlock Text="Hotkey" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                            <TextBlock Text="{Binding SelectedSoundHotkeyText}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                            <controls:HotkeyCaptureBox
+                                Ctrl="{Binding HotkeyCtrl, Mode=TwoWay}"
+                                Alt="{Binding HotkeyAlt, Mode=TwoWay}"
+                                Shift="{Binding HotkeyShift, Mode=TwoWay}"
+                                Win="{Binding HotkeyWin, Mode=TwoWay}"
+                                PrimaryKey="{Binding HotkeyPrimaryKey, Mode=TwoWay}" />
+                            <CheckBox Content="Enabled" IsChecked="{Binding IsSelectedSoundHotkeyEnabled, Mode=TwoWay}" />
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}">
+                                <Button
+                                    Content="Save"
+                                    Command="{Binding SaveSoundHotkeyCommand}"
+                                    Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                                <Button
+                                    Content="Remove"
+                                    Command="{Binding RemoveSoundHotkeyCommand}"
+                                    Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

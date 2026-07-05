@@ -3,17 +3,20 @@ using System;
 using EchoBoard.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace EchoBoard.Infrastructure.Migrations;
-
-[DbContext(typeof(EchoBoardDbContext))]
-partial class EchoBoardDbContextModelSnapshot : ModelSnapshot
+namespace EchoBoard.Infrastructure.Migrations
 {
-    protected override void BuildModel(ModelBuilder modelBuilder)
+    [DbContext(typeof(EchoBoardDbContext))]
+    [Migration("20260705154327_AddHotkeyBindings")]
+    partial class AddHotkeyBindings
     {
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
@@ -175,5 +178,6 @@ partial class EchoBoardDbContextModelSnapshot : ModelSnapshot
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 #pragma warning restore 612, 618
+        }
     }
 }

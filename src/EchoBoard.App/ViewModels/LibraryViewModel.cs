@@ -2,7 +2,9 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EchoBoard.App.Controls;
+using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
+using EchoBoard.Domain.Enums;
 using EchoBoard.Domain.Exceptions;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -18,10 +20,21 @@ public sealed partial class LibraryViewModel : ObservableObject
     private readonly DeleteCategoryUseCase deleteCategory;
     private readonly SetSoundFavoriteUseCase setSoundFavorite;
     private readonly AssignSoundCategoryUseCase assignSoundCategory;
+    private readonly ListHotkeyBindingsUseCase listHotkeys;
+    private readonly AssignSoundHotkeyUseCase assignSoundHotkey;
+    private readonly RemoveHotkeyBindingUseCase removeHotkeyBinding;
+    private readonly SetHotkeyBindingEnabledUseCase setHotkeyBindingEnabled;
+    private readonly Dictionary<Guid, HotkeyBindingDto> hotkeyBySoundId = [];
     private bool isBusy;
     private string searchText = string.Empty;
+    private string hotkeyPrimaryKey = string.Empty;
     private Guid? selectedCategoryId;
     private bool includeUncategorizedOnly;
+    private bool hotkeyCtrl = true;
+    private bool hotkeyAlt;
+    private bool hotkeyShift;
+    private bool hotkeyWin;
+    private bool isSelectedSoundHotkeyEnabled = true;
     private string? loadError;
     private ToastPreviewModel? importToast;
 
@@ -32,7 +45,11 @@ public sealed partial class LibraryViewModel : ObservableObject
         UpdateCategoryUseCase updateCategory,
         DeleteCategoryUseCase deleteCategory,
         SetSoundFavoriteUseCase setSoundFavorite,
-        AssignSoundCategoryUseCase assignSoundCategory)
+        AssignSoundCategoryUseCase assignSoundCategory,
+        ListHotkeyBindingsUseCase listHotkeys,
+        AssignSoundHotkeyUseCase assignSoundHotkey,
+        RemoveHotkeyBindingUseCase removeHotkeyBinding,
+        SetHotkeyBindingEnabledUseCase setHotkeyBindingEnabled)
     {
         this.queryLibrary = queryLibrary;
         this.importSounds = importSounds;
@@ -41,6 +58,10 @@ public sealed partial class LibraryViewModel : ObservableObject
         this.deleteCategory = deleteCategory;
         this.setSoundFavorite = setSoundFavorite;
         this.assignSoundCategory = assignSoundCategory;
+        this.listHotkeys = listHotkeys;
+        this.assignSoundHotkey = assignSoundHotkey;
+        this.removeHotkeyBinding = removeHotkeyBinding;
+        this.setHotkeyBindingEnabled = setHotkeyBindingEnabled;
 
         Categories = [];
         Sounds = [];
@@ -49,6 +70,9 @@ public sealed partial class LibraryViewModel : ObservableObject
         ClearFiltersCommand = new AsyncRelayCommand(ct => ClearFiltersAsync(ct));
         SelectCategoryCommand = new AsyncRelayCommand<CategoryPreviewModel>(SelectCategoryAsync);
         SelectSoundCommand = new RelayCommand<Guid>(SelectSound);
+        SaveSoundHotkeyCommand = new AsyncRelayCommand(ct => SaveSelectedSoundHotkeyAsync(ct));
+        RemoveSoundHotkeyCommand = new AsyncRelayCommand(ct => RemoveSelectedSoundHotkeyAsync(ct));
+        ToggleSelectedSoundHotkeyEnabledCommand = new AsyncRelayCommand(ct => ToggleSelectedSoundHotkeyEnabledAsync(ct));
 
         UpdateCategoryFilters([], totalSoundCount: 0, uncategorizedCount: 0);
     }
@@ -150,6 +174,47 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     public string ImportButtonText => IsBusy ? "Working..." : "Import";
 
+    public string HotkeyPrimaryKey
+    {
+        get => hotkeyPrimaryKey;
+        set => SetProperty(ref hotkeyPrimaryKey, value);
+    }
+
+    public bool HotkeyCtrl
+    {
+        get => hotkeyCtrl;
+        set => SetProperty(ref hotkeyCtrl, value);
+    }
+
+    public bool HotkeyAlt
+    {
+        get => hotkeyAlt;
+        set => SetProperty(ref hotkeyAlt, value);
+    }
+
+    public bool HotkeyShift
+    {
+        get => hotkeyShift;
+        set => SetProperty(ref hotkeyShift, value);
+    }
+
+    public bool HotkeyWin
+    {
+        get => hotkeyWin;
+        set => SetProperty(ref hotkeyWin, value);
+    }
+
+    public bool IsSelectedSoundHotkeyEnabled
+    {
+        get => isSelectedSoundHotkeyEnabled;
+        set => SetProperty(ref isSelectedSoundHotkeyEnabled, value);
+    }
+
+    public string SelectedSoundHotkeyText =>
+        SelectedSoundId is not null && hotkeyBySoundId.TryGetValue(SelectedSoundId.Value, out var binding)
+            ? $"{binding.NormalizedKeyCombination} ({binding.RegistrationState})"
+            : "No hotkey assigned";
+
     public bool IsImportEnabled => !IsBusy;
 
     public bool HasActiveFilters =>
@@ -167,6 +232,8 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     public Visibility ImportToastVisibility => ImportToast is null ? Visibility.Collapsed : Visibility.Visible;
 
+    public Visibility SoundHotkeyEditorVisibility => SelectedSoundId is null ? Visibility.Collapsed : Visibility.Visible;
+
     public IRelayCommand DismissImportFeedbackCommand { get; }
 
     public IAsyncRelayCommand ClearFiltersCommand { get; }
@@ -174,6 +241,12 @@ public sealed partial class LibraryViewModel : ObservableObject
     public IAsyncRelayCommand<CategoryPreviewModel> SelectCategoryCommand { get; }
 
     public IRelayCommand<Guid> SelectSoundCommand { get; }
+
+    public IAsyncRelayCommand SaveSoundHotkeyCommand { get; }
+
+    public IAsyncRelayCommand RemoveSoundHotkeyCommand { get; }
+
+    public IAsyncRelayCommand ToggleSelectedSoundHotkeyEnabledCommand { get; }
 
     public async Task LoadAsync(CancellationToken cancellationToken)
     {
@@ -313,12 +386,65 @@ public sealed partial class LibraryViewModel : ObservableObject
         }
     }
 
+    public async Task SaveSelectedSoundHotkeyAsync(CancellationToken cancellationToken)
+    {
+        if (SelectedSoundId is null)
+        {
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Warning, "Select a sound", "Choose a sound before assigning a hotkey.");
+            return;
+        }
+
+        try
+        {
+            var result = await assignSoundHotkey.ExecuteAsync(
+                new AssignSoundHotkeyRequest(
+                    SelectedSoundId.Value,
+                    BuildSelectedModifiers(),
+                    HotkeyPrimaryKey,
+                    IsSelectedSoundHotkeyEnabled,
+                    DateTimeOffset.UtcNow),
+                cancellationToken);
+            ImportToast = ToastForRegistration("Hotkey saved", result);
+            await RefreshAsync(cancellationToken);
+        }
+        catch (Exception exception) when (exception is DuplicateHotkeyBindingException or DomainValidationException)
+        {
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Error, "Hotkey not saved", exception.Message);
+        }
+    }
+
+    public async Task RemoveSelectedSoundHotkeyAsync(CancellationToken cancellationToken)
+    {
+        if (SelectedSoundId is null || !hotkeyBySoundId.TryGetValue(SelectedSoundId.Value, out var binding))
+        {
+            ImportToast = new ToastPreviewModel(ToastNotificationKind.Info, "No hotkey assigned", "The selected sound has no hotkey to remove.");
+            return;
+        }
+
+        await removeHotkeyBinding.ExecuteAsync(binding.Id, cancellationToken);
+        ImportToast = new ToastPreviewModel(ToastNotificationKind.Success, "Hotkey removed", "The selected sound no longer has a global hotkey.");
+        await RefreshAsync(cancellationToken);
+    }
+
+    public async Task ToggleSelectedSoundHotkeyEnabledAsync(CancellationToken cancellationToken)
+    {
+        if (SelectedSoundId is null || !hotkeyBySoundId.TryGetValue(SelectedSoundId.Value, out var binding))
+        {
+            return;
+        }
+
+        var result = await setHotkeyBindingEnabled.ExecuteAsync(binding.Id, !binding.IsEnabled, DateTimeOffset.UtcNow, cancellationToken);
+        ImportToast = ToastForRegistration(result.IsEnabled ? "Hotkey enabled" : "Hotkey disabled", result);
+        await RefreshAsync(cancellationToken);
+    }
+
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
         IsBusy = true;
         try
         {
             loadError = null;
+            await RefreshHotkeysAsync(cancellationToken);
             var result = await queryLibrary.ExecuteAsync(
                 new SoundLibraryFilter(SearchText, selectedCategoryId, includeUncategorizedOnly, FavoritesOnly: false),
                 cancellationToken);
@@ -366,6 +492,9 @@ public sealed partial class LibraryViewModel : ObservableObject
             var item = Sounds[index];
             Sounds[index] = item with { IsSelected = item.Id == soundId };
         }
+
+        PopulateHotkeyEditor(soundId);
+        NotifyHotkeyPropertiesChanged();
     }
 
     private void ReplaceSounds(IReadOnlyList<SoundLibraryItemDto> sounds)
@@ -377,7 +506,7 @@ public sealed partial class LibraryViewModel : ObservableObject
                 sound.Name,
                 BuildSoundSubtitle(sound),
                 FormatDuration(sound.Duration),
-                "No hotkey",
+                hotkeyBySoundId.TryGetValue(sound.Id, out var binding) ? binding.NormalizedKeyCombination : "No hotkey",
                 sound.CategoryName ?? "Uncategorized",
                 null,
                 IsSelected: sound.Id == SelectedSoundId,
@@ -479,6 +608,84 @@ public sealed partial class LibraryViewModel : ObservableObject
         OnPropertyChanged(nameof(SoundGridVisibility));
         OnPropertyChanged(nameof(ClearFiltersVisibility));
         OnPropertyChanged(nameof(HasActiveFilters));
+        OnPropertyChanged(nameof(SoundHotkeyEditorVisibility));
+        OnPropertyChanged(nameof(SelectedSoundHotkeyText));
+    }
+
+    private async Task RefreshHotkeysAsync(CancellationToken cancellationToken)
+    {
+        var bindings = await listHotkeys.ExecuteAsync(cancellationToken);
+        hotkeyBySoundId.Clear();
+        foreach (var binding in bindings.Where(binding => binding.TargetKind == HotkeyBindingTargetKind.Sound && binding.SoundId is not null))
+        {
+            hotkeyBySoundId[binding.SoundId!.Value] = binding;
+        }
+    }
+
+    private void PopulateHotkeyEditor(Guid soundId)
+    {
+        if (!hotkeyBySoundId.TryGetValue(soundId, out var binding))
+        {
+            HotkeyCtrl = true;
+            HotkeyAlt = false;
+            HotkeyShift = false;
+            HotkeyWin = false;
+            HotkeyPrimaryKey = string.Empty;
+            IsSelectedSoundHotkeyEnabled = true;
+            return;
+        }
+
+        HotkeyCtrl = binding.Modifiers.HasFlag(HotkeyModifiers.Control);
+        HotkeyAlt = binding.Modifiers.HasFlag(HotkeyModifiers.Alt);
+        HotkeyShift = binding.Modifiers.HasFlag(HotkeyModifiers.Shift);
+        HotkeyWin = binding.Modifiers.HasFlag(HotkeyModifiers.Windows);
+        HotkeyPrimaryKey = binding.PrimaryKey;
+        IsSelectedSoundHotkeyEnabled = binding.IsEnabled;
+    }
+
+    private HotkeyModifiers BuildSelectedModifiers()
+    {
+        var modifiers = HotkeyModifiers.None;
+        if (HotkeyCtrl)
+        {
+            modifiers |= HotkeyModifiers.Control;
+        }
+
+        if (HotkeyAlt)
+        {
+            modifiers |= HotkeyModifiers.Alt;
+        }
+
+        if (HotkeyShift)
+        {
+            modifiers |= HotkeyModifiers.Shift;
+        }
+
+        if (HotkeyWin)
+        {
+            modifiers |= HotkeyModifiers.Windows;
+        }
+
+        return modifiers;
+    }
+
+    private void NotifyHotkeyPropertiesChanged()
+    {
+        OnPropertyChanged(nameof(SoundHotkeyEditorVisibility));
+        OnPropertyChanged(nameof(SelectedSoundHotkeyText));
+    }
+
+    private static ToastPreviewModel ToastForRegistration(string title, HotkeyBindingDto binding)
+    {
+        var kind = binding.RegistrationState switch
+        {
+            HotkeyRegistrationState.Active => ToastNotificationKind.Success,
+            HotkeyRegistrationState.Disabled => ToastNotificationKind.Info,
+            HotkeyRegistrationState.Conflicting => ToastNotificationKind.Warning,
+            _ => ToastNotificationKind.Error
+        };
+
+        return new ToastPreviewModel(kind, title, binding.RegistrationMessage);
     }
 
     private static ToastPreviewModel BuildImportToast(IReadOnlyList<ImportSoundItemResult> items)
