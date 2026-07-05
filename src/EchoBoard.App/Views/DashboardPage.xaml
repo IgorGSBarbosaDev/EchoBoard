@@ -1,7 +1,8 @@
 <Page
     x:Class="EchoBoard.App.Views.DashboardPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:EchoBoard.App.Controls">
     <ScrollViewer>
         <StackPanel Spacing="{StaticResource EchoBoardSpace24}">
             <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
@@ -44,16 +45,47 @@
                 </Border>
             </Grid>
 
+            <controls:ToastNotification
+                Kind="{Binding PreviewToast.Kind}"
+                Title="{Binding PreviewToast.Title}"
+                Description="{Binding PreviewToast.Description}" />
+
             <Border Style="{StaticResource EchoBoardPanelStyle}">
-                <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
-                    <TextBlock
-                        Text="{Binding EmptyStateTitle}"
-                        Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                    <TextBlock
-                        Text="{Binding EmptyStateMessage}"
-                        Style="{StaticResource EchoBoardBodyTextStyle}" />
+                <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
+                    <TextBlock Text="Reusable sound cards" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                    <ItemsControl ItemsSource="{Binding PreviewSounds}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace12}" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <controls:SoundCard
+                                    Width="236"
+                                    Title="{Binding Title}"
+                                    Subtitle="{Binding Subtitle}"
+                                    DurationText="{Binding DurationText}"
+                                    HotkeyText="{Binding HotkeyText}"
+                                    CategoryLabel="{Binding CategoryLabel}"
+                                    CategoryBrush="{Binding CategoryBrush}"
+                                    IsSelected="{Binding IsSelected}"
+                                    IsPlaying="{Binding IsPlaying}"
+                                    IsFavorite="{Binding IsFavorite}"
+                                    IsCompact="{Binding IsCompact}"
+                                    IsEnabled="{Binding IsEnabled}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </Border>
+
+            <controls:EmptyState
+                Icon="{Binding PreviewEmptyState.Icon}"
+                Title="{Binding PreviewEmptyState.Title}"
+                Description="{Binding PreviewEmptyState.Description}"
+                PrimaryActionText="{Binding PreviewEmptyState.PrimaryActionText}"
+                SecondaryActionText="{Binding PreviewEmptyState.SecondaryActionText}" />
         </StackPanel>
     </ScrollViewer>
 </Page>

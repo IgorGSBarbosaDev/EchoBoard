@@ -1,7 +1,8 @@
 <Page
     x:Class="EchoBoard.App.Views.LibraryPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:EchoBoard.App.Controls">
     <ScrollViewer>
         <StackPanel Spacing="{StaticResource EchoBoardSpace24}">
             <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
@@ -15,20 +16,77 @@
                     Style="{StaticResource EchoBoardCaptionTextStyle}" />
             </StackPanel>
 
-            <Border Style="{StaticResource EchoBoardPanelStyle}">
-                <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
-                    <TextBlock
-                        Text="{Binding EmptyStateTitle}"
-                        Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                    <TextBlock
-                        Text="{Binding EmptyStateMessage}"
-                        Style="{StaticResource EchoBoardBodyTextStyle}" />
-                    <Button
-                        Content="Import placeholder"
-                        IsEnabled="False"
-                        Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                </StackPanel>
-            </Border>
+            <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="240" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Style="{StaticResource EchoBoardPanelStyle}">
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
+                        <TextBlock Text="Categories" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                        <ItemsControl ItemsSource="{Binding PreviewCategories}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <controls:CategoryItem
+                                        Margin="0,0,0,8"
+                                        CategoryName="{Binding Name}"
+                                        CountText="{Binding CountText}"
+                                        Icon="{Binding Icon}"
+                                        IndicatorBrush="{Binding IndicatorBrush}"
+                                        IsSelected="{Binding IsSelected}"
+                                        IsEnabled="{Binding IsEnabled}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource EchoBoardPanelStyle}">
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Sound cards" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                            <Button
+                                Grid.Column="1"
+                                Content="Import placeholder"
+                                IsEnabled="False"
+                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                        </Grid>
+                        <GridView
+                            ItemsSource="{Binding PreviewSounds}"
+                            IsItemClickEnabled="False"
+                            SelectionMode="None">
+                            <GridView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" />
+                                </ItemsPanelTemplate>
+                            </GridView.ItemsPanel>
+                            <GridView.ItemTemplate>
+                                <DataTemplate>
+                                    <controls:SoundCard
+                                        Width="236"
+                                        Margin="0,0,12,12"
+                                        Title="{Binding Title}"
+                                        Subtitle="{Binding Subtitle}"
+                                        DurationText="{Binding DurationText}"
+                                        HotkeyText="{Binding HotkeyText}"
+                                        CategoryLabel="{Binding CategoryLabel}"
+                                        CategoryBrush="{Binding CategoryBrush}"
+                                        IsSelected="{Binding IsSelected}"
+                                        IsPlaying="{Binding IsPlaying}"
+                                        IsFavorite="{Binding IsFavorite}"
+                                        IsCompact="{Binding IsCompact}"
+                                        IsEnabled="{Binding IsEnabled}" />
+                                </DataTemplate>
+                            </GridView.ItemTemplate>
+                        </GridView>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </StackPanel>
     </ScrollViewer>
 </Page>

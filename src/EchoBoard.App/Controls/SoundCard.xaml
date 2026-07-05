@@ -1,0 +1,100 @@
+<UserControl
+    x:Class="EchoBoard.App.Controls.SoundCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:EchoBoard.App.Controls"
+    MinWidth="180"
+    AutomationProperties.Name="{x:Bind AccessibleLabel, Mode=OneTime}">
+    <Button
+        Command="{x:Bind Command, Mode=OneTime}"
+        CommandParameter="{x:Bind CommandParameter, Mode=OneTime}"
+        IsEnabled="{x:Bind IsEnabled, Mode=OneTime}"
+        HorizontalAlignment="Stretch"
+        HorizontalContentAlignment="Stretch"
+        Background="{x:Bind CardBackground, Mode=OneTime}"
+        BorderBrush="{x:Bind CardBorderBrush, Mode=OneTime}"
+        BorderThickness="1"
+        CornerRadius="{StaticResource EchoBoardRadiusLarge}"
+        Padding="0">
+        <Grid MinHeight="{x:Bind CardMinHeight, Mode=OneTime}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border
+                Background="{x:Bind DisplayCategoryBrush, Mode=OneTime}"
+                CornerRadius="8,0,0,8" />
+            <Grid
+                Grid.Column="1"
+                Padding="{StaticResource EchoBoardPanelPadding}"
+                RowSpacing="{StaticResource EchoBoardSpace12}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid ColumnSpacing="{StaticResource EchoBoardSpace8}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        Text="{x:Bind CategoryLabel, Mode=OneTime}"
+                        Foreground="{ThemeResource EchoBoardTextSecondaryBrush}"
+                        FontSize="{StaticResource EchoBoardFontSizeBadge}"
+                        TextTrimming="CharacterEllipsis" />
+                    <StackPanel
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="{StaticResource EchoBoardSpace4}">
+                        <SymbolIcon
+                            Symbol="Favorite"
+                            Foreground="{ThemeResource EchoBoardWarningBrush}"
+                            Visibility="{x:Bind FavoriteVisibility, Mode=OneTime}" />
+                        <TextBlock
+                            Text="Playing"
+                            Foreground="{ThemeResource EchoBoardSuccessBrush}"
+                            FontSize="{StaticResource EchoBoardFontSizeBadge}"
+                            FontWeight="SemiBold"
+                            Visibility="{x:Bind PlayingVisibility, Mode=OneTime}" />
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel
+                    Grid.Row="1"
+                    Spacing="{StaticResource EchoBoardSpace4}">
+                    <TextBlock
+                        Text="{x:Bind Title, Mode=OneTime}"
+                        Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
+                        FontSize="{StaticResource EchoBoardFontSizeSectionTitle}"
+                        FontWeight="SemiBold"
+                        TextTrimming="CharacterEllipsis" />
+                    <TextBlock
+                        Text="{x:Bind Subtitle, Mode=OneTime}"
+                        Style="{StaticResource EchoBoardCaptionTextStyle}"
+                        Visibility="{x:Bind SubtitleVisibility, Mode=OneTime}" />
+                </StackPanel>
+
+                <Grid
+                    Grid.Row="2"
+                    ColumnSpacing="{StaticResource EchoBoardSpace8}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <controls:HotkeyBadge
+                        Text="{x:Bind HotkeyText, Mode=OneTime}"
+                        IsUnavailable="{x:Bind HotkeyUnavailable, Mode=OneTime}" />
+                    <TextBlock
+                        Grid.Column="2"
+                        Text="{x:Bind DurationText, Mode=OneTime}"
+                        Foreground="{ThemeResource EchoBoardTextSecondaryBrush}"
+                        FontSize="{StaticResource EchoBoardFontSizeBadge}"
+                        Visibility="{x:Bind DurationVisibility, Mode=OneTime}" />
+                </Grid>
+            </Grid>
+        </Grid>
+    </Button>
+</UserControl>

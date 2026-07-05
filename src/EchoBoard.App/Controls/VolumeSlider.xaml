@@ -1,0 +1,35 @@
+<UserControl
+    x:Class="EchoBoard.App.Controls.VolumeSlider"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    AutomationProperties.Name="{x:Bind AccessibleLabel, Mode=OneTime}">
+    <StackPanel Spacing="{StaticResource EchoBoardSpace4}">
+        <Grid ColumnSpacing="{StaticResource EchoBoardSpace8}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <SymbolIcon
+                Symbol="{x:Bind Icon, Mode=OneTime}"
+                Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" />
+            <TextBlock
+                Grid.Column="1"
+                Text="{x:Bind Label, Mode=OneTime}"
+                Style="{StaticResource EchoBoardCaptionTextStyle}"
+                TextTrimming="CharacterEllipsis" />
+            <TextBlock
+                Grid.Column="2"
+                Text="{x:Bind PercentageText, Mode=OneTime}"
+                Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
+                FontSize="{StaticResource EchoBoardFontSizeBadge}"
+                FontWeight="SemiBold" />
+        </Grid>
+        <Slider
+            Minimum="{x:Bind Minimum, Mode=OneTime}"
+            Maximum="{x:Bind Maximum, Mode=OneTime}"
+            Value="{x:Bind Value, Mode=TwoWay}"
+            IsEnabled="{x:Bind IsSliderEnabled, Mode=OneTime}"
+            Style="{StaticResource EchoBoardSliderStyle}" />
+    </StackPanel>
+</UserControl>
