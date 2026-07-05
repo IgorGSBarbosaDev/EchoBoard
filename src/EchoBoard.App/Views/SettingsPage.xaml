@@ -19,6 +19,78 @@
 
             <Border Style="{StaticResource EchoBoardPanelStyle}">
                 <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
+                    <TextBlock Text="Microphone input" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                    <TextBlock
+                        Text="Select a physical input device and start capture when you want to feed the future mixer."
+                        Style="{StaticResource EchoBoardCaptionTextStyle}" />
+
+                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <ComboBox
+                            MinWidth="320"
+                            AutomationProperties.Name="Microphone device"
+                            ItemsSource="{Binding MicrophoneDevices}"
+                            DisplayMemberPath="DisplayName"
+                            SelectedItem="{Binding SelectedMicrophoneDevice, Mode=TwoWay}"
+                            PlaceholderText="Choose microphone" />
+                        <Button
+                            Grid.Column="1"
+                            Content="Refresh"
+                            Command="{Binding RefreshMicrophoneDevicesCommand}"
+                            Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                        <Button
+                            Grid.Column="2"
+                            Content="Start"
+                            Command="{Binding StartMicrophoneCaptureCommand}"
+                            Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                        <Button
+                            Grid.Column="3"
+                            Content="Stop"
+                            Command="{Binding StopMicrophoneCaptureCommand}"
+                            Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                    </Grid>
+
+                    <controls:DeviceStatusBadge
+                        Label="Selected microphone"
+                        DeviceName="{Binding SelectedMicrophoneName}"
+                        Icon="Microphone"
+                        Status="{Binding MicrophoneStatusKind}" />
+
+                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <controls:AudioLevelMeter
+                            Label="Input level"
+                            Level="{Binding MicrophoneLevel}"
+                            Variant="Microphone"
+                            ValueText="{Binding MicrophoneLevelText}" />
+                        <controls:VolumeSlider
+                            Grid.Column="1"
+                            Label="Mic gain"
+                            Icon="Microphone"
+                            Value="{Binding MicrophoneGainPercent, Mode=TwoWay}"
+                            IsReadOnly="False" />
+                        <Button
+                            Grid.Column="2"
+                            VerticalAlignment="Bottom"
+                            Content="{Binding MicrophoneMuteButtonText}"
+                            Command="{Binding ToggleMicrophoneMuteCommand}"
+                            Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource EchoBoardPanelStyle}">
+                <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
                     <TextBlock Text="Global hotkeys" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
                     <TextBlock
                         Text="Keyboard shortcuts work while EchoBoard is minimized or out of focus. Use at least one modifier plus one primary key."

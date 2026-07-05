@@ -1,4 +1,5 @@
 using EchoBoard.Application.Interfaces;
+using EchoBoard.Application.Audio;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 using EchoBoard.Infrastructure.Files;
@@ -22,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<ISoundLibraryRepository, EfSoundLibraryRepository>();
         services.AddScoped<ICategoryRepository, EfCategoryRepository>();
         services.AddScoped<IHotkeyBindingRepository, EfHotkeyBindingRepository>();
+        services.AddScoped<IAppSettingRepository, EfAppSettingRepository>();
         services.AddScoped<IAudioFileMetadataReader, AudioFileMetadataReader>();
         services.AddScoped<ISoundFileAvailabilityReader, SoundFileAvailabilityReader>();
         services.AddScoped<IDatabaseInitializer, EfDatabaseInitializer>();

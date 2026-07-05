@@ -1,5 +1,6 @@
 using EchoBoard.App.Controls;
 using EchoBoard.App.ViewModels;
+using EchoBoard.Application.Audio;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 using EchoBoard.Domain.Entities;
@@ -90,11 +91,7 @@ public sealed class ComponentPreviewContractTests
     public void SettingsViewModelExposesRequiredGlobalHotkeyRows()
     {
         var hotkeys = new FakeHotkeyBindingRepository();
-        var viewModel = new SettingsViewModel(
-            new ListHotkeyBindingsUseCase(hotkeys, new FakeHotkeyRuntime()),
-            new AssignGlobalHotkeyUseCase(hotkeys, new FakeHotkeyRuntime()),
-            new RemoveHotkeyBindingUseCase(hotkeys, new FakeHotkeyRuntime()),
-            new SetHotkeyBindingEnabledUseCase(hotkeys, new FakeHotkeyRuntime()));
+        var viewModel = CreateSettingsViewModel(hotkeys);
 
         viewModel.GlobalHotkeys.Select(item => item.Command).Should().Equal(
             GlobalHotkeyCommand.StopAllSounds,
@@ -188,19 +185,11 @@ public sealed class ComponentPreviewContractTests
     [Fact]
     public void DiagnosticsPreviewDataCoversDeviceStatusesAndMeterVariants()
     {
-        var viewModel = new AudioDiagnosticsViewModel();
+        var viewModel = CreateAudioDiagnosticsViewModel();
 
-        viewModel.PreviewDevices.Select(device => device.Status).Should().Contain([
-            DeviceStatusKind.Connected,
-            DeviceStatusKind.Warning,
-            DeviceStatusKind.Unavailable,
-            DeviceStatusKind.Loading]);
+        viewModel.PreviewDevices.Select(device => device.Status).Should().Contain(DeviceStatusKind.Unavailable);
 
-        viewModel.PreviewMeters.Select(meter => meter.Variant).Should().Equal(
-            AudioLevelMeterVariant.Microphone,
-            AudioLevelMeterVariant.Effects,
-            AudioLevelMeterVariant.Monitor,
-            AudioLevelMeterVariant.VirtualOutput);
+        viewModel.PreviewMeters.Select(meter => meter.Variant).Should().Equal(AudioLevelMeterVariant.Microphone);
 
         viewModel.PreviewMeters.Should().OnlyContain(meter => meter.Level >= 0 && meter.Level <= 1);
     }
@@ -253,6 +242,33 @@ public sealed class ComponentPreviewContractTests
             new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
             new RemoveHotkeyBindingUseCase(hotkeys, runtime),
             new SetHotkeyBindingEnabledUseCase(hotkeys, runtime));
+    }
+
+    private static SettingsViewModel CreateSettingsViewModel(FakeHotkeyBindingRepository? hotkeys = null)
+    {
+        hotkeys ??= new FakeHotkeyBindingRepository();
+        var runtime = new FakeHotkeyRuntime();
+        var settings = new FakeAppSettingRepository();
+        var controller = new FakeMicrophoneCaptureController();
+
+        return new SettingsViewModel(
+            new ListHotkeyBindingsUseCase(hotkeys, runtime),
+            new AssignGlobalHotkeyUseCase(hotkeys, runtime),
+            new RemoveHotkeyBindingUseCase(hotkeys, runtime),
+            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime),
+            new ListMicrophoneDevicesUseCase(controller),
+            new LoadMicrophoneSettingsUseCase(settings, controller),
+            new SelectMicrophoneDeviceUseCase(settings, controller),
+            new SetMicrophoneGainUseCase(settings, controller),
+            new SetMicrophoneMuteUseCase(settings, controller),
+            new StartMicrophoneCaptureUseCase(controller),
+            new StopMicrophoneCaptureUseCase(controller),
+            new GetMicrophoneCaptureSnapshotUseCase(controller));
+    }
+
+    private static AudioDiagnosticsViewModel CreateAudioDiagnosticsViewModel()
+    {
+        return new AudioDiagnosticsViewModel(new GetMicrophoneCaptureSnapshotUseCase(new FakeMicrophoneCaptureController()));
     }
 
     private sealed class FakeSoundLibraryRepository : ISoundLibraryRepository
@@ -452,6 +468,64 @@ public sealed class ComponentPreviewContractTests
         public HotkeyRegistrationState GetRegistrationState(Guid bindingId)
         {
             return HotkeyRegistrationState.Active;
+        }
+    }
+
+    private sealed class FakeAppSettingRepository : IAppSettingRepository
+    {
+        public Task<string?> GetValueAsync(string key, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<string?>(null);
+        }
+
+        public Task UpsertValueAsync(string key, string value, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeMicrophoneCaptureController : IMicrophoneCaptureController
+    {
+        public IMicrophonePcmSource? CurrentSource => null;
+
+        public Task<IReadOnlyList<AudioInputDeviceDto>> ListInputDevicesAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<IReadOnlyList<AudioInputDeviceDto>>([]);
+        }
+
+        public Task RestoreSelectionAsync(MicrophoneSettingsDto settings, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SelectDeviceAsync(AudioInputDeviceDto device, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SetGainAsync(double gain, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SetMutedAsync(bool isMuted, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public MicrophoneCaptureSnapshot GetSnapshot()
+        {
+            return MicrophoneCaptureSnapshot.Unavailable("No microphone available. Connect an input device.", MicrophoneSettingsDto.Default);
         }
     }
 }

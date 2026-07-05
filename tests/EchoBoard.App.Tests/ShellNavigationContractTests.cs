@@ -1,4 +1,5 @@
 using EchoBoard.Application.Interfaces;
+using EchoBoard.Application.Audio;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 using EchoBoard.App.Navigation;
@@ -126,7 +127,7 @@ public sealed class ShellNavigationContractTests
             CreateFavoritesViewModel(),
             new RecentViewModel(),
             CreateSettingsViewModel(),
-            new AudioDiagnosticsViewModel());
+            CreateAudioDiagnosticsViewModel());
     }
 
     private static LibraryViewModel CreateLibraryViewModel()
@@ -155,12 +156,27 @@ public sealed class ShellNavigationContractTests
     {
         var hotkeys = new FakeHotkeyBindingRepository();
         var runtime = new FakeHotkeyRuntime();
+        var settings = new FakeAppSettingRepository();
+        var microphone = new FakeMicrophoneCaptureController();
 
         return new SettingsViewModel(
             new ListHotkeyBindingsUseCase(hotkeys, runtime),
             new AssignGlobalHotkeyUseCase(hotkeys, runtime),
             new RemoveHotkeyBindingUseCase(hotkeys, runtime),
-            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime));
+            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime),
+            new ListMicrophoneDevicesUseCase(microphone),
+            new LoadMicrophoneSettingsUseCase(settings, microphone),
+            new SelectMicrophoneDeviceUseCase(settings, microphone),
+            new SetMicrophoneGainUseCase(settings, microphone),
+            new SetMicrophoneMuteUseCase(settings, microphone),
+            new StartMicrophoneCaptureUseCase(microphone),
+            new StopMicrophoneCaptureUseCase(microphone),
+            new GetMicrophoneCaptureSnapshotUseCase(microphone));
+    }
+
+    private static AudioDiagnosticsViewModel CreateAudioDiagnosticsViewModel()
+    {
+        return new AudioDiagnosticsViewModel(new GetMicrophoneCaptureSnapshotUseCase(new FakeMicrophoneCaptureController()));
     }
 
     private static FavoritesViewModel CreateFavoritesViewModel()
@@ -332,6 +348,64 @@ public sealed class ShellNavigationContractTests
         public HotkeyRegistrationState GetRegistrationState(Guid bindingId)
         {
             return HotkeyRegistrationState.Active;
+        }
+    }
+
+    private sealed class FakeAppSettingRepository : IAppSettingRepository
+    {
+        public Task<string?> GetValueAsync(string key, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<string?>(null);
+        }
+
+        public Task UpsertValueAsync(string key, string value, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeMicrophoneCaptureController : IMicrophoneCaptureController
+    {
+        public IMicrophonePcmSource? CurrentSource => null;
+
+        public Task<IReadOnlyList<AudioInputDeviceDto>> ListInputDevicesAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<IReadOnlyList<AudioInputDeviceDto>>([]);
+        }
+
+        public Task RestoreSelectionAsync(MicrophoneSettingsDto settings, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SelectDeviceAsync(AudioInputDeviceDto device, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SetGainAsync(double gain, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SetMutedAsync(bool isMuted, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+
+        public MicrophoneCaptureSnapshot GetSnapshot()
+        {
+            return MicrophoneCaptureSnapshot.Unavailable("No microphone available. Connect an input device.", MicrophoneSettingsDto.Default);
         }
     }
 }
