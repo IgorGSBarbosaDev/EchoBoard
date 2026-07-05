@@ -1,3 +1,4 @@
+using EchoBoard.Application.Interfaces;
 using EchoBoard.App.Navigation;
 using EchoBoard.App.ViewModels;
 using FluentAssertions;
@@ -83,6 +84,33 @@ public sealed class ShellNavigationContractTests
 
         host.Services.GetRequiredService<INavigationService>().Should().NotBeNull();
         host.Services.GetRequiredService<MainShellViewModel>().Should().NotBeNull();
+        host.Services.GetRequiredService<IDatabaseInitializer>().Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task AppHostInitializesDatabaseOnce()
+    {
+        var initializer = new FakeDatabaseInitializer();
+        var services = new ServiceCollection()
+            .AddScoped<IDatabaseInitializer>(_ => initializer)
+            .BuildServiceProvider();
+
+        await Hosting.AppHost.InitializeDatabaseAsync(services, TestContext.Current.CancellationToken);
+
+        initializer.CallCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AppHostRethrowsDatabaseInitializationFailures()
+    {
+        var expected = new InvalidOperationException("database unavailable");
+        var services = new ServiceCollection()
+            .AddScoped<IDatabaseInitializer>(_ => new FakeDatabaseInitializer(expected))
+            .BuildServiceProvider();
+
+        Func<Task> act = () => Hosting.AppHost.InitializeDatabaseAsync(services, TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("database unavailable");
     }
 
     private static MainShellViewModel CreateViewModel()
@@ -95,5 +123,23 @@ public sealed class ShellNavigationContractTests
             new RecentViewModel(),
             new SettingsViewModel(),
             new AudioDiagnosticsViewModel());
+    }
+
+    private sealed class FakeDatabaseInitializer : IDatabaseInitializer
+    {
+        private readonly Exception? exception;
+
+        public FakeDatabaseInitializer(Exception? exception = null)
+        {
+            this.exception = exception;
+        }
+
+        public int CallCount { get; private set; }
+
+        public Task InitializeAsync(CancellationToken cancellationToken)
+        {
+            CallCount++;
+            return exception is null ? Task.CompletedTask : Task.FromException(exception);
+        }
     }
 }

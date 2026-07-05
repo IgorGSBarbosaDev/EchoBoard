@@ -1,5 +1,6 @@
 using System.Globalization;
 using EchoBoard.Application;
+using EchoBoard.Application.Interfaces;
 using EchoBoard.App.Navigation;
 using EchoBoard.App.ViewModels;
 using EchoBoard.App.Views;
@@ -50,5 +51,26 @@ public static class AppHost
                 services.AddSingleton<MainWindow>();
             })
             .Build();
+    }
+
+    public static async Task InitializeDatabaseAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        try
+        {
+            Log.Information("Initializing EchoBoard database.");
+
+            await using var scope = services.CreateAsyncScope();
+            var initializer = scope.ServiceProvider.GetRequiredService<IDatabaseInitializer>();
+            await initializer.InitializeAsync(cancellationToken);
+
+            Log.Information("EchoBoard database initialization completed.");
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "EchoBoard database initialization failed.");
+            throw;
+        }
     }
 }

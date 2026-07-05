@@ -23,6 +23,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         try
         {
             await host.StartAsync().ConfigureAwait(true);
+            await AppHost.InitializeDatabaseAsync(host.Services, CancellationToken.None).ConfigureAwait(true);
             mainWindow = host.Services.GetRequiredService<MainWindow>();
             mainWindow.Activate();
         }
