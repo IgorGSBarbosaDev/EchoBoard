@@ -3,7 +3,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:EchoBoard.App.Controls"
-    Loaded="OnLoaded">
+    Loaded="OnLoaded"
+    Unloaded="OnUnloaded">
     <ScrollViewer>
         <StackPanel
             AllowDrop="True"
@@ -150,6 +151,13 @@
                             DismissCommand="{Binding DismissImportFeedbackCommand}"
                             Visibility="{Binding ImportToastVisibility}" />
 
+                        <controls:ToastNotification
+                            Kind="{Binding PlaybackToast.Kind}"
+                            Title="{Binding PlaybackToast.Title}"
+                            Description="{Binding PlaybackToast.Description}"
+                            DismissCommand="{Binding DismissPlaybackFeedbackCommand}"
+                            Visibility="{Binding PlaybackToastVisibility}" />
+
                         <Border
                             Style="{StaticResource EchoBoardCardStyle}"
                             Visibility="{Binding ImportFeedbackVisibility}">
@@ -202,6 +210,7 @@
                                         CategoryBrush="{Binding CategoryBrush}"
                                         IsSelected="{Binding IsSelected}"
                                         IsPlaying="{Binding IsPlaying}"
+                                        IsPaused="{Binding IsPaused}"
                                         IsFavorite="{Binding IsFavorite}"
                                         IsMissingFile="{Binding IsMissingFile}"
                                         StatusText="{Binding StatusText}"

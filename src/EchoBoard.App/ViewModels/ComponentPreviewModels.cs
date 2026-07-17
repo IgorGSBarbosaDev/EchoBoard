@@ -14,6 +14,7 @@ public sealed record SoundCardPreviewModel(
     Brush? CategoryBrush,
     bool IsSelected = false,
     bool IsPlaying = false,
+    bool IsPaused = false,
     bool IsFavorite = false,
     bool IsCompact = false,
     bool IsEnabled = true,

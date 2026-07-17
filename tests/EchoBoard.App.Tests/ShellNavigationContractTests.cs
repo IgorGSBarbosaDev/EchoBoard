@@ -210,7 +210,8 @@ public sealed class ShellNavigationContractTests
             new ListHotkeyBindingsUseCase(hotkeys, runtime),
             new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
             new RemoveHotkeyBindingUseCase(hotkeys, runtime),
-            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime));
+            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime),
+            new FakeSoundPlaybackEngine());
     }
 
     private static SettingsViewModel CreateSettingsViewModel()

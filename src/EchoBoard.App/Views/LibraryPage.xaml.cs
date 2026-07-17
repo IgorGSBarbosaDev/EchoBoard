@@ -11,16 +11,19 @@ namespace EchoBoard.App.Views;
 public sealed partial class LibraryPage : Page
 {
     private bool hasLoaded;
+    private readonly DispatcherTimer playbackTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
 
     public LibraryPage()
     {
         InitializeComponent();
+        playbackTimer.Tick += OnPlaybackTimerTick;
     }
 
     private LibraryViewModel? ViewModel => DataContext as LibraryViewModel;
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        playbackTimer.Start();
         if (hasLoaded || ViewModel is null)
         {
             return;
@@ -28,6 +31,20 @@ public sealed partial class LibraryPage : Page
 
         hasLoaded = true;
         await ViewModel.LoadAsync(CancellationToken.None);
+    }
+
+    private async void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        playbackTimer.Stop();
+        if (ViewModel is not null)
+        {
+            await ViewModel.StopPlaybackAsync(CancellationToken.None);
+        }
+    }
+
+    private void OnPlaybackTimerTick(object? sender, object e)
+    {
+        ViewModel?.RefreshPlaybackState();
     }
 
     private async void OnImportClicked(object sender, RoutedEventArgs e)
@@ -40,6 +57,10 @@ public sealed partial class LibraryPage : Page
         var picker = new FileOpenPicker();
         picker.FileTypeFilter.Add(".mp3");
         picker.FileTypeFilter.Add(".wav");
+        picker.FileTypeFilter.Add(".ogg");
+        picker.FileTypeFilter.Add(".flac");
+        picker.FileTypeFilter.Add(".m4a");
+        picker.FileTypeFilter.Add(".aac");
         picker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
 
         if (MainWindow.CurrentInstance is not null)
@@ -62,7 +83,7 @@ public sealed partial class LibraryPage : Page
         if (e.DataView.Contains(StandardDataFormats.StorageItems))
         {
             e.AcceptedOperation = DataPackageOperation.Copy;
-            e.DragUIOverride.Caption = "Import MP3 or WAV files";
+            e.DragUIOverride.Caption = "Import audio files";
         }
         else
         {

@@ -52,16 +52,10 @@
                             Spacing="{StaticResource EchoBoardSpace4}">
                             <TextBlock
                                 Text="{x:Bind StatusText, Mode=OneTime}"
-                                Foreground="{ThemeResource EchoBoardWarningBrush}"
+                                Foreground="{x:Bind StatusForeground, Mode=OneTime}"
                                 FontSize="{StaticResource EchoBoardFontSizeBadge}"
                                 FontWeight="SemiBold"
                                 Visibility="{x:Bind StatusVisibility, Mode=OneTime}" />
-                            <TextBlock
-                                Text="Playing"
-                                Foreground="{ThemeResource EchoBoardSuccessBrush}"
-                                FontSize="{StaticResource EchoBoardFontSizeBadge}"
-                                FontWeight="SemiBold"
-                                Visibility="{x:Bind PlayingVisibility, Mode=OneTime}" />
                         </StackPanel>
                     </Grid>
 

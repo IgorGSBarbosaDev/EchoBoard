@@ -55,6 +55,12 @@ public sealed partial class SoundCard : UserControl
         typeof(SoundCard),
         new PropertyMetadata(false, OnDisplayPropertyChanged));
 
+    public static readonly DependencyProperty IsPausedProperty = DependencyProperty.Register(
+        nameof(IsPaused),
+        typeof(bool),
+        typeof(SoundCard),
+        new PropertyMetadata(false, OnDisplayPropertyChanged));
+
     public static readonly DependencyProperty IsFavoriteProperty = DependencyProperty.Register(
         nameof(IsFavorite),
         typeof(bool),
@@ -156,6 +162,12 @@ public sealed partial class SoundCard : UserControl
         set => SetValue(IsPlayingProperty, value);
     }
 
+    public bool IsPaused
+    {
+        get => (bool)GetValue(IsPausedProperty);
+        set => SetValue(IsPausedProperty, value);
+    }
+
     public bool IsFavorite
     {
         get => (bool)GetValue(IsFavoriteProperty);
@@ -204,9 +216,11 @@ public sealed partial class SoundCard : UserControl
         set => SetValue(FavoriteCommandParameterProperty, value);
     }
 
-    public Brush CardBackground => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsSelected || IsPlaying ? "EchoBoardCardActiveBrush" : "EchoBoardCardBrush"];
+    public Brush CardBackground => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsSelected || IsPlaying || IsPaused ? "EchoBoardCardActiveBrush" : "EchoBoardCardBrush"];
 
-    public Brush CardBorderBrush => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsPlaying ? "EchoBoardSuccessBrush" : IsSelected ? "EchoBoardActionBrush" : "EchoBoardBorderBrush"];
+    public Brush CardBorderBrush => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsPlaying ? "EchoBoardSuccessBrush" : IsPaused ? "EchoBoardWarningBrush" : IsSelected ? "EchoBoardActionBrush" : "EchoBoardBorderBrush"];
+
+    public Brush StatusForeground => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsPlaying ? "EchoBoardSuccessBrush" : IsPaused || IsMissingFile ? "EchoBoardWarningBrush" : "EchoBoardTextSecondaryBrush"];
 
     public double CardMinHeight => IsCompact ? 116 : 168;
 

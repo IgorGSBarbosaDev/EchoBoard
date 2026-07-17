@@ -133,6 +133,142 @@ public sealed class ComponentPreviewContractTests
     }
 
     [Fact]
+    public async Task LibraryViewModelPlaysSelectedSoundAndUpdatesProgress()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(30), 123, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var playback = new FakeSoundPlaybackEngine();
+        var viewModel = CreateLibraryViewModel(sounds, files: new FakeSoundFileAvailabilityReader(DefaultExists: true), playback: playback);
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        await viewModel.ActivateSoundCommand.ExecuteAsync(sound.Id);
+        playback.AdvanceTo(TimeSpan.FromSeconds(4));
+        viewModel.RefreshPlaybackState();
+
+        playback.PlayedPaths.Should().Equal(sound.FilePath);
+        viewModel.SelectedSoundId.Should().Be(sound.Id);
+        viewModel.Sounds.Should().ContainSingle(item => item.IsPlaying && !item.IsPaused && item.StatusText == "Playing" && item.DurationText == "0:04 / 0:30");
+    }
+
+    [Fact]
+    public async Task LibraryViewModelPausesAndResumesSameSound()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var playback = new FakeSoundPlaybackEngine();
+        var viewModel = CreateLibraryViewModel(sounds, files: new FakeSoundFileAvailabilityReader(DefaultExists: true), playback: playback);
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        await viewModel.ActivateSoundCommand.ExecuteAsync(sound.Id);
+        await viewModel.ActivateSoundCommand.ExecuteAsync(sound.Id);
+
+        playback.ToggleCount.Should().Be(1);
+        viewModel.Sounds.Should().ContainSingle(item => item.IsPaused && !item.IsPlaying && item.StatusText == "Paused");
+
+        await viewModel.ActivateSoundCommand.ExecuteAsync(sound.Id);
+        viewModel.Sounds.Should().ContainSingle(item => item.IsPlaying && !item.IsPaused);
+    }
+
+    [Fact]
+    public async Task LibraryViewModelStopsCurrentSoundBeforePlayingAnother()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var first = Sound.Create("First", "C:\\Audio\\first.wav", ".wav", TimeSpan.FromSeconds(3), 123, null, 0, Now);
+        var second = Sound.Create("Second", "C:\\Audio\\second.wav", ".wav", TimeSpan.FromSeconds(5), 456, null, 1, Now);
+        await sounds.AddSoundAsync(first, CancellationToken.None);
+        await sounds.AddSoundAsync(second, CancellationToken.None);
+        var playback = new FakeSoundPlaybackEngine();
+        var viewModel = CreateLibraryViewModel(sounds, files: new FakeSoundFileAvailabilityReader(DefaultExists: true), playback: playback);
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        await viewModel.ActivateSoundCommand.ExecuteAsync(first.Id);
+        await viewModel.ActivateSoundCommand.ExecuteAsync(second.Id);
+
+        playback.Operations.TakeLast(2).Should().Equal("stop", $"play:{second.FilePath}");
+        viewModel.Sounds.Single(item => item.Id == first.Id).StatusText.Should().Be("Stopped");
+        viewModel.Sounds.Single(item => item.Id == second.Id).IsPlaying.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task LibraryViewModelResetsCardWhenPlaybackFinishes()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var playback = new FakeSoundPlaybackEngine();
+        var viewModel = CreateLibraryViewModel(sounds, files: new FakeSoundFileAvailabilityReader(DefaultExists: true), playback: playback);
+        await viewModel.LoadAsync(CancellationToken.None);
+        await viewModel.ActivateSoundCommand.ExecuteAsync(sound.Id);
+
+        playback.Complete();
+        viewModel.RefreshPlaybackState();
+
+        viewModel.Sounds.Should().ContainSingle(item => !item.IsPlaying && !item.IsPaused && item.StatusText == "Stopped" && item.DurationText == "0:03");
+    }
+
+    [Fact]
+    public async Task LibraryViewModelReportsPlaybackOpenErrorWithoutThrowing()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var sound = Sound.Create("Broken", "C:\\Audio\\broken.flac", ".flac", TimeSpan.FromSeconds(3), 123, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var playback = new FakeSoundPlaybackEngine { PlayException = new InvalidDataException("Invalid audio.") };
+        var viewModel = CreateLibraryViewModel(sounds, files: new FakeSoundFileAvailabilityReader(DefaultExists: true), playback: playback);
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        var action = async () => await viewModel.ActivateSoundCommand.ExecuteAsync(sound.Id);
+
+        await action.Should().NotThrowAsync();
+        viewModel.PlaybackToast.Should().NotBeNull();
+        viewModel.PlaybackToast!.Description.Should().Contain("corrupted");
+        viewModel.Sounds.Should().ContainSingle(item => item.StatusText == "Stopped" && !item.IsPlaying);
+    }
+
+    [Fact]
+    public async Task PlaybackBarTracksPlaybackPauseAndTimeline()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(30), 123, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var playback = new FakeSoundPlaybackEngine();
+        var viewModel = CreatePlaybackBarViewModel(sounds, playback);
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        await playback.PlayAsync(sound.FilePath, sound.Volume, CancellationToken.None);
+        playback.AdvanceTo(TimeSpan.FromSeconds(12), sound.Duration);
+        viewModel.Refresh();
+        await viewModel.PlayPauseCommand.ExecuteAsync(null);
+
+        viewModel.Title.Should().Be("Intro");
+        viewModel.ProgressPercent.Should().BeApproximately(40, 0.01);
+        viewModel.ElapsedText.Should().Be("0:12");
+        viewModel.DurationText.Should().Be("0:30");
+        viewModel.IsPaused.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task PlaybackBarUpdatesMixersRepeatAndStopsAll()
+    {
+        var playback = new FakeSoundPlaybackEngine();
+        var viewModel = CreatePlaybackBarViewModel(new FakeSoundLibraryRepository(), playback);
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        viewModel.EffectsPercent = 67;
+        viewModel.MonitorPercent = 42;
+        viewModel.MicrophonePercent = 74;
+        viewModel.ToggleRepeatCommand.Execute(null);
+        await viewModel.StopAllCommand.ExecuteAsync(null);
+
+        playback.LastVolume.Should().BeApproximately(0.67, 0.001);
+        viewModel.MonitorPercentText.Should().Be("42%");
+        viewModel.MicrophonePercentText.Should().Be("74%");
+        viewModel.IsRepeatEnabled.Should().BeTrue();
+        playback.Operations.Should().Contain("stop");
+    }
+
+    [Fact]
     public async Task FavoritesViewModelLoadsOnlyFavoriteSounds()
     {
         var sounds = new FakeSoundLibraryRepository();
@@ -221,13 +357,15 @@ public sealed class ComponentPreviewContractTests
         FakeAudioFileMetadataReader? metadata = null,
         FakeCategoryRepository? categories = null,
         FakeHotkeyBindingRepository? hotkeys = null,
-        FakeSoundFileAvailabilityReader? files = null)
+        FakeSoundFileAvailabilityReader? files = null,
+        FakeSoundPlaybackEngine? playback = null)
     {
         sounds ??= new FakeSoundLibraryRepository();
         metadata ??= new FakeAudioFileMetadataReader();
         categories ??= new FakeCategoryRepository();
         hotkeys ??= new FakeHotkeyBindingRepository();
         files ??= new FakeSoundFileAvailabilityReader();
+        playback ??= new FakeSoundPlaybackEngine();
         var runtime = new FakeHotkeyRuntime();
 
         return new LibraryViewModel(
@@ -241,7 +379,8 @@ public sealed class ComponentPreviewContractTests
             new ListHotkeyBindingsUseCase(hotkeys, runtime),
             new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
             new RemoveHotkeyBindingUseCase(hotkeys, runtime),
-            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime));
+            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime),
+            playback);
     }
 
     private static SettingsViewModel CreateSettingsViewModel(FakeHotkeyBindingRepository? hotkeys = null)
@@ -526,6 +665,87 @@ public sealed class ComponentPreviewContractTests
         public MicrophoneCaptureSnapshot GetSnapshot()
         {
             return MicrophoneCaptureSnapshot.Unavailable("No microphone available. Connect an input device.", MicrophoneSettingsDto.Default);
+        }
+    }
+
+    private static PlaybackBarViewModel CreatePlaybackBarViewModel(FakeSoundLibraryRepository sounds, FakeSoundPlaybackEngine playback)
+    {
+        var microphone = new FakeMicrophoneCaptureController();
+        return new PlaybackBarViewModel(
+            playback,
+            new QuerySoundLibraryUseCase(sounds, new FakeCategoryRepository(), new FakeSoundFileAvailabilityReader(DefaultExists: true)),
+            new GetMicrophoneCaptureSnapshotUseCase(microphone),
+            new SetMicrophoneGainUseCase(new FakeAppSettingRepository(), microphone));
+    }
+
+    private sealed class FakeSoundPlaybackEngine : ISoundPlaybackEngine
+    {
+        private SoundPlaybackSnapshot snapshot = SoundPlaybackSnapshot.Idle;
+
+        public List<string> PlayedPaths { get; } = [];
+
+        public List<string> Operations { get; } = [];
+
+        public int ToggleCount { get; private set; }
+
+        public Exception? PlayException { get; init; }
+
+        public double LastVolume { get; private set; }
+
+        public Task PlayAsync(string filePath, double volume, CancellationToken cancellationToken)
+        {
+            if (PlayException is not null)
+            {
+                throw PlayException;
+            }
+
+            PlayedPaths.Add(filePath);
+            Operations.Add($"play:{filePath}");
+            snapshot = new SoundPlaybackSnapshot(filePath, TimeSpan.Zero, TimeSpan.Zero, IsPlaying: true, IsPaused: false);
+            return Task.CompletedTask;
+        }
+
+        public Task StopAllAsync(CancellationToken cancellationToken)
+        {
+            Operations.Add("stop");
+            snapshot = SoundPlaybackSnapshot.Idle;
+            return Task.CompletedTask;
+        }
+
+        public Task TogglePauseAsync(CancellationToken cancellationToken)
+        {
+            ToggleCount++;
+            snapshot = snapshot with { IsPlaying = snapshot.IsPaused, IsPaused = snapshot.IsPlaying };
+            return Task.CompletedTask;
+        }
+
+        public Task SeekAsync(TimeSpan position, CancellationToken cancellationToken)
+        {
+            snapshot = snapshot with { Position = position };
+            return Task.CompletedTask;
+        }
+
+        public Task SetVolumeAsync(double volume, CancellationToken cancellationToken)
+        {
+            LastVolume = volume;
+            return Task.CompletedTask;
+        }
+
+        public SoundPlaybackSnapshot GetSnapshot() => snapshot;
+
+        public void AdvanceTo(TimeSpan position)
+        {
+            snapshot = snapshot with { Position = position };
+        }
+
+        public void AdvanceTo(TimeSpan position, TimeSpan duration)
+        {
+            snapshot = snapshot with { Position = position, Duration = duration };
+        }
+
+        public void Complete()
+        {
+            snapshot = SoundPlaybackSnapshot.Idle;
         }
     }
 }
