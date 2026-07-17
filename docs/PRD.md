@@ -77,7 +77,7 @@ O EchoBoard centraliza a biblioteca, a reprodução, os atalhos, a mixagem de vo
 
 ### 5.1 Objetivos do MVP
 
-- Importar e organizar arquivos MP3 e WAV.
+- Importar e organizar arquivos MP3, WAV, OGG, FLAC, M4A e AAC.
 - Reproduzir sons por clique e hotkey global.
 - Capturar áudio do microfone físico.
 - Misturar voz e efeitos sonoros.
@@ -125,7 +125,7 @@ Os itens abaixo não podem atrasar a primeira versão utilizável:
 
 | ID | Requisito | Comportamento esperado | Prioridade |
 |---|---|---|---|
-| LIB-01 | Importar arquivos | Permitir selecionar vários arquivos MP3 e WAV por seletor de arquivos. | MVP |
+| LIB-01 | Importar arquivos | Permitir selecionar vários arquivos MP3, WAV, OGG, FLAC, M4A e AAC por seletor de arquivos. | MVP |
 | LIB-02 | Arrastar e soltar | Permitir arrastar arquivos compatíveis para a janela do aplicativo. | MVP |
 | LIB-03 | Validar importação | Recusar extensões não suportadas, arquivos ilegíveis e duplicidades por caminho. | MVP |
 | LIB-04 | Metadados do som | Salvar nome, caminho, formato, duração, tamanho, data de criação e data de alteração. | MVP |
@@ -475,7 +475,7 @@ Conversão / Resampling
        ├───────────────────────────┐
        │                           │
        ▼                           ▼
-                     Sons MP3/WAV → Decoder → Resampler
+          Sons MP3/WAV/OGG/FLAC/M4A/AAC → Decoder → Resampler
                                                    │
                                                    ▼
                                               Mixer / Limiter
@@ -667,7 +667,7 @@ A tela de diagnóstico deve mostrar:
 
 ### 16.2 Critérios de aceite do MVP
 
-- [ ] Importa MP3 e WAV válidos.
+- [ ] Importa MP3, WAV, OGG, FLAC, M4A e AAC válidos.
 - [ ] Rejeita arquivo inválido sem travar a interface.
 - [ ] Mantém biblioteca, categorias, favoritos e hotkeys após reiniciar.
 - [ ] Reproduz áudio localmente.
@@ -722,7 +722,7 @@ A tela de diagnóstico deve mostrar:
 ### Fase 2 — Biblioteca e persistência
 
 - SQLite, migrations e entidades.
-- Importação de MP3/WAV.
+- Importação de MP3, WAV, OGG, FLAC, M4A e AAC.
 - Categorias, busca, favoritos e ordenação.
 
 ### Fase 3 — Reprodução local e hotkeys
