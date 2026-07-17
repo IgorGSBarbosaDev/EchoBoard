@@ -88,16 +88,14 @@ public sealed class ShellNavigationContractTests
     }
 
     [Fact]
-    public void MainShellViewModelCollapsesContextPanelWithoutReservingPanelWidth()
+    public void MainShellViewModelStartsWithOverlayDrawerFullyCollapsed()
     {
         var viewModel = CreateViewModel();
 
-        viewModel.ToggleContextPanelCommand.Execute(null);
-
-        viewModel.IsContextPanelOpen.Should().BeFalse();
-        viewModel.ContextPanelColumnWidth.Value.Should().Be(0);
-        viewModel.ContextPanelVisibility.Should().Be(Microsoft.UI.Xaml.Visibility.Collapsed);
-        viewModel.ContextPanelExpandButtonVisibility.Should().Be(Microsoft.UI.Xaml.Visibility.Visible);
+        viewModel.SoundDetails.IsOpen.Should().BeFalse();
+        viewModel.SoundDetails.DrawerVisibility.Should().Be(Visibility.Collapsed);
+        typeof(MainShellViewModel).GetProperty("ContextPanelColumnWidth").Should().BeNull();
+        typeof(MainShellViewModel).GetProperty("IsContextPanelOpen").Should().BeNull();
     }
 
     [Fact]
@@ -177,18 +175,81 @@ public sealed class ShellNavigationContractTests
         appearanceSettings ??= new FakeAppSettingRepository();
         appearanceResources ??= new FakeAppearanceResourceManager();
 
+        var navigation = new NavigationService();
+        var microphone = new FakeMicrophoneCaptureController();
+        var soundDetails = CreateSoundDetailsViewModel();
+
         return new MainShellViewModel(
-            new NavigationService(),
-            new DashboardViewModel(),
+            navigation,
+            CreateDashboardViewModel(navigation),
             CreateLibraryViewModel(),
             CreateFavoritesViewModel(),
-            new RecentViewModel(),
+            CreateRecentViewModel(),
             CreateSettingsViewModel(),
             CreateAudioDiagnosticsViewModel(),
             CreatePlaybackBarViewModel(),
+            soundDetails,
+            new GetMicrophoneCaptureSnapshotUseCase(microphone),
             new LoadAppearanceSettingsUseCase(appearanceSettings),
             new SaveAppearanceSettingsUseCase(appearanceSettings),
             appearanceResources);
+    }
+
+    private static DashboardViewModel CreateDashboardViewModel(INavigationService navigation)
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var files = new FakeSoundFileAvailabilityReader();
+        var hotkeys = new FakeHotkeyBindingRepository();
+        var runtime = new FakeHotkeyRuntime();
+        var history = new FakeRecentlyPlayedRepository();
+        var playback = new FakeSoundPlaybackEngine();
+        var microphone = new FakeMicrophoneCaptureController();
+        var query = new QuerySoundLibraryUseCase(sounds, categories, files, history);
+        var play = new PlaySoundUseCase(sounds, files, history, playback);
+
+        return new DashboardViewModel(
+            query,
+            new ImportSoundsUseCase(sounds, new FakeAudioFileMetadataReader()),
+            new SetSoundFavoriteUseCase(sounds),
+            new GenerateSoundWaveformUseCase(sounds, new FakeAudioFileMetadataReader()),
+            new ListHotkeyBindingsUseCase(hotkeys, runtime),
+            new GetMicrophoneCaptureSnapshotUseCase(microphone),
+            play,
+            CreateSoundDetailsViewModel(),
+            navigation);
+    }
+
+    private static RecentViewModel CreateRecentViewModel()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var files = new FakeSoundFileAvailabilityReader();
+        var history = new FakeRecentlyPlayedRepository();
+        var playback = new FakeSoundPlaybackEngine();
+        return new RecentViewModel(
+            new ListRecentlyPlayedUseCase(history, sounds),
+            new PlaySoundUseCase(sounds, files, history, playback),
+            CreateSoundDetailsViewModel());
+    }
+
+    private static SoundDetailsViewModel CreateSoundDetailsViewModel()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var files = new FakeSoundFileAvailabilityReader();
+        var hotkeys = new FakeHotkeyBindingRepository();
+        var runtime = new FakeHotkeyRuntime();
+        var history = new FakeRecentlyPlayedRepository();
+        var query = new QuerySoundLibraryUseCase(sounds, categories, files, history);
+
+        return new SoundDetailsViewModel(
+            query,
+            new UpdateSoundUseCase(sounds, categories),
+            new DeleteSoundUseCase(sounds),
+            new ListHotkeyBindingsUseCase(hotkeys, runtime),
+            new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
+            new RemoveHotkeyBindingUseCase(hotkeys, runtime),
+            new PlaySoundUseCase(sounds, files, history, new FakeSoundPlaybackEngine()));
     }
 
     private static LibraryViewModel CreateLibraryViewModel()
@@ -350,6 +411,17 @@ public sealed class ShellNavigationContractTests
         {
             return Task.FromResult(true);
         }
+    }
+
+    private sealed class FakeRecentlyPlayedRepository : IRecentlyPlayedRepository
+    {
+        public Task AddAsync(RecentlyPlayed entry, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<IReadOnlyDictionary<Guid, int>> GetPlayCountsAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, int>>(new Dictionary<Guid, int>());
+
+        public Task<IReadOnlyList<RecentlyPlayed>> ListAsync(int limit, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<RecentlyPlayed>>([]);
     }
 
     private sealed class FakeHotkeyBindingRepository : IHotkeyBindingRepository

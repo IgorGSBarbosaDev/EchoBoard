@@ -1,28 +1,36 @@
 <Page
     x:Class="EchoBoard.App.Views.RecentPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Loaded="OnLoaded">
     <ScrollViewer>
-        <StackPanel Spacing="{StaticResource EchoBoardSpace24}">
-            <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                <TextBlock
-                    Text="{Binding Title}"
-                    Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
-                    FontSize="{StaticResource EchoBoardFontSizeTitle}"
-                    FontWeight="SemiBold" />
-                <TextBlock
-                    Text="{Binding Subtitle}"
-                    Style="{StaticResource EchoBoardCaptionTextStyle}" />
+        <StackPanel Spacing="24">
+            <StackPanel Spacing="8">
+                <TextBlock Text="{Binding Title}" Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" FontSize="{StaticResource EchoBoardFontSizeTitle}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Subtitle}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
             </StackPanel>
-
             <Border Style="{StaticResource EchoBoardPanelStyle}">
-                <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
-                    <TextBlock
-                        Text="{Binding EmptyStateTitle}"
-                        Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                    <TextBlock
-                        Text="{Binding EmptyStateMessage}"
-                        Style="{StaticResource EchoBoardBodyTextStyle}" />
+                <StackPanel Spacing="10">
+                    <StackPanel HorizontalAlignment="Center" Spacing="6" Visibility="{Binding EmptyVisibility}">
+                        <SymbolIcon Symbol="Clock" Foreground="{ThemeResource EchoBoardActionBrush}" />
+                        <TextBlock Text="Nada reproduzido recentemente" FontWeight="SemiBold" />
+                        <TextBlock Text="Os sons aparecerão aqui após uma reprodução bem-sucedida." Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Sounds}" Visibility="{Binding ListVisibility}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,0,8" Style="{StaticResource EchoBoardCardStyle}">
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <Button Command="{Binding PlayCommand}" Style="{StaticResource EchoBoardIconButtonStyle}"><SymbolIcon Symbol="Play" /></Button>
+                                        <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="{Binding Title}" FontWeight="SemiBold" /><TextBlock Text="{Binding Format}" Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel>
+                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{Binding PlayedAt}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                                        <Button Grid.Column="3" Command="{Binding DetailsCommand}" CommandParameter="{Binding Id}" Style="{StaticResource EchoBoardIconButtonStyle}"><FontIcon Glyph="&#xE712;" /></Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </Border>
         </StackPanel>

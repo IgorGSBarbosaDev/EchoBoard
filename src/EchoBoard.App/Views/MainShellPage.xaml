@@ -36,6 +36,7 @@
 
     <Grid x:Name="ShellRoot"
         Background="{ThemeResource EchoBoardBackgroundPrimaryBrush}"
+        KeyDown="OnShellKeyDown"
         RequestedTheme="{Binding RequestedTheme}">
         <Grid.RowDefinitions>
             <RowDefinition Height="80" />
@@ -211,6 +212,14 @@
                     </StackPanel>
                 </Button>
                 <Button
+                    AutomationProperties.Name="Mostrar detalhes do som"
+                    Command="{Binding ToggleSoundDetailsCommand}"
+                    IsEnabled="{Binding SoundDetails.HasSelection}"
+                    Style="{StaticResource EchoBoardIconButtonStyle}"
+                    ToolTipService.ToolTip="Mostrar ou ocultar detalhes do som">
+                    <FontIcon Glyph="&#xE8A7;" />
+                </Button>
+                <Button
                     AutomationProperties.Name="Open settings"
                     Command="{Binding OpenSettingsCommand}"
                     Style="{StaticResource EchoBoardIconButtonStyle}"
@@ -258,95 +267,32 @@
                     </DataTemplate>
                 </NavigationView.MenuItemTemplate>
 
-                <Grid Padding="{StaticResource EchoBoardPagePadding}" ColumnSpacing="{StaticResource EchoBoardSpace16}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="{Binding ContextPanelColumnWidth}" />
-                    </Grid.ColumnDefinitions>
-
+                <Grid Padding="{StaticResource EchoBoardPagePadding}">
                     <ContentControl
                         Content="{Binding CurrentPage}"
                         ContentTemplateSelector="{StaticResource ShellPageTemplateSelector}" />
-
-                    <Border
-                        Grid.Column="1"
-                        Style="{StaticResource EchoBoardPanelStyle}"
-                        Visibility="{Binding ContextPanelVisibility}">
-                        <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
-                            <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Spacing="{StaticResource EchoBoardSpace4}">
-                                    <TextBlock
-                                        Text="{Binding ContextPanelTitle}"
-                                        Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                                    <TextBlock
-                                        Text="{Binding ContextPanelSubtitle}"
-                                        Style="{StaticResource EchoBoardCaptionTextStyle}" />
-                                </StackPanel>
-                                <Button
-                                    Grid.Column="1"
-                                    AutomationProperties.Name="Collapse context panel"
-                                    Command="{Binding ToggleContextPanelCommand}"
-                                    Content="&gt;"
-                                    Style="{StaticResource EchoBoardIconButtonStyle}" />
-                            </Grid>
-
-                            <controls:SoundCard
-                                Title="{Binding ContextSound.Title}"
-                                Subtitle="{Binding ContextSound.Subtitle}"
-                                DurationText="{Binding ContextSound.DurationText}"
-                                HotkeyText="{Binding ContextSound.HotkeyText}"
-                                CategoryLabel="{Binding ContextSound.CategoryLabel}"
-                                CategoryBrush="{Binding ContextSound.CategoryBrush}"
-                                IsSelected="{Binding ContextSound.IsSelected}"
-                                IsPlaying="{Binding ContextSound.IsPlaying}"
-                                IsFavorite="{Binding ContextSound.IsFavorite}"
-                                IsCompact="True" />
-
-                            <Border Style="{StaticResource EchoBoardCardStyle}">
-                                <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                                    <TextBlock Style="{StaticResource EchoBoardCaptionTextStyle}" Text="Devices" />
-                                    <ItemsControl ItemsSource="{Binding ContextDevices}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <controls:DeviceStatusBadge
-                                                    Margin="0,0,0,8"
-                                                    Label="{Binding Label}"
-                                                    DeviceName="{Binding DeviceName}"
-                                                    Icon="{Binding Icon}"
-                                                    Status="{Binding Status}" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </Border>
-
-                            <controls:EmptyState
-                                Icon="Clock"
-                                Title="Queue is mocked"
-                                Description="Active sounds and history will be connected after playback is implemented." />
-
-                            <controls:ToastNotification
-                                Kind="{Binding PreviewToast.Kind}"
-                                Title="{Binding PreviewToast.Title}"
-                                Description="{Binding PreviewToast.Description}" />
-                        </StackPanel>
-                    </Border>
                 </Grid>
             </NavigationView>
 
-            <Button
-                HorizontalAlignment="Right"
-                VerticalAlignment="Top"
-                Margin="0,24,24,0"
-                AutomationProperties.Name="Expand context panel"
-                Command="{Binding ToggleContextPanelCommand}"
-                Content="Panel"
-                Visibility="{Binding ContextPanelExpandButtonVisibility}"
-                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+            <Grid x:Name="SoundDetailsOverlay" Visibility="Collapsed" Canvas.ZIndex="20">
+                <Button
+                    x:Name="SoundDetailsBackdrop"
+                    Click="OnSoundDetailsBackdropClicked"
+                    Background="#88000000"
+                    BorderThickness="0"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Opacity="0" />
+                <controls:SoundDetailsDrawer
+                    x:Name="SoundDetailsDrawer"
+                    MaxWidth="360"
+                    HorizontalAlignment="Right"
+                    DataContext="{Binding SoundDetails}">
+                    <controls:SoundDetailsDrawer.RenderTransform>
+                        <CompositeTransform x:Name="SoundDetailsTransform" TranslateX="360" />
+                    </controls:SoundDetailsDrawer.RenderTransform>
+                </controls:SoundDetailsDrawer>
+            </Grid>
         </Grid>
 
         <Border

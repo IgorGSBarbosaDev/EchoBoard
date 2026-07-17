@@ -109,6 +109,21 @@ public sealed partial class SoundCard : UserControl
         typeof(SoundCard),
         new PropertyMetadata(null));
 
+    public static readonly DependencyProperty FormatTextProperty = DependencyProperty.Register(
+        nameof(FormatText), typeof(string), typeof(SoundCard), new PropertyMetadata(string.Empty, OnDisplayPropertyChanged));
+
+    public static readonly DependencyProperty UsageTextProperty = DependencyProperty.Register(
+        nameof(UsageText), typeof(string), typeof(SoundCard), new PropertyMetadata(string.Empty, OnDisplayPropertyChanged));
+
+    public static readonly DependencyProperty WaveformBarsProperty = DependencyProperty.Register(
+        nameof(WaveformBars), typeof(IReadOnlyList<ViewModels.WaveformBarViewModel>), typeof(SoundCard), new PropertyMetadata(null, OnDisplayPropertyChanged));
+
+    public static readonly DependencyProperty DetailsCommandProperty = DependencyProperty.Register(
+        nameof(DetailsCommand), typeof(ICommand), typeof(SoundCard), new PropertyMetadata(null, OnDisplayPropertyChanged));
+
+    public static readonly DependencyProperty EditCommandProperty = DependencyProperty.Register(
+        nameof(EditCommand), typeof(ICommand), typeof(SoundCard), new PropertyMetadata(null, OnDisplayPropertyChanged));
+
     public SoundCard()
     {
         InitializeComponent();
@@ -216,6 +231,20 @@ public sealed partial class SoundCard : UserControl
         set => SetValue(FavoriteCommandParameterProperty, value);
     }
 
+    public string FormatText { get => (string)GetValue(FormatTextProperty); set => SetValue(FormatTextProperty, value); }
+
+    public string UsageText { get => (string)GetValue(UsageTextProperty); set => SetValue(UsageTextProperty, value); }
+
+    public IReadOnlyList<ViewModels.WaveformBarViewModel>? WaveformBars
+    {
+        get => (IReadOnlyList<ViewModels.WaveformBarViewModel>?)GetValue(WaveformBarsProperty);
+        set => SetValue(WaveformBarsProperty, value);
+    }
+
+    public ICommand? DetailsCommand { get => (ICommand?)GetValue(DetailsCommandProperty); set => SetValue(DetailsCommandProperty, value); }
+
+    public ICommand? EditCommand { get => (ICommand?)GetValue(EditCommandProperty); set => SetValue(EditCommandProperty, value); }
+
     public Brush CardBackground => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsSelected || IsPlaying || IsPaused ? "EchoBoardCardActiveBrush" : "EchoBoardCardBrush"];
 
     public Brush CardBorderBrush => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsPlaying ? "EchoBoardSuccessBrush" : IsPaused ? "EchoBoardWarningBrush" : IsSelected ? "EchoBoardActionBrush" : "EchoBoardBorderBrush"];
@@ -239,6 +268,14 @@ public sealed partial class SoundCard : UserControl
     public Visibility SubtitleVisibility => IsCompact || string.IsNullOrWhiteSpace(Subtitle) ? Visibility.Collapsed : Visibility.Visible;
 
     public Visibility DurationVisibility => string.IsNullOrWhiteSpace(DurationText) ? Visibility.Collapsed : Visibility.Visible;
+
+    public Visibility UsageVisibility => string.IsNullOrWhiteSpace(UsageText) ? Visibility.Collapsed : Visibility.Visible;
+
+    public Visibility WaveformVisibility => WaveformBars is { Count: > 0 } ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility WaveformUnavailableVisibility => WaveformBars is { Count: > 0 } ? Visibility.Collapsed : Visibility.Visible;
+
+    public Visibility OptionsVisibility => DetailsCommand is null && EditCommand is null ? Visibility.Collapsed : Visibility.Visible;
 
     public string AccessibleLabel => $"{Title} {CategoryLabel} {DurationText} {StatusText}".Trim();
 

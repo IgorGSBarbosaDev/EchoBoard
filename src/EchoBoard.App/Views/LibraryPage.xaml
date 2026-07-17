@@ -219,7 +219,12 @@
                                         Command="{Binding SelectCommand}"
                                         CommandParameter="{Binding Id}"
                                         FavoriteCommand="{Binding FavoriteCommand}"
-                                        FavoriteCommandParameter="{Binding Id}" />
+                                        FavoriteCommandParameter="{Binding Id}"
+                                        FormatText="{Binding FormatText}"
+                                        UsageText="{Binding UsageText}"
+                                        WaveformBars="{Binding WaveformBars}"
+                                        DetailsCommand="{Binding DetailsCommand}"
+                                        EditCommand="{Binding EditCommand}" />
                                 </DataTemplate>
                             </GridView.ItemTemplate>
                         </GridView>

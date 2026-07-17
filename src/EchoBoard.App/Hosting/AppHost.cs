@@ -49,6 +49,7 @@ public static class AppHost
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IAppearanceResourceManager, AppearanceResourceManager>();
                 services.AddTransient<DashboardViewModel>();
+                services.AddScoped<SoundDetailsViewModel>();
                 services.AddTransient<LibraryViewModel>();
                 services.AddTransient<FavoritesViewModel>();
                 services.AddTransient<RecentViewModel>();

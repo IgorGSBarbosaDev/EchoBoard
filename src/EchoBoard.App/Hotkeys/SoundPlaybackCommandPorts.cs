@@ -20,24 +20,13 @@ public sealed class SoundPlaybackCommandPorts : ISoundPlaybackCommandPort, IPlay
     public async Task<HotkeyCommandResult> PlaySoundAsync(Guid soundId, CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
-        var sounds = scope.ServiceProvider.GetRequiredService<ISoundLibraryRepository>();
-        var sound = await sounds.GetSoundAsync(soundId, cancellationToken);
-        if (sound is null)
-        {
-            return HotkeyCommandResult.Failed("The selected sound no longer exists.");
-        }
-
-        if (!File.Exists(sound.FilePath))
-        {
-            return HotkeyCommandResult.Failed("The audio file could not be found.");
-        }
-
         try
         {
-            await playback.PlayAsync(sound.FilePath, sound.Volume, cancellationToken);
-            return HotkeyCommandResult.Success($"Playing {sound.Name}.");
+            var playSound = scope.ServiceProvider.GetRequiredService<PlaySoundUseCase>();
+            var result = await playSound.ExecuteAsync(new PlaySoundRequest(soundId, DateTimeOffset.UtcNow), cancellationToken);
+            return HotkeyCommandResult.Success($"Playing {result.SoundName}.");
         }
-        catch (Exception exception) when (exception is IOException or InvalidDataException or COMException or NotSupportedException or ArgumentException or InvalidOperationException)
+        catch (Exception exception) when (exception is IOException or InvalidDataException or COMException or NotSupportedException or ArgumentException or InvalidOperationException or SoundNotFoundException)
         {
             return HotkeyCommandResult.Failed("The audio file is corrupted, unsupported, or no playback device is available.");
         }
