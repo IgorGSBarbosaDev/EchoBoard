@@ -136,7 +136,7 @@ Os itens abaixo não podem atrasar a primeira versão utilizável:
 | LIB-09 | Recentes | Exibir sons reproduzidos recentemente. | MVP |
 | LIB-10 | Renomear | Alterar apenas o nome exibido no EchoBoard, sem renomear o arquivo original. | MVP |
 | LIB-11 | Remover da biblioteca | Remover referência do EchoBoard sem apagar o arquivo do disco. | MVP |
-| LIB-12 | Informações visuais | Exibir nome, duração, hotkey, favorito e estado de reprodução no card. | MVP |
+| LIB-12 | Informações visuais | Exibir categoria, nome, formato, duração, usos, waveform real, hotkey, favorito e estado de reprodução no card. | MVP |
 | LIB-13 | Cor/ícone do som | Permitir cor de destaque por som; ícones personalizados entram depois do MVP. | MVP |
 | LIB-14 | Tags | Adicionar tags reutilizáveis para filtros avançados. | Fase 2 |
 | LIB-15 | Playlists | Criar listas ordenadas de sons. | Fase 2 |
@@ -310,6 +310,10 @@ Princípios:
 | Error | `#C53030` |
 
 ### 9.3 Layout principal
+
+O Dashboard inicial ocupa toda a área do conteúdo e apresenta cabeçalho de ações, métricas reais, acesso rápido, primeiros passos, fluxo de áudio e níveis disponíveis. Em janelas largas usa duas colunas proporcionais; entre 720px e 1099px empilha o conteúdo com métricas 2x2; abaixo de 720px usa uma única coluna sem overflow horizontal.
+
+Os detalhes do som são exibidos em uma drawer compartilhada sobre o conteúdo. Fechada, ela permanece `Collapsed` e não reserva largura. O corpo do card reproduz o áudio; favorito e menu de detalhes/edição são ações independentes.
 
 ```text
 ┌───────────────────────────────────────────────────────────────────┐
@@ -519,6 +523,8 @@ Sound
 - IsFavorite
 - IsLoopEnabled
 - StopPreviousSound
+- AllowOverlap
+- WaveformPeaks (32 picos normalizados)
 - CategoryId
 - SortOrder
 - CreatedAt
@@ -562,6 +568,8 @@ RecentlyPlayed
 - SoundId
 - PlayedAt
 ```
+
+`RecentlyPlayed` registra apenas reproduções iniciadas com sucesso, independentemente de terem sido acionadas por clique, drawer ou hotkey. A remoção de `Sound` elimina seu histórico em cascata, mas nunca apaga o arquivo de áudio do disco.
 
 ### 13.2 Persistência
 

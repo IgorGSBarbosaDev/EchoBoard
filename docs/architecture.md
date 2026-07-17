@@ -35,6 +35,8 @@ Circular dependencies are not allowed. The architecture tests read project files
 - WinUI startup uses `Microsoft.Extensions.Hosting` for dependency injection.
 - `EchoBoard.App` registers the application, audio, and infrastructure modules from the composition root.
 - Serilog writes rolling file logs under local application data.
-- SQLite is active through EF Core with `Sound` and `Category` tables, repository implementations, migrations, and a design-time factory.
-- The library application layer contains import, listing/query, category management, favorite toggling, and sound category assignment use cases.
-- The main shell hosts Dashboard, Library, Favorites, Recent, Settings, and Audio Diagnostics routes. Library and Favorites render persisted local sounds; Recent remains a placeholder until playback history exists.
+- SQLite is active through EF Core with `Sound`, `Category`, `HotkeyBinding`, `AppSetting`, and `RecentlyPlayed` persistence, repository implementations, migrations, and a design-time factory. Playback history is removed in cascade with its sound.
+- The library application layer contains import, listing/query, category management, favorite toggling, sound category assignment, persisted waveform extraction, play counts, and recent-history use cases.
+- `PlaySoundUseCase` is the single entry point for card, drawer, and hotkey playback. It applies loop, stop-previous, and overlap policies before calling the audio engine and records history only after playback starts successfully.
+- The main shell hosts Dashboard, Library, Favorites, Recent, Settings, and Audio Diagnostics routes. A shared `SoundDetailsViewModel` keeps the selected sound and controls an overlay drawer used by Dashboard, Library, Favorites, and Recent without reserving layout width while closed.
+- The Dashboard derives library, hotkey, microphone, file-availability, and usage values from application services. Mixer, effects telemetry, and virtual output remain explicit unavailable states until those audio layers exist.
