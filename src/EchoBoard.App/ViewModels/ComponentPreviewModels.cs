@@ -23,7 +23,17 @@ public sealed record SoundCardPreviewModel(
     string StatusText = "",
     ICommand? SelectCommand = null,
     ICommand? FavoriteCommand = null,
-    ICommand? AssignCategoryCommand = null);
+    ICommand? AssignCategoryCommand = null,
+    string FormatText = "",
+    string UsageText = "",
+    IReadOnlyList<WaveformBarViewModel>? WaveformBars = null,
+    ICommand? DetailsCommand = null,
+    ICommand? EditCommand = null)
+{
+    public bool HasWaveform => WaveformBars is { Count: > 0 };
+}
+
+public sealed record WaveformBarViewModel(double Height);
 
 public sealed record CategoryPreviewModel(
     string Name,

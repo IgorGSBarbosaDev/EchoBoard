@@ -83,6 +83,35 @@ public sealed class SoundLibraryPersistenceTests
     }
 
     [Fact]
+    public async Task HistoryPersistsPlaybackCountsAndCascadesWhenSoundIsDeleted()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var sounds = new EfSoundLibraryRepository(database.Context);
+        var history = new EfRecentlyPlayedRepository(database.Context);
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, null, 0, Now);
+        sound.ConfigurePlayback(isLoopEnabled: true, stopPreviousSound: false, allowOverlap: true, Now.AddSeconds(1));
+        sound.SetWaveformPeaks(Enumerable.Repeat((byte)50, 32).ToArray(), Now.AddSeconds(1));
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        await history.AddAsync(RecentlyPlayed.Create(sound.Id, Now.AddSeconds(2)), CancellationToken.None);
+        await history.AddAsync(RecentlyPlayed.Create(sound.Id, Now.AddSeconds(3)), CancellationToken.None);
+
+        database.Context.ChangeTracker.Clear();
+        var stored = await sounds.GetSoundAsync(sound.Id, CancellationToken.None);
+        var counts = await history.GetPlayCountsAsync(CancellationToken.None);
+
+        stored!.IsLoopEnabled.Should().BeTrue();
+        stored.StopPreviousSound.Should().BeFalse();
+        stored.AllowOverlap.Should().BeTrue();
+        stored.WaveformPeaks.Should().OnlyContain(peak => peak == 50);
+        counts[sound.Id].Should().Be(2);
+
+        await sounds.DeleteSoundAsync(sound.Id, CancellationToken.None);
+        database.Context.ChangeTracker.Clear();
+
+        (await history.ListAsync(10, CancellationToken.None)).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task DatabaseInitializerAppliesMigrationsToEmptyDatabase()
     {
         var databasePath = Path.Combine(Path.GetTempPath(), $"echoboard-{Guid.NewGuid():N}.db");
@@ -103,10 +132,10 @@ public sealed class SoundLibraryPersistenceTests
             await initializer.InitializeAsync(TestContext.Current.CancellationToken);
 
             var tables = await context.Database.SqlQueryRaw<string>(
-                "SELECT name AS Value FROM sqlite_master WHERE type = 'table' AND name IN ('Sounds', 'Categories')")
+                "SELECT name AS Value FROM sqlite_master WHERE type = 'table' AND name IN ('Sounds', 'Categories', 'RecentlyPlayed')")
                 .ToListAsync(TestContext.Current.CancellationToken);
 
-            tables.Should().BeEquivalentTo(["Sounds", "Categories"]);
+            tables.Should().BeEquivalentTo(["Sounds", "Categories", "RecentlyPlayed"]);
         }
         finally
         {

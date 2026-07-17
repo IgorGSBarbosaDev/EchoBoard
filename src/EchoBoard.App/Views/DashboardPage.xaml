@@ -2,90 +2,147 @@
     x:Class="EchoBoard.App.Views.DashboardPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="using:EchoBoard.App.Controls">
-    <ScrollViewer>
-        <StackPanel Spacing="{StaticResource EchoBoardSpace24}">
-            <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                <TextBlock
-                    Text="{Binding Title}"
-                    Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
-                    FontSize="{StaticResource EchoBoardFontSizeTitle}"
-                    FontWeight="SemiBold" />
-                <TextBlock
-                    Text="{Binding Subtitle}"
-                    Style="{StaticResource EchoBoardCaptionTextStyle}" />
+    xmlns:controls="using:EchoBoard.App.Controls"
+    Loaded="OnLoaded"
+    Unloaded="OnUnloaded">
+    <Grid x:Name="DashboardRoot">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="Wide">
+                    <VisualState.StateTriggers><AdaptiveTrigger MinWindowWidth="1100" /></VisualState.StateTriggers>
+                </VisualState>
+                <VisualState x:Name="Medium">
+                    <VisualState.StateTriggers><AdaptiveTrigger MinWindowWidth="720" /></VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="SummaryColumn2.Width" Value="0" />
+                        <Setter Target="SummaryColumn3.Width" Value="0" />
+                        <Setter Target="MicrophoneMetric.(Grid.Row)" Value="1" />
+                        <Setter Target="MicrophoneMetric.(Grid.Column)" Value="0" />
+                        <Setter Target="RoutingMetric.(Grid.Row)" Value="1" />
+                        <Setter Target="RoutingMetric.(Grid.Column)" Value="1" />
+                        <Setter Target="SideColumn.Width" Value="0" />
+                        <Setter Target="SideContent.(Grid.Row)" Value="1" />
+                        <Setter Target="SideContent.(Grid.Column)" Value="0" />
+                        <Setter Target="HeaderActions.(Grid.Row)" Value="1" />
+                        <Setter Target="HeaderActions.(Grid.Column)" Value="0" />
+                        <Setter Target="HeaderActions.HorizontalAlignment" Value="Left" />
+                        <Setter Target="HeaderActions.Margin" Value="0,12,0,0" />
+                        <Setter Target="FlowColumn1.Width" Value="0" />
+                        <Setter Target="FlowColumn2.Width" Value="0" />
+                        <Setter Target="FlowColumn3.Width" Value="0" />
+                        <Setter Target="FlowColumn4.Width" Value="0" />
+                        <Setter Target="FlowArrow1.Visibility" Value="Collapsed" />
+                        <Setter Target="FlowArrow2.Visibility" Value="Collapsed" />
+                        <Setter Target="MixerFlowCard.(Grid.Row)" Value="1" />
+                        <Setter Target="MixerFlowCard.(Grid.Column)" Value="0" />
+                        <Setter Target="OutputFlowCard.(Grid.Row)" Value="2" />
+                        <Setter Target="OutputFlowCard.(Grid.Column)" Value="0" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Compact">
+                    <VisualState.StateTriggers><AdaptiveTrigger MinWindowWidth="0" /></VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="HeaderActions.Orientation" Value="Vertical" />
+                        <Setter Target="SummaryColumn1.Width" Value="0" />
+                        <Setter Target="SummaryColumn2.Width" Value="0" />
+                        <Setter Target="SummaryColumn3.Width" Value="0" />
+                        <Setter Target="HotkeysMetric.(Grid.Row)" Value="1" />
+                        <Setter Target="HotkeysMetric.(Grid.Column)" Value="0" />
+                        <Setter Target="MicrophoneMetric.(Grid.Row)" Value="2" />
+                        <Setter Target="MicrophoneMetric.(Grid.Column)" Value="0" />
+                        <Setter Target="RoutingMetric.(Grid.Row)" Value="3" />
+                        <Setter Target="RoutingMetric.(Grid.Column)" Value="0" />
+                        <Setter Target="SideColumn.Width" Value="0" />
+                        <Setter Target="SideContent.(Grid.Row)" Value="1" />
+                        <Setter Target="SideContent.(Grid.Column)" Value="0" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="14">
+                <Grid ColumnSpacing="16" RowSpacing="12">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="VISÃO GERAL" Foreground="{ThemeResource EchoBoardActionBrush}" FontSize="10" FontWeight="Bold" CharacterSpacing="90" />
+                        <TextBlock Text="Seu painel de áudio" Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" FontSize="24" FontWeight="SemiBold" />
+                        <TextBlock Text="Acompanhe a biblioteca, o roteamento e os sons mais usados sem transformar a tela em um dashboard administrativo." Style="{StaticResource EchoBoardBodyTextStyle}" TextWrapping="Wrap" MaxWidth="680" />
+                    </StackPanel>
+                    <StackPanel x:Name="HeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                        <Button Command="{Binding OpenSettingsCommand}" Style="{StaticResource EchoBoardSecondaryButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="7"><SymbolIcon Symbol="Setting" /><TextBlock Text="Configurar áudio" /></StackPanel></Button>
+                        <Button Click="OnImportClicked" Style="{StaticResource EchoBoardPrimaryButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="7"><SymbolIcon Symbol="Add" /><TextBlock Text="Importar sons" /></StackPanel></Button>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="{Binding FeedbackMessage}" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" Visibility="{Binding FeedbackVisibility}" />
+
+                <Grid x:Name="SummaryGrid" ColumnSpacing="12" RowSpacing="12">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition x:Name="SummaryColumn1" Width="*" />
+                        <ColumnDefinition x:Name="SummaryColumn2" Width="*" />
+                        <ColumnDefinition x:Name="SummaryColumn3" Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource EchoBoardCardStyle}"><Grid><StackPanel Spacing="8"><TextBlock Text="BIBLIOTECA" Style="{StaticResource EchoBoardCaptionTextStyle}" /><TextBlock Text="{Binding LibraryValue}" FontSize="22" FontWeight="SemiBold" /><TextBlock Text="{Binding LibraryNote}" Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel><SymbolIcon HorizontalAlignment="Right" VerticalAlignment="Top" Symbol="Library" Foreground="{ThemeResource EchoBoardActionBrush}" /></Grid></Border>
+                    <Border x:Name="HotkeysMetric" Grid.Column="1" Style="{StaticResource EchoBoardCardStyle}"><Grid><StackPanel Spacing="8"><TextBlock Text="HOTKEYS" Style="{StaticResource EchoBoardCaptionTextStyle}" /><TextBlock Text="{Binding HotkeyValue}" FontSize="22" FontWeight="SemiBold" /><TextBlock Text="{Binding HotkeyNote}" Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel><SymbolIcon HorizontalAlignment="Right" VerticalAlignment="Top" Symbol="Keyboard" Foreground="{ThemeResource EchoBoardActionBrush}" /></Grid></Border>
+                    <Border x:Name="MicrophoneMetric" Grid.Column="2" Style="{StaticResource EchoBoardCardStyle}"><Grid><StackPanel Spacing="8"><TextBlock Text="MICROFONE" Style="{StaticResource EchoBoardCaptionTextStyle}" /><TextBlock Text="{Binding MicrophoneValue}" FontSize="22" FontWeight="SemiBold" /><TextBlock Text="{Binding MicrophoneNote}" Style="{StaticResource EchoBoardCaptionTextStyle}" TextTrimming="CharacterEllipsis" /></StackPanel><SymbolIcon HorizontalAlignment="Right" VerticalAlignment="Top" Symbol="Microphone" Foreground="{ThemeResource EchoBoardActionBrush}" /></Grid></Border>
+                    <Border x:Name="RoutingMetric" Grid.Column="3" Style="{StaticResource EchoBoardCardStyle}"><Grid><StackPanel Spacing="8"><TextBlock Text="ROTEAMENTO" Style="{StaticResource EchoBoardCaptionTextStyle}" /><TextBlock Text="{Binding RoutingValue}" Foreground="{ThemeResource EchoBoardWarningBrush}" FontSize="22" FontWeight="SemiBold" /><TextBlock Text="{Binding RoutingNote}" Style="{StaticResource EchoBoardCaptionTextStyle}" TextWrapping="Wrap" /></StackPanel><SymbolIcon HorizontalAlignment="Right" VerticalAlignment="Top" Symbol="Audio" Foreground="{ThemeResource EchoBoardWarningBrush}" /></Grid></Border>
+                </Grid>
+
+                <Grid x:Name="MainContent" ColumnSpacing="14" RowSpacing="14">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="1.55*" /><ColumnDefinition x:Name="SideColumn" Width="0.8*" /></Grid.ColumnDefinitions>
+
+                    <StackPanel Spacing="14">
+                        <Border Style="{StaticResource EchoBoardPanelStyle}">
+                            <StackPanel Spacing="12">
+                                <Grid><StackPanel Spacing="2"><TextBlock Text="Acesso rápido" Style="{StaticResource EchoBoardSectionTitleTextStyle}" /><TextBlock Text="Favoritos e sons usados com frequência." Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel><Button HorizontalAlignment="Right" Command="{Binding OpenLibraryCommand}" Content="Abrir biblioteca →" Style="{StaticResource EchoBoardSecondaryButtonStyle}" /></Grid>
+                                <GridView ItemsSource="{Binding QuickSounds}" SelectionMode="None" IsItemClickEnabled="False" Visibility="{Binding QuickSoundsVisibility}" HorizontalContentAlignment="Stretch">
+                                    <GridView.ItemsPanel><ItemsPanelTemplate><ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" /></ItemsPanelTemplate></GridView.ItemsPanel>
+                                    <GridView.ItemTemplate><DataTemplate><controls:SoundCard Width="220" Margin="0,0,10,10" Title="{Binding Title}" DurationText="{Binding DurationText}" HotkeyText="{Binding HotkeyText}" CategoryLabel="{Binding CategoryLabel}" IsFavorite="{Binding IsFavorite}" IsMissingFile="{Binding IsMissingFile}" StatusText="{Binding StatusText}" Command="{Binding SelectCommand}" CommandParameter="{Binding Id}" FavoriteCommand="{Binding FavoriteCommand}" FavoriteCommandParameter="{Binding Id}" FormatText="{Binding FormatText}" UsageText="{Binding UsageText}" WaveformBars="{Binding WaveformBars}" DetailsCommand="{Binding DetailsCommand}" EditCommand="{Binding EditCommand}" /></DataTemplate></GridView.ItemTemplate>
+                                </GridView>
+                                <StackPanel HorizontalAlignment="Center" Spacing="5" Visibility="{Binding QuickEmptyVisibility}"><SymbolIcon Symbol="Audio" Foreground="{ThemeResource EchoBoardActionBrush}" /><TextBlock Text="Nenhum som disponível" FontWeight="SemiBold" /><TextBlock Text="Importe sons para preencher o acesso rápido." Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource EchoBoardPanelStyle}">
+                            <StackPanel Spacing="12">
+                                <Grid><StackPanel Spacing="2"><TextBlock Text="Fluxo de áudio" Style="{StaticResource EchoBoardSectionTitleTextStyle}" /><TextBlock Text="Leitura direta de como o sinal entra, é misturado e sai." Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel><Button HorizontalAlignment="Right" Command="{Binding OpenSettingsCommand}" Content="Editar rota" Style="{StaticResource EchoBoardSecondaryButtonStyle}" /></Grid>
+                                <Grid ColumnSpacing="10" RowSpacing="10">
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition x:Name="FlowColumn1" Width="Auto" /><ColumnDefinition x:Name="FlowColumn2" Width="*" /><ColumnDefinition x:Name="FlowColumn3" Width="Auto" /><ColumnDefinition x:Name="FlowColumn4" Width="*" /></Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource EchoBoardCardStyle}"><StackPanel Spacing="7"><SymbolIcon HorizontalAlignment="Left" Symbol="Microphone" Foreground="{ThemeResource EchoBoardActionBrush}" /><TextBlock Text="{Binding MicrophoneNote}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" /><TextBlock Text="Entrada física" Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel></Border>
+                                    <SymbolIcon x:Name="FlowArrow1" Grid.Column="1" VerticalAlignment="Center" Symbol="Forward" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" />
+                                    <Border x:Name="MixerFlowCard" Grid.Column="2" Style="{StaticResource EchoBoardCardStyle}"><StackPanel Spacing="7"><SymbolIcon HorizontalAlignment="Left" Symbol="Audio" Foreground="{ThemeResource EchoBoardActionBrush}" /><TextBlock Text="Mixer EchoBoard" FontWeight="SemiBold" /><TextBlock Text="Ainda não implementado" Foreground="{ThemeResource EchoBoardWarningBrush}" FontSize="10" /></StackPanel></Border>
+                                    <SymbolIcon x:Name="FlowArrow2" Grid.Column="3" VerticalAlignment="Center" Symbol="Forward" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" />
+                                    <Border x:Name="OutputFlowCard" Grid.Column="4" Style="{StaticResource EchoBoardCardStyle}"><StackPanel Spacing="7"><SymbolIcon HorizontalAlignment="Left" Symbol="Audio" Foreground="{ThemeResource EchoBoardWarningBrush}" /><TextBlock Text="Saída virtual" FontWeight="SemiBold" /><TextBlock Text="Não implementada" Foreground="{ThemeResource EchoBoardWarningBrush}" FontSize="10" /></StackPanel></Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel x:Name="SideContent" Grid.Column="1" Spacing="14">
+                        <Border Style="{StaticResource EchoBoardPanelStyle}">
+                            <StackPanel Spacing="12">
+                                <StackPanel Spacing="2"><TextBlock Text="Primeiros passos" Style="{StaticResource EchoBoardSectionTitleTextStyle}" /><TextBlock Text="O necessário para usar no Discord ou OBS." Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel>
+                                <ItemsControl ItemsSource="{Binding SetupSteps}"><ItemsControl.ItemTemplate><DataTemplate><Border Margin="0,0,0,7" Style="{StaticResource EchoBoardCardStyle}"><Grid ColumnSpacing="10"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><SymbolIcon Symbol="{Binding Icon}" Foreground="{ThemeResource EchoBoardActionBrush}" /><StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="{Binding Title}" FontWeight="SemiBold" /><TextBlock Text="{Binding Description}" Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel><TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{Binding StatusText}" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" FontSize="10" /></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource EchoBoardPanelStyle}">
+                            <StackPanel Spacing="12">
+                                <StackPanel Spacing="2"><TextBlock Text="Níveis ao vivo" Style="{StaticResource EchoBoardSectionTitleTextStyle}" /><TextBlock Text="Dados reais quando a telemetria está disponível." Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel>
+                                <controls:AudioLevelMeter Label="Microfone" Level="{Binding MicrophoneLevel}" ValueText="{Binding MicrophoneLevelText}" Variant="Microphone" />
+                                <controls:AudioLevelMeter Label="Efeitos" Level="0" ValueText="{Binding EffectsLevelText}" Variant="Effects" />
+                                <controls:AudioLevelMeter Label="Saída virtual" Level="0" ValueText="{Binding VirtualOutputLevelText}" Variant="VirtualOutput" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
             </StackPanel>
-
-            <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}" RowSpacing="{StaticResource EchoBoardSpace16}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <Border Style="{StaticResource EchoBoardCardStyle}">
-                    <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                        <TextBlock Style="{StaticResource EchoBoardCaptionTextStyle}" Text="Library" />
-                        <TextBlock Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" FontSize="28" FontWeight="SemiBold" Text="0 sounds" />
-                    </StackPanel>
-                </Border>
-
-                <Border Grid.Column="1" Style="{StaticResource EchoBoardCardStyle}">
-                    <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                        <TextBlock Style="{StaticResource EchoBoardCaptionTextStyle}" Text="Hotkeys" />
-                        <TextBlock Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" FontSize="28" FontWeight="SemiBold" Text="Not set" />
-                    </StackPanel>
-                </Border>
-
-                <Border Grid.Column="2" Style="{StaticResource EchoBoardCardStyle}">
-                    <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                        <TextBlock Style="{StaticResource EchoBoardCaptionTextStyle}" Text="Routing" />
-                        <TextBlock Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" FontSize="28" FontWeight="SemiBold" Text="Idle" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <controls:ToastNotification
-                Kind="{Binding PreviewToast.Kind}"
-                Title="{Binding PreviewToast.Title}"
-                Description="{Binding PreviewToast.Description}" />
-
-            <Border Style="{StaticResource EchoBoardPanelStyle}">
-                <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
-                    <TextBlock Text="Reusable sound cards" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                    <ItemsControl ItemsSource="{Binding PreviewSounds}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace12}" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <controls:SoundCard
-                                    Width="236"
-                                    Title="{Binding Title}"
-                                    Subtitle="{Binding Subtitle}"
-                                    DurationText="{Binding DurationText}"
-                                    HotkeyText="{Binding HotkeyText}"
-                                    CategoryLabel="{Binding CategoryLabel}"
-                                    CategoryBrush="{Binding CategoryBrush}"
-                                    IsSelected="{Binding IsSelected}"
-                                    IsPlaying="{Binding IsPlaying}"
-                                    IsFavorite="{Binding IsFavorite}"
-                                    IsCompact="{Binding IsCompact}"
-                                    IsEnabled="{Binding IsEnabled}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-
-            <controls:EmptyState
-                Icon="{Binding PreviewEmptyState.Icon}"
-                Title="{Binding PreviewEmptyState.Title}"
-                Description="{Binding PreviewEmptyState.Description}"
-                PrimaryActionText="{Binding PreviewEmptyState.PrimaryActionText}"
-                SecondaryActionText="{Binding PreviewEmptyState.SecondaryActionText}" />
-        </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+    </Grid>
 </Page>

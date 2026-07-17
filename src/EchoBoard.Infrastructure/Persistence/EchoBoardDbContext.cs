@@ -18,6 +18,8 @@ public sealed class EchoBoardDbContext : DbContext
 
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
+    public DbSet<RecentlyPlayed> RecentlyPlayed => Set<RecentlyPlayed>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(EchoBoardDbContext).Assembly);

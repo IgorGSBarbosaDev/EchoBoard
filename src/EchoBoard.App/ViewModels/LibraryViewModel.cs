@@ -26,6 +26,8 @@ public sealed partial class LibraryViewModel : ObservableObject
     private readonly RemoveHotkeyBindingUseCase removeHotkeyBinding;
     private readonly SetHotkeyBindingEnabledUseCase setHotkeyBindingEnabled;
     private readonly ISoundPlaybackEngine playback;
+    private readonly PlaySoundUseCase? playSound;
+    private readonly SoundDetailsViewModel? details;
     private readonly Dictionary<Guid, HotkeyBindingDto> hotkeyBySoundId = [];
     private readonly Dictionary<Guid, SoundLibraryItemDto> soundById = [];
     private bool isBusy;
@@ -55,7 +57,9 @@ public sealed partial class LibraryViewModel : ObservableObject
         AssignSoundHotkeyUseCase assignSoundHotkey,
         RemoveHotkeyBindingUseCase removeHotkeyBinding,
         SetHotkeyBindingEnabledUseCase setHotkeyBindingEnabled,
-        ISoundPlaybackEngine playback)
+        ISoundPlaybackEngine playback,
+        PlaySoundUseCase? playSound = null,
+        SoundDetailsViewModel? details = null)
     {
         this.queryLibrary = queryLibrary;
         this.importSounds = importSounds;
@@ -69,6 +73,8 @@ public sealed partial class LibraryViewModel : ObservableObject
         this.removeHotkeyBinding = removeHotkeyBinding;
         this.setHotkeyBindingEnabled = setHotkeyBindingEnabled;
         this.playback = playback;
+        this.playSound = playSound;
+        this.details = details;
 
         Categories = [];
         Sounds = [];
@@ -84,6 +90,10 @@ public sealed partial class LibraryViewModel : ObservableObject
         ToggleSelectedSoundHotkeyEnabledCommand = new AsyncRelayCommand(ct => ToggleSelectedSoundHotkeyEnabledAsync(ct));
 
         UpdateCategoryFilters([], totalSoundCount: 0, uncategorizedCount: 0);
+        if (details is not null)
+        {
+            details.SoundChanged += OnDetailsSoundChanged;
+        }
     }
 
     public string Title => "Library";
@@ -561,11 +571,16 @@ public sealed partial class LibraryViewModel : ObservableObject
                 return;
             }
 
-            await playback.StopAllAsync(cancellationToken);
-            playbackSoundId = null;
-            ApplyPlaybackSnapshot(SoundPlaybackSnapshot.Idle);
+            if (playSound is null)
+            {
+                await playback.StopAllAsync(cancellationToken);
+                await playback.PlayAsync(sound.FilePath, sound.Volume, cancellationToken);
+            }
+            else
+            {
+                await playSound.ExecuteAsync(new PlaySoundRequest(sound.Id, DateTimeOffset.UtcNow), cancellationToken);
+            }
 
-            await playback.PlayAsync(sound.FilePath, sound.Volume, cancellationToken);
             playbackSoundId = soundId;
             PlaybackToast = null;
             ApplyPlaybackSnapshot(playback.GetSnapshot());
@@ -663,7 +678,12 @@ public sealed partial class LibraryViewModel : ObservableObject
                 IsMissingFile: sound.IsMissingFile,
                 StatusText: sound.IsMissingFile ? "File missing" : "Stopped",
                 SelectCommand: ActivateSoundCommand,
-                FavoriteCommand: new AsyncRelayCommand(_ => ToggleFavoriteAsync(sound.Id, CancellationToken.None))));
+                FavoriteCommand: new AsyncRelayCommand(_ => ToggleFavoriteAsync(sound.Id, CancellationToken.None)),
+                FormatText: sound.Extension.TrimStart('.').ToUpperInvariant(),
+                UsageText: $"{sound.PlayCount} {(sound.PlayCount == 1 ? "uso" : "usos")}",
+                WaveformBars: ToWaveform(sound.WaveformPeaks),
+                DetailsCommand: details?.OpenCommand,
+                EditCommand: details?.OpenEditCommand));
         }
 
         ApplyPlaybackSnapshot(playback.GetSnapshot());
@@ -883,6 +903,15 @@ public sealed partial class LibraryViewModel : ObservableObject
     {
         return count.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
+
+    private async void OnDetailsSoundChanged(object? sender, EventArgs e)
+    {
+        await RefreshAsync(CancellationToken.None);
+    }
+
+    private static WaveformBarViewModel[] ToWaveform(byte[] peaks) => peaks.Length == 32
+        ? peaks.Select(peak => new WaveformBarViewModel(6 + peak / 255.0 * 28)).ToArray()
+        : [];
 }
 
 public static class SoundLibraryCategoryFilterKinds

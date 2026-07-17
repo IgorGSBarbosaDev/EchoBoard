@@ -40,6 +40,21 @@ public sealed class SoundConfiguration : IEntityTypeConfiguration<Sound>
         builder.Property(sound => sound.IsFavorite)
             .IsRequired();
 
+        builder.Property(sound => sound.IsLoopEnabled)
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        builder.Property(sound => sound.StopPreviousSound)
+            .HasDefaultValue(true)
+            .IsRequired();
+
+        builder.Property(sound => sound.AllowOverlap)
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        builder.Property(sound => sound.WaveformPeaks)
+            .IsRequired();
+
         builder.Property(sound => sound.SortOrder)
             .IsRequired();
 

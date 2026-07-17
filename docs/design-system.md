@@ -62,3 +62,12 @@ Prefer these styles before adding custom controls. Add a custom control only whe
 - Keep audio-specific UI direct and scannable: levels, device state, transport state, and warnings should be visible without decorative noise.
 - Use status color together with text or shape; do not rely on color alone.
 - Validate both light and dark themes when adding a screen or reusable component.
+
+## Dashboard And Sound Details
+
+- The Dashboard uses four summary metrics and a proportional two-column content grid at 1100px and above, a 2x2 metric grid with stacked content from 720px to 1099px, and a single column below 720px.
+- `SoundCard` keeps the card body as the playback action. Favorite and overflow-menu actions are separate controls and must never trigger playback through event bubbling.
+- Waveforms render only persisted peaks extracted from the real audio file. Missing or unreadable waveform data uses a neutral unavailable state instead of simulated bars.
+- `SoundDetailsDrawer` overlays the shell content from the right, is limited to 360px, and uses a short transition. Its closed state is `Collapsed`; no column, background, border, or invisible hit target may remain.
+- The drawer must close by its close button, Escape, and backdrop, and focus returns to the control that opened it.
+- Rounded rectangles remain subtle. Pill shapes are limited to hotkeys and compact status indicators.

@@ -37,6 +37,10 @@ public sealed class Sound
         long fileSize,
         double volume,
         bool isFavorite,
+        bool isLoopEnabled,
+        bool stopPreviousSound,
+        bool allowOverlap,
+        byte[] waveformPeaks,
         Guid? categoryId,
         int sortOrder,
         DateTimeOffset createdAt,
@@ -50,6 +54,10 @@ public sealed class Sound
         FileSize = fileSize;
         Volume = volume;
         IsFavorite = isFavorite;
+        IsLoopEnabled = isLoopEnabled;
+        StopPreviousSound = stopPreviousSound;
+        AllowOverlap = allowOverlap;
+        WaveformPeaks = waveformPeaks;
         CategoryId = categoryId;
         SortOrder = sortOrder;
         CreatedAt = createdAt;
@@ -72,6 +80,14 @@ public sealed class Sound
 
     public bool IsFavorite { get; private set; }
 
+    public bool IsLoopEnabled { get; private set; }
+
+    public bool StopPreviousSound { get; private set; }
+
+    public bool AllowOverlap { get; private set; }
+
+    public byte[] WaveformPeaks { get; private set; } = [];
+
     public Guid? CategoryId { get; private set; }
 
     public int SortOrder { get; private set; }
@@ -88,7 +104,8 @@ public sealed class Sound
         long fileSize,
         Guid? categoryId,
         int sortOrder,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        byte[]? waveformPeaks = null)
     {
         var utcCreatedAt = ValidateUtc(createdAt, nameof(createdAt));
 
@@ -101,6 +118,10 @@ public sealed class Sound
             ValidateFileSize(fileSize),
             DefaultVolume,
             isFavorite: false,
+            isLoopEnabled: false,
+            stopPreviousSound: true,
+            allowOverlap: false,
+            ValidateWaveformPeaks(waveformPeaks),
             categoryId,
             ValidateSortOrder(sortOrder),
             utcCreatedAt,
@@ -140,6 +161,20 @@ public sealed class Sound
     public void SetFavorite(bool isFavorite, DateTimeOffset updatedAt)
     {
         IsFavorite = isFavorite;
+        UpdatedAt = ValidateUtc(updatedAt, nameof(updatedAt));
+    }
+
+    public void ConfigurePlayback(bool isLoopEnabled, bool stopPreviousSound, bool allowOverlap, DateTimeOffset updatedAt)
+    {
+        IsLoopEnabled = isLoopEnabled;
+        StopPreviousSound = stopPreviousSound;
+        AllowOverlap = allowOverlap;
+        UpdatedAt = ValidateUtc(updatedAt, nameof(updatedAt));
+    }
+
+    public void SetWaveformPeaks(byte[] waveformPeaks, DateTimeOffset updatedAt)
+    {
+        WaveformPeaks = ValidateWaveformPeaks(waveformPeaks);
         UpdatedAt = ValidateUtc(updatedAt, nameof(updatedAt));
     }
 
@@ -249,6 +284,21 @@ public sealed class Sound
         }
 
         return sortOrder;
+    }
+
+    private static byte[] ValidateWaveformPeaks(byte[]? waveformPeaks)
+    {
+        if (waveformPeaks is null || waveformPeaks.Length == 0)
+        {
+            return [];
+        }
+
+        if (waveformPeaks.Length != 32)
+        {
+            throw new DomainValidationException("WaveformPeaks must contain exactly 32 values.");
+        }
+
+        return [.. waveformPeaks];
     }
 
     private static DateTimeOffset ValidateUtc(DateTimeOffset value, string parameterName)

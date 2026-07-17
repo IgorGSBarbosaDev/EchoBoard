@@ -14,7 +14,11 @@ public sealed record SoundDto(
     Guid? CategoryId,
     int SortOrder,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    bool IsLoopEnabled,
+    bool StopPreviousSound,
+    bool AllowOverlap,
+    byte[] WaveformPeaks);
 
 public sealed record CategoryDto(Guid Id, string Name, int SortOrder, DateTimeOffset CreatedAt);
 
@@ -42,7 +46,12 @@ public sealed record SoundLibraryItemDto(
     int SortOrder,
     bool IsMissingFile,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    bool IsLoopEnabled,
+    bool StopPreviousSound,
+    bool AllowOverlap,
+    byte[] WaveformPeaks,
+    int PlayCount);
 
 public sealed record SoundLibraryCategoryDto(
     Guid Id,
@@ -79,7 +88,11 @@ public sealed record UpdateSoundRequest(
     bool IsFavorite,
     Guid? CategoryId,
     int SortOrder,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    bool IsLoopEnabled = false,
+    bool StopPreviousSound = true,
+    bool AllowOverlap = false,
+    byte[]? WaveformPeaks = null);
 
 public sealed record SetSoundFavoriteRequest(Guid Id, bool IsFavorite, DateTimeOffset UpdatedAt);
 
@@ -100,7 +113,10 @@ public sealed record AudioFileMetadata(
     string FullPath,
     string Extension,
     TimeSpan Duration,
-    long FileSize);
+    long FileSize,
+    byte[]? WaveformPeaks = null);
+
+public sealed record RecentlyPlayedDto(Guid Id, Guid SoundId, DateTimeOffset PlayedAt);
 
 public enum ImportSoundStatus
 {
@@ -149,4 +165,13 @@ public interface ICategoryRepository
     Task UpdateCategoryAsync(Category category, CancellationToken cancellationToken);
 
     Task DeleteCategoryAsync(Guid id, CancellationToken cancellationToken);
+}
+
+public interface IRecentlyPlayedRepository
+{
+    Task AddAsync(RecentlyPlayed entry, CancellationToken cancellationToken);
+
+    Task<IReadOnlyDictionary<Guid, int>> GetPlayCountsAsync(CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<RecentlyPlayed>> ListAsync(int limit, CancellationToken cancellationToken);
 }

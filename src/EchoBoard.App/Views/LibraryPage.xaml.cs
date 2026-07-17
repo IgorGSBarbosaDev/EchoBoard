@@ -1,10 +1,9 @@
 using EchoBoard.App.ViewModels;
+using EchoBoard.App.Dialogs;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 
 namespace EchoBoard.App.Views;
 
@@ -54,28 +53,14 @@ public sealed partial class LibraryPage : Page
             return;
         }
 
-        var picker = new FileOpenPicker();
-        picker.FileTypeFilter.Add(".mp3");
-        picker.FileTypeFilter.Add(".wav");
-        picker.FileTypeFilter.Add(".ogg");
-        picker.FileTypeFilter.Add(".flac");
-        picker.FileTypeFilter.Add(".m4a");
-        picker.FileTypeFilter.Add(".aac");
-        picker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
-
-        if (MainWindow.CurrentInstance is not null)
-        {
-            InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(MainWindow.CurrentInstance));
-        }
-
-        var files = await picker.PickMultipleFilesAsync();
-        if (files.Count == 0)
+        var paths = await AudioFilePicker.PickMultipleAsync();
+        if (paths.Count == 0)
         {
             ViewModel.ReportImportCancelled();
             return;
         }
 
-        await ViewModel.ImportFilePathsAsync(files.Select(file => file.Path).ToArray(), CancellationToken.None);
+        await ViewModel.ImportFilePathsAsync(paths, CancellationToken.None);
     }
 
     private void OnDragOver(object sender, DragEventArgs e)

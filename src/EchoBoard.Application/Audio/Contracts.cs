@@ -136,7 +136,13 @@ public interface ISoundPlaybackEngine
 {
     Task PlayAsync(string filePath, double volume, CancellationToken cancellationToken);
 
+    Task PlayAsync(string filePath, double volume, SoundPlaybackOptions options, CancellationToken cancellationToken)
+        => PlayAsync(filePath, volume, cancellationToken);
+
     Task StopAllAsync(CancellationToken cancellationToken);
+
+    Task StopSoundAsync(string filePath, CancellationToken cancellationToken)
+        => StopAllAsync(cancellationToken);
 
     Task TogglePauseAsync(CancellationToken cancellationToken);
 
@@ -145,6 +151,11 @@ public interface ISoundPlaybackEngine
     Task SetVolumeAsync(double volume, CancellationToken cancellationToken);
 
     SoundPlaybackSnapshot GetSnapshot();
+}
+
+public sealed record SoundPlaybackOptions(bool IsLoopEnabled)
+{
+    public static SoundPlaybackOptions Default { get; } = new(IsLoopEnabled: false);
 }
 
 public sealed record SoundPlaybackSnapshot(

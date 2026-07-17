@@ -66,6 +66,8 @@ public sealed class AudioFileMetadataReaderTests
             metadata.Extension.Should().Be(".wav");
             metadata.FileSize.Should().BeGreaterThan(0);
             metadata.Duration.Should().BeCloseTo(TimeSpan.FromMilliseconds(250), TimeSpan.FromMilliseconds(25));
+            metadata.WaveformPeaks.Should().HaveCount(32);
+            metadata.WaveformPeaks.Should().OnlyContain(peak => peak == 0);
         }
         finally
         {

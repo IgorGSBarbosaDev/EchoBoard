@@ -130,6 +130,11 @@ public sealed class UpdateSoundUseCase
         sound.UpdateFileMetadata(request.Extension, request.Duration, request.FileSize, request.UpdatedAt);
         sound.ChangeVolume(request.Volume, request.UpdatedAt);
         sound.SetFavorite(request.IsFavorite, request.UpdatedAt);
+        sound.ConfigurePlayback(request.IsLoopEnabled, request.StopPreviousSound, request.AllowOverlap, request.UpdatedAt);
+        if (request.WaveformPeaks is { Length: > 0 })
+        {
+            sound.SetWaveformPeaks(request.WaveformPeaks, request.UpdatedAt);
+        }
         sound.ChangeSortOrder(request.SortOrder, request.UpdatedAt);
 
         if (request.CategoryId is null)
