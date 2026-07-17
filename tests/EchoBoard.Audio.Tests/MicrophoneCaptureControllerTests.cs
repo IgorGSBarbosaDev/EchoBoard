@@ -62,6 +62,17 @@ public sealed class MicrophoneCaptureControllerTests
     }
 
     [Fact]
+    public async Task CapturedPeakLevelIsNormalizedToUnitRange()
+    {
+        var session = new FakeMicrophoneCaptureSession(new AudioStreamFormatDto(48000, 1, 32, "IeeeFloat"));
+        var controller = CreateStartedController(session);
+
+        session.PushSamples([-2.0f, 0.25f, 1.5f]);
+
+        controller.GetSnapshot().Level.Should().Be(1.0);
+    }
+
+    [Fact]
     public async Task StartFailureTransitionsToFailedState()
     {
         var factory = new FakeMicrophoneCaptureSessionFactory(new InvalidOperationException("access denied"));

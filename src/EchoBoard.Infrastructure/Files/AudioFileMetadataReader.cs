@@ -1,6 +1,7 @@
 using EchoBoard.Application.Library;
 using EchoBoard.Domain.Entities;
 using NAudio.Wave;
+using NAudio.Vorbis;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -16,7 +17,7 @@ public sealed class AudioFileMetadataReader : IAudioFileMetadataReader
         var extension = Path.GetExtension(normalizedPath).ToLowerInvariant();
         if (!Sound.AllowedExtensions.Contains(extension))
         {
-            throw new AudioFileMetadataException(normalizedPath, "Only MP3 and WAV files can be imported.");
+            throw new AudioFileMetadataException(normalizedPath, "The audio format is not supported.");
         }
 
         var fileInfo = new FileInfo(normalizedPath);
@@ -46,17 +47,17 @@ public sealed class AudioFileMetadataReader : IAudioFileMetadataReader
         TimeSpan duration;
         try
         {
-            using var reader = new AudioFileReader(normalizedPath);
-            duration = reader.TotalTime;
+            using var reader = OpenAudioReader(normalizedPath, extension);
+            duration = GetDuration(reader);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or COMException or NotSupportedException or ArgumentException)
         {
-            throw new AudioFileMetadataException(normalizedPath, "Audio metadata could not be read.");
+            throw new AudioFileMetadataException(normalizedPath, "The file is corrupted or uses an unsupported audio encoding.");
         }
 
         if (duration <= TimeSpan.Zero)
         {
-            throw new AudioFileMetadataException(normalizedPath, "Audio duration could not be read.");
+            throw new AudioFileMetadataException(normalizedPath, "The file is corrupted or its audio duration could not be determined.");
         }
 
         var displayName = Path.GetFileNameWithoutExtension(normalizedPath);
@@ -67,5 +68,39 @@ public sealed class AudioFileMetadataReader : IAudioFileMetadataReader
             extension,
             duration,
             fileInfo.Length));
+    }
+
+    private static WaveStream OpenAudioReader(string filePath, string extension)
+    {
+        if (string.Equals(extension, ".ogg", StringComparison.OrdinalIgnoreCase))
+        {
+            return new VorbisWaveReader(filePath);
+        }
+
+        if (string.Equals(extension, ".mp3", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                return new AudioFileReader(filePath);
+            }
+            catch (Exception exception) when (exception is IOException or InvalidDataException or COMException or NotSupportedException or ArgumentException)
+            {
+                return new Mp3FileReader(filePath);
+            }
+        }
+
+        return new AudioFileReader(filePath);
+    }
+
+    private static TimeSpan GetDuration(WaveStream reader)
+    {
+        if (reader.TotalTime > TimeSpan.Zero)
+        {
+            return reader.TotalTime;
+        }
+
+        return reader.WaveFormat.AverageBytesPerSecond > 0 && reader.Length > 0
+            ? TimeSpan.FromSeconds((double)reader.Length / reader.WaveFormat.AverageBytesPerSecond)
+            : TimeSpan.Zero;
     }
 }

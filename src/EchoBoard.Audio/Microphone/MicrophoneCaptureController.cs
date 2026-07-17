@@ -120,9 +120,14 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
                 Format = session.Format
             };
         }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+        catch (OperationCanceledException)
         {
-            DisposeSessionSynchronously();
+            await DisposeSessionAsync();
+            throw;
+        }
+        catch (Exception exception)
+        {
+            await DisposeSessionAsync();
             snapshot = snapshot with
             {
                 State = MicrophoneCaptureState.Failed,
@@ -135,17 +140,23 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        await StopSessionAsync(cancellationToken);
-        source?.Clear();
-        source = null;
-        snapshot = snapshot with
+        try
         {
-            State = MicrophoneCaptureState.Stopped,
-            Level = 0,
-            StatusMessage = "Stopped",
-            ErrorMessage = null,
-            Format = null
-        };
+            await StopSessionAsync(cancellationToken);
+        }
+        finally
+        {
+            source?.Clear();
+            source = null;
+            snapshot = snapshot with
+            {
+                State = MicrophoneCaptureState.Stopped,
+                Level = 0,
+                StatusMessage = "Stopped",
+                ErrorMessage = null,
+                Format = null
+            };
+        }
     }
 
     public MicrophoneCaptureSnapshot GetSnapshot()
@@ -160,6 +171,11 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
 
     private void OnSamplesCaptured(object? sender, MicrophoneSamplesCapturedEventArgs e)
     {
+        if (!ReferenceEquals(sender, session))
+        {
+            return;
+        }
+
         var currentSource = source;
         if (currentSource is null || snapshot.State != MicrophoneCaptureState.Active)
         {
@@ -174,9 +190,14 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
         };
     }
 
-    private void OnCaptureFailed(object? sender, Exception exception)
+    private async void OnCaptureFailed(object? sender, Exception exception)
     {
-        DisposeSessionSynchronously();
+        if (!ReferenceEquals(sender, session))
+        {
+            return;
+        }
+
+        var failedSession = DetachSession();
         source?.Clear();
         source = null;
         snapshot = snapshot with
@@ -187,35 +208,61 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
             ErrorMessage = exception.Message,
             Format = null
         };
+
+        if (failedSession is not null)
+        {
+            try
+            {
+                await failedSession.DisposeAsync();
+            }
+            catch
+            {
+                // The failed capture is already detached, so no further recovery is possible here.
+            }
+        }
     }
 
     private async Task StopSessionAsync(CancellationToken cancellationToken)
     {
-        var currentSession = session;
-        session = null;
+        var currentSession = DetachSession();
         if (currentSession is null)
         {
             return;
         }
 
-        currentSession.SamplesCaptured -= OnSamplesCaptured;
-        currentSession.CaptureFailed -= OnCaptureFailed;
-        await currentSession.StopAsync(cancellationToken);
+        try
+        {
+            await currentSession.StopAsync(cancellationToken);
+        }
+        finally
+        {
+            await currentSession.DisposeAsync();
+        }
+    }
+
+    private async Task DisposeSessionAsync()
+    {
+        var currentSession = DetachSession();
+        if (currentSession is null)
+        {
+            return;
+        }
+
         await currentSession.DisposeAsync();
     }
 
-    private void DisposeSessionSynchronously()
+    private IMicrophoneCaptureSession? DetachSession()
     {
         var currentSession = session;
         session = null;
         if (currentSession is null)
         {
-            return;
+            return null;
         }
 
         currentSession.SamplesCaptured -= OnSamplesCaptured;
         currentSession.CaptureFailed -= OnCaptureFailed;
-        currentSession.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        return currentSession;
     }
 
     private static string StatusFor(MicrophoneCaptureState state)

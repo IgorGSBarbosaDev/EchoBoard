@@ -94,13 +94,34 @@ public sealed class SoundLibraryUseCaseTests
         var useCase = new ImportSoundsUseCase(sounds, metadata);
 
         var result = await useCase.ExecuteAsync(
-            new ImportSoundsRequest(["C:\\Audio\\clip.flac"], Now),
+            new ImportSoundsRequest(["C:\\Audio\\clip.txt"], Now),
             CancellationToken.None);
 
         result.Items.Should().ContainSingle()
             .Which.Status.Should().Be(ImportSoundStatus.InvalidExtension);
         metadata.ReadCount.Should().Be(0);
         sounds.Items.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("sound.MP3", ".mp3")]
+    [InlineData("sound.WAV", ".wav")]
+    [InlineData("sound.OGG", ".ogg")]
+    [InlineData("sound.FLAC", ".flac")]
+    [InlineData("sound.M4A", ".m4a")]
+    [InlineData("sound.AAC", ".aac")]
+    public async Task ImportSoundsAcceptsSupportedExtensionsCaseInsensitively(string fileName, string normalizedExtension)
+    {
+        var filePath = $"C:\\Audio\\{fileName}";
+        var sounds = new FakeSoundLibraryRepository();
+        var metadata = new FakeAudioFileMetadataReader();
+        metadata.Add(filePath, "Sound", normalizedExtension, TimeSpan.FromSeconds(1), 100);
+        var useCase = new ImportSoundsUseCase(sounds, metadata);
+
+        var result = await useCase.ExecuteAsync(new ImportSoundsRequest([filePath], Now), CancellationToken.None);
+
+        result.Items.Should().ContainSingle().Which.Status.Should().Be(ImportSoundStatus.Imported);
+        sounds.Items.Should().ContainSingle().Which.Extension.Should().Be(normalizedExtension);
     }
 
     [Fact]

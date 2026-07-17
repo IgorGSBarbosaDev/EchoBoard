@@ -12,6 +12,10 @@ public sealed class SoundTests
     [Theory]
     [InlineData(".mp3")]
     [InlineData("WAV")]
+    [InlineData(".ogg")]
+    [InlineData("FLAC")]
+    [InlineData(".m4a")]
+    [InlineData("AAC")]
     public void CreateAcceptsSupportedExtensionsAndNormalizesValues(string extension)
     {
         var sound = Sound.Create(
@@ -43,8 +47,8 @@ public sealed class SoundTests
     }
 
     [Theory]
-    [InlineData(".flac")]
-    [InlineData(".ogg")]
+    [InlineData(".txt")]
+    [InlineData(".mp4")]
     public void CreateRejectsUnsupportedExtension(string extension)
     {
         var act = () => Sound.Create("Intro", "C:\\Audio\\intro.mp3", extension, TimeSpan.FromSeconds(1), 1, null, 0, CreatedAt);

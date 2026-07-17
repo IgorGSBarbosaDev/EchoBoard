@@ -131,3 +131,28 @@ public interface IMicrophoneCaptureController
 
     MicrophoneCaptureSnapshot GetSnapshot();
 }
+
+public interface ISoundPlaybackEngine
+{
+    Task PlayAsync(string filePath, double volume, CancellationToken cancellationToken);
+
+    Task StopAllAsync(CancellationToken cancellationToken);
+
+    Task TogglePauseAsync(CancellationToken cancellationToken);
+
+    Task SeekAsync(TimeSpan position, CancellationToken cancellationToken);
+
+    Task SetVolumeAsync(double volume, CancellationToken cancellationToken);
+
+    SoundPlaybackSnapshot GetSnapshot();
+}
+
+public sealed record SoundPlaybackSnapshot(
+    string? FilePath,
+    TimeSpan Position,
+    TimeSpan Duration,
+    bool IsPlaying,
+    bool IsPaused)
+{
+    public static SoundPlaybackSnapshot Idle { get; } = new(null, TimeSpan.Zero, TimeSpan.Zero, false, false);
+}
