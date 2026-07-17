@@ -18,7 +18,11 @@ internal static class LibraryMapper
             sound.CategoryId,
             sound.SortOrder,
             sound.CreatedAt,
-            sound.UpdatedAt);
+            sound.UpdatedAt,
+            sound.IsLoopEnabled,
+            sound.StopPreviousSound,
+            sound.AllowOverlap,
+            [.. sound.WaveformPeaks]);
     }
 
     public static CategoryDto ToDto(Category category)

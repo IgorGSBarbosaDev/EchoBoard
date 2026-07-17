@@ -32,8 +32,39 @@ public sealed class SoundTests
         sound.FilePath.Should().Be("C:\\Audio\\intro.MP3");
         sound.Extension.Should().Be(extension.StartsWith('.') ? extension.ToLowerInvariant() : $".{extension.ToLowerInvariant()}");
         sound.Volume.Should().Be(1.0);
+        sound.IsLoopEnabled.Should().BeFalse();
+        sound.StopPreviousSound.Should().BeTrue();
+        sound.AllowOverlap.Should().BeFalse();
+        sound.WaveformPeaks.Should().BeEmpty();
         sound.CreatedAt.Should().Be(CreatedAt);
         sound.UpdatedAt.Should().Be(CreatedAt);
+    }
+
+    [Fact]
+    public void PlaybackAndWaveformMutationsPersistValidatedValues()
+    {
+        var sound = CreateValidSound();
+        var updatedAt = CreatedAt.AddMinutes(1);
+        var waveform = Enumerable.Range(0, 32).Select(value => (byte)value).ToArray();
+
+        sound.ConfigurePlayback(isLoopEnabled: true, stopPreviousSound: false, allowOverlap: true, updatedAt);
+        sound.SetWaveformPeaks(waveform, updatedAt);
+
+        sound.IsLoopEnabled.Should().BeTrue();
+        sound.StopPreviousSound.Should().BeFalse();
+        sound.AllowOverlap.Should().BeTrue();
+        sound.WaveformPeaks.Should().Equal(waveform);
+        sound.UpdatedAt.Should().Be(updatedAt);
+    }
+
+    [Fact]
+    public void SetWaveformPeaksRejectsUnexpectedPeakCount()
+    {
+        var sound = CreateValidSound();
+
+        var act = () => sound.SetWaveformPeaks([1, 2, 3], CreatedAt.AddMinutes(1));
+
+        act.Should().Throw<DomainValidationException>().WithMessage("*32*");
     }
 
     [Theory]

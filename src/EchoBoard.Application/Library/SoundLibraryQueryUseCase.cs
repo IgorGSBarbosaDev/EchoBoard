@@ -5,15 +5,18 @@ public sealed class QuerySoundLibraryUseCase
     private readonly ISoundLibraryRepository sounds;
     private readonly ICategoryRepository categories;
     private readonly ISoundFileAvailabilityReader fileAvailability;
+    private readonly IRecentlyPlayedRepository? recentlyPlayed;
 
     public QuerySoundLibraryUseCase(
         ISoundLibraryRepository sounds,
         ICategoryRepository categories,
-        ISoundFileAvailabilityReader fileAvailability)
+        ISoundFileAvailabilityReader fileAvailability,
+        IRecentlyPlayedRepository? recentlyPlayed = null)
     {
         this.sounds = sounds;
         this.categories = categories;
         this.fileAvailability = fileAvailability;
+        this.recentlyPlayed = recentlyPlayed;
     }
 
     public async Task<SoundLibraryResult> ExecuteAsync(SoundLibraryFilter filter, CancellationToken cancellationToken)
@@ -22,6 +25,9 @@ public sealed class QuerySoundLibraryUseCase
 
         var allSounds = await sounds.ListSoundsAsync(cancellationToken);
         var allCategories = await categories.ListCategoriesAsync(cancellationToken);
+        var playCounts = recentlyPlayed is null
+            ? new Dictionary<Guid, int>()
+            : await recentlyPlayed.GetPlayCountsAsync(cancellationToken);
         var categoryById = allCategories.ToDictionary(category => category.Id);
         var countSource = filter.FavoritesOnly
             ? allSounds.Where(sound => sound.IsFavorite).ToArray()
@@ -73,7 +79,12 @@ public sealed class QuerySoundLibraryUseCase
                 sound.SortOrder,
                 IsMissingFile: !fileExists,
                 sound.CreatedAt,
-                sound.UpdatedAt));
+                sound.UpdatedAt,
+                sound.IsLoopEnabled,
+                sound.StopPreviousSound,
+                sound.AllowOverlap,
+                [.. sound.WaveformPeaks],
+                playCounts.GetValueOrDefault(sound.Id)));
         }
 
         var categoryDtos = allCategories

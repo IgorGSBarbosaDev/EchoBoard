@@ -16,6 +16,11 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IDisposabl
 
     public Task PlayAsync(string filePath, double volume, CancellationToken cancellationToken)
     {
+        return PlayAsync(filePath, volume, SoundPlaybackOptions.Default, cancellationToken);
+    }
+
+    public Task PlayAsync(string filePath, double volume, SoundPlaybackOptions options, CancellationToken cancellationToken)
+    {
         cancellationToken.ThrowIfCancellationRequested();
         ObjectDisposedException.ThrowIf(disposed, this);
 
@@ -34,7 +39,7 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IDisposabl
             output.Init(volumeProvider);
 
             var id = Guid.NewGuid();
-            session = new PlaybackSession(output, reader, volumeProvider, filePath, () => RemoveSession(id));
+            session = new PlaybackSession(output, reader, volumeProvider, filePath, options.IsLoopEnabled, () => RemoveSession(id));
             if (!sessions.TryAdd(id, session))
             {
                 session.Dispose();
@@ -71,6 +76,18 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IDisposabl
     {
         cancellationToken.ThrowIfCancellationRequested();
         foreach (var session in sessions.Values)
+        {
+            session.Stop();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task StopSoundAsync(string filePath, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        foreach (var session in sessions.Values.Where(session =>
+                     string.Equals(session.FilePath, filePath, StringComparison.OrdinalIgnoreCase)))
         {
             session.Stop();
         }
@@ -191,22 +208,31 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IDisposabl
         private readonly WaveStream reader;
         private readonly VolumeSampleProvider volumeProvider;
         private readonly string filePath;
+        private readonly bool isLoopEnabled;
         private readonly Action completed;
         private int disposed;
+        private int stopRequested;
 
-        public PlaybackSession(IWavePlayer output, WaveStream reader, VolumeSampleProvider volumeProvider, string filePath, Action completed)
+        public PlaybackSession(IWavePlayer output, WaveStream reader, VolumeSampleProvider volumeProvider, string filePath, bool isLoopEnabled, Action completed)
         {
             this.output = output;
             this.reader = reader;
             this.volumeProvider = volumeProvider;
             this.filePath = filePath;
+            this.isLoopEnabled = isLoopEnabled;
             this.completed = completed;
             this.output.PlaybackStopped += OnPlaybackStopped;
         }
 
         public PlaybackState PlaybackState => output.PlaybackState;
 
-        public void Stop() => output.Stop();
+        public string FilePath => filePath;
+
+        public void Stop()
+        {
+            Interlocked.Exchange(ref stopRequested, 1);
+            output.Stop();
+        }
 
         public void Pause() => output.Pause();
 
@@ -257,6 +283,20 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IDisposabl
             }
         }
 
-        private void OnPlaybackStopped(object? sender, StoppedEventArgs e) => completed();
+        private void OnPlaybackStopped(object? sender, StoppedEventArgs e)
+        {
+            if (isLoopEnabled && e.Exception is null && Volatile.Read(ref stopRequested) == 0 && disposed == 0)
+            {
+                lock (sync)
+                {
+                    reader.Position = 0;
+                    output.Play();
+                }
+
+                return;
+            }
+
+            completed();
+        }
     }
 }

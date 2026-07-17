@@ -85,7 +85,8 @@ public sealed class ImportSoundsUseCase
                 metadata.FileSize,
                 categoryId: null,
                 sortOrder,
-                importedAt);
+                importedAt,
+                metadata.WaveformPeaks);
 
             await sounds.AddSoundAsync(sound, cancellationToken);
 

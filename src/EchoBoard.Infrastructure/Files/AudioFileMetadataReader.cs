@@ -45,10 +45,12 @@ public sealed class AudioFileMetadataReader : IAudioFileMetadataReader
         }
 
         TimeSpan duration;
+        byte[] waveformPeaks;
         try
         {
             using var reader = OpenAudioReader(normalizedPath, extension);
             duration = GetDuration(reader);
+            waveformPeaks = ExtractWaveform(reader, 32, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or COMException or NotSupportedException or ArgumentException)
         {
@@ -67,7 +69,8 @@ public sealed class AudioFileMetadataReader : IAudioFileMetadataReader
             normalizedPath,
             extension,
             duration,
-            fileInfo.Length));
+            fileInfo.Length,
+            waveformPeaks));
     }
 
     private static WaveStream OpenAudioReader(string filePath, string extension)
@@ -102,5 +105,37 @@ public sealed class AudioFileMetadataReader : IAudioFileMetadataReader
         return reader.WaveFormat.AverageBytesPerSecond > 0 && reader.Length > 0
             ? TimeSpan.FromSeconds((double)reader.Length / reader.WaveFormat.AverageBytesPerSecond)
             : TimeSpan.Zero;
+    }
+
+    private static byte[] ExtractWaveform(WaveStream reader, int peakCount, CancellationToken cancellationToken)
+    {
+        var provider = reader.ToSampleProvider();
+        var totalSamples = Math.Max(
+            1L,
+            (long)Math.Ceiling(reader.TotalTime.TotalSeconds * provider.WaveFormat.SampleRate * provider.WaveFormat.Channels));
+        var samplesPerPeak = Math.Max(1L, totalSamples / peakCount);
+        var maxima = new float[peakCount];
+        var buffer = new float[8192];
+        long sampleIndex = 0;
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var read = provider.Read(buffer, 0, buffer.Length);
+            if (read == 0)
+            {
+                break;
+            }
+
+            for (var index = 0; index < read; index++, sampleIndex++)
+            {
+                var peakIndex = (int)Math.Min(peakCount - 1, sampleIndex / samplesPerPeak);
+                maxima[peakIndex] = Math.Max(maxima[peakIndex], Math.Abs(buffer[index]));
+            }
+        }
+
+        return maxima
+            .Select(value => (byte)Math.Clamp((int)Math.Round(value * byte.MaxValue), 0, byte.MaxValue))
+            .ToArray();
     }
 }

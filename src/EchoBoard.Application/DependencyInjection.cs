@@ -19,6 +19,8 @@ public static class DependencyInjection
         services.AddTransient<AssignSoundCategoryUseCase>();
         services.AddTransient<DeleteSoundUseCase>();
         services.AddTransient<ImportSoundsUseCase>();
+        services.AddTransient<GenerateSoundWaveformUseCase>();
+        services.AddTransient<ListRecentlyPlayedUseCase>();
         services.AddTransient<CreateCategoryUseCase>();
         services.AddTransient<GetCategoryUseCase>();
         services.AddTransient<ListCategoriesUseCase>();
@@ -38,6 +40,7 @@ public static class DependencyInjection
         services.AddTransient<StartMicrophoneCaptureUseCase>();
         services.AddTransient<StopMicrophoneCaptureUseCase>();
         services.AddTransient<GetMicrophoneCaptureSnapshotUseCase>();
+        services.AddTransient<PlaySoundUseCase>();
         services.AddTransient<LoadAppearanceSettingsUseCase>();
         services.AddTransient<SaveAppearanceSettingsUseCase>();
         services.AddSingleton<HotkeyRuntimeService>();
