@@ -5,9 +5,12 @@
         <ResourceDictionary x:Key="Default">
             <Color x:Key="EchoBoardBackgroundPrimaryColor">#080B12</Color>
             <Color x:Key="EchoBoardBackgroundSurfaceColor">#111827</Color>
+            <Color x:Key="EchoBoardBackgroundElevatedColor">#0E1420</Color>
+            <Color x:Key="EchoBoardSurfaceHoverColor">#1B2435</Color>
             <Color x:Key="EchoBoardCardColor">#151C2B</Color>
             <Color x:Key="EchoBoardCardActiveColor">#1C2D4D</Color>
             <Color x:Key="EchoBoardBorderColor">#263147</Color>
+            <Color x:Key="EchoBoardBorderSoftColor">#1D2738</Color>
             <Color x:Key="EchoBoardActionColor">#2F80FF</Color>
             <Color x:Key="EchoBoardActionHoverColor">#5A9BFF</Color>
             <Color x:Key="EchoBoardActionPressedColor">#0D4EB5</Color>
@@ -17,6 +20,7 @@
             <Color x:Key="EchoBoardTextPrimaryColor">#F4F7FB</Color>
             <Color x:Key="EchoBoardTextSecondaryColor">#A9B3C6</Color>
             <Color x:Key="EchoBoardTextDisabledColor">#707A8F</Color>
+            <Color x:Key="EchoBoardOnActionColor">#FFFFFF</Color>
             <Color x:Key="EchoBoardSuccessColor">#25C58A</Color>
             <Color x:Key="EchoBoardWarningColor">#F0B429</Color>
             <Color x:Key="EchoBoardErrorColor">#F05252</Color>
@@ -26,9 +30,12 @@
         <ResourceDictionary x:Key="Dark">
             <Color x:Key="EchoBoardBackgroundPrimaryColor">#080B12</Color>
             <Color x:Key="EchoBoardBackgroundSurfaceColor">#111827</Color>
+            <Color x:Key="EchoBoardBackgroundElevatedColor">#0E1420</Color>
+            <Color x:Key="EchoBoardSurfaceHoverColor">#1B2435</Color>
             <Color x:Key="EchoBoardCardColor">#151C2B</Color>
             <Color x:Key="EchoBoardCardActiveColor">#1C2D4D</Color>
             <Color x:Key="EchoBoardBorderColor">#263147</Color>
+            <Color x:Key="EchoBoardBorderSoftColor">#1D2738</Color>
             <Color x:Key="EchoBoardActionColor">#2F80FF</Color>
             <Color x:Key="EchoBoardActionHoverColor">#5A9BFF</Color>
             <Color x:Key="EchoBoardActionPressedColor">#0D4EB5</Color>
@@ -38,6 +45,7 @@
             <Color x:Key="EchoBoardTextPrimaryColor">#F4F7FB</Color>
             <Color x:Key="EchoBoardTextSecondaryColor">#A9B3C6</Color>
             <Color x:Key="EchoBoardTextDisabledColor">#707A8F</Color>
+            <Color x:Key="EchoBoardOnActionColor">#FFFFFF</Color>
             <Color x:Key="EchoBoardSuccessColor">#25C58A</Color>
             <Color x:Key="EchoBoardWarningColor">#F0B429</Color>
             <Color x:Key="EchoBoardErrorColor">#F05252</Color>
@@ -47,9 +55,12 @@
         <ResourceDictionary x:Key="Light">
             <Color x:Key="EchoBoardBackgroundPrimaryColor">#F5F7FB</Color>
             <Color x:Key="EchoBoardBackgroundSurfaceColor">#FFFFFF</Color>
+            <Color x:Key="EchoBoardBackgroundElevatedColor">#F8FAFD</Color>
+            <Color x:Key="EchoBoardSurfaceHoverColor">#F0F4F9</Color>
             <Color x:Key="EchoBoardCardColor">#FFFFFF</Color>
             <Color x:Key="EchoBoardCardActiveColor">#E7F0FF</Color>
             <Color x:Key="EchoBoardBorderColor">#D8E0ED</Color>
+            <Color x:Key="EchoBoardBorderSoftColor">#E7ECF3</Color>
             <Color x:Key="EchoBoardActionColor">#146EF5</Color>
             <Color x:Key="EchoBoardActionHoverColor">#0E5CD1</Color>
             <Color x:Key="EchoBoardActionPressedColor">#0B49A6</Color>
@@ -59,6 +70,7 @@
             <Color x:Key="EchoBoardTextPrimaryColor">#111827</Color>
             <Color x:Key="EchoBoardTextSecondaryColor">#5B6475</Color>
             <Color x:Key="EchoBoardTextDisabledColor">#8892A3</Color>
+            <Color x:Key="EchoBoardOnActionColor">#FFFFFF</Color>
             <Color x:Key="EchoBoardSuccessColor">#168A60</Color>
             <Color x:Key="EchoBoardWarningColor">#B77900</Color>
             <Color x:Key="EchoBoardErrorColor">#C53030</Color>

@@ -34,22 +34,68 @@
             SettingsTemplate="{StaticResource SettingsTemplate}" />
     </Page.Resources>
 
-    <Grid
+    <Grid x:Name="ShellRoot"
         Background="{ThemeResource EchoBoardBackgroundPrimaryBrush}"
         RequestedTheme="{Binding RequestedTheme}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="72" />
+            <RowDefinition Height="80" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="132" />
+            <RowDefinition x:Name="PlayerRow" Height="132" />
         </Grid.RowDefinitions>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="WidePlayer">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1180" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+                <VisualState x:Name="MediumPlayer">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="720" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="PlayerRow.Height" Value="206" />
+                        <Setter Target="PlayerLeftColumn.MinWidth" Value="160" />
+                        <Setter Target="PlayerCenterColumn.MinWidth" Value="260" />
+                        <Setter Target="PlayerRightColumn.Width" Value="0" />
+                        <Setter Target="PlayerRightColumn.MinWidth" Value="0" />
+                        <Setter Target="NowPlayingPanel.(Grid.Column)" Value="0" />
+                        <Setter Target="TransportPanel.(Grid.Column)" Value="1" />
+                        <Setter Target="MixerPanel.(Grid.Row)" Value="1" />
+                        <Setter Target="MixerPanel.(Grid.Column)" Value="0" />
+                        <Setter Target="MixerPanel.(Grid.ColumnSpan)" Value="2" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="CompactPlayer">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="PlayerRow.Height" Value="286" />
+                        <Setter Target="PlayerLeftColumn.MinWidth" Value="0" />
+                        <Setter Target="PlayerCenterColumn.MinWidth" Value="0" />
+                        <Setter Target="PlayerRightColumn.Width" Value="0" />
+                        <Setter Target="PlayerRightColumn.MinWidth" Value="0" />
+                        <Setter Target="NowPlayingPanel.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="TransportPanel.(Grid.Row)" Value="1" />
+                        <Setter Target="TransportPanel.(Grid.Column)" Value="0" />
+                        <Setter Target="TransportPanel.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="MixerPanel.(Grid.Row)" Value="2" />
+                        <Setter Target="MixerPanel.(Grid.Column)" Value="0" />
+                        <Setter Target="MixerPanel.(Grid.ColumnSpan)" Value="2" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
 
         <Grid
-            Padding="24,16"
+            Padding="20,14"
+            Background="{ThemeResource EchoBoardBackgroundSurfaceBrush}"
             BorderBrush="{ThemeResource EchoBoardBorderBrush}"
             BorderThickness="0,0,0,1"
-            ColumnSpacing="{StaticResource EchoBoardSpace16}">
+            ColumnSpacing="{StaticResource EchoBoardSpace20}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="204" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
@@ -58,51 +104,112 @@
                 VerticalAlignment="Center"
                 Orientation="Horizontal"
                 Spacing="{StaticResource EchoBoardSpace12}">
-                <SymbolIcon
-                    Foreground="{ThemeResource EchoBoardActionBrush}"
-                    Symbol="Audio" />
-                <TextBlock
-                    VerticalAlignment="Center"
-                    Text="{Binding Title}"
-                    Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
-                    FontSize="{StaticResource EchoBoardFontSizeSectionTitle}"
-                    FontWeight="SemiBold" />
+                <Border
+                    Width="38"
+                    Height="38"
+                    Background="{ThemeResource EchoBoardActionBrush}"
+                    CornerRadius="{StaticResource EchoBoardRadiusLarge}">
+                    <SymbolIcon
+                        Foreground="{ThemeResource EchoBoardOnActionBrush}"
+                        Symbol="Audio" />
+                </Border>
+                <StackPanel VerticalAlignment="Center" Spacing="0">
+                    <TextBlock
+                        Text="{Binding Title}"
+                        Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
+                        FontSize="{StaticResource EchoBoardFontSizeSectionTitle}"
+                        FontWeight="SemiBold" />
+                    <TextBlock
+                        Text="Audio workspace"
+                        Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                </StackPanel>
             </StackPanel>
 
-            <TextBox
+            <Grid
                 Grid.Column="1"
-                MaxWidth="460"
+                MaxWidth="520"
                 HorizontalAlignment="Stretch"
-                VerticalAlignment="Center"
-                AutomationProperties.Name="Search sounds placeholder"
-                IsTabStop="True"
-                PlaceholderText="{Binding SearchPlaceholder}"
-                Style="{StaticResource EchoBoardSearchTextBoxStyle}" />
+                VerticalAlignment="Center">
+                <TextBox
+                    AutomationProperties.Name="Search sounds placeholder"
+                    IsTabStop="True"
+                    PlaceholderText="{Binding SearchPlaceholder}"
+                    Style="{StaticResource EchoBoardTopbarSearchTextBoxStyle}" />
+                <SymbolIcon
+                    Margin="14,0,0,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    IsHitTestVisible="False"
+                    Foreground="{ThemeResource EchoBoardTextSecondaryBrush}"
+                    Symbol="Find" />
+                <Border
+                    Margin="0,0,10,0"
+                    Padding="7,3"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Background="{ThemeResource EchoBoardBackgroundElevatedBrush}"
+                    BorderBrush="{ThemeResource EchoBoardBorderSoftBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource EchoBoardRadiusSmall}">
+                    <TextBlock
+                        Text="Ctrl K"
+                        Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                </Border>
+            </Grid>
 
             <StackPanel
                 Grid.Column="2"
                 VerticalAlignment="Center"
                 Orientation="Horizontal"
                 Spacing="{StaticResource EchoBoardSpace8}">
-                <Border Style="{StaticResource EchoBoardStatusBadgeStyle}">
-                    <TextBlock
-                        Foreground="{ThemeResource EchoBoardSuccessBrush}"
-                        FontSize="{StaticResource EchoBoardFontSizeBadge}"
-                        FontWeight="SemiBold"
-                        Text="{Binding MicrophoneStatusLabel}" />
+                <Border Style="{StaticResource EchoBoardTopbarStatusStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}">
+                        <SymbolIcon Foreground="{ThemeResource EchoBoardSuccessBrush}" Symbol="Microphone" />
+                        <StackPanel VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="{Binding MicrophoneStatusLabel}" Style="{StaticResource EchoBoardTopbarStatusTitleStyle}" />
+                            <TextBlock Text="Microphone" Style="{StaticResource EchoBoardTopbarStatusCaptionStyle}" />
+                        </StackPanel>
+                    </StackPanel>
                 </Border>
-                <Border Style="{StaticResource EchoBoardStatusBadgeStyle}">
-                    <TextBlock
-                        Foreground="{ThemeResource EchoBoardWarningBrush}"
-                        FontSize="{StaticResource EchoBoardFontSizeBadge}"
-                        FontWeight="SemiBold"
-                        Text="{Binding VirtualOutputStatusLabel}" />
+                <Border Style="{StaticResource EchoBoardTopbarStatusStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}">
+                        <SymbolIcon Foreground="{ThemeResource EchoBoardWarningBrush}" Symbol="Audio" />
+                        <StackPanel VerticalAlignment="Center" Spacing="0">
+                            <TextBlock Text="{Binding VirtualOutputStatusLabel}" Style="{StaticResource EchoBoardTopbarStatusTitleStyle}" />
+                            <TextBlock Text="Virtual output" Style="{StaticResource EchoBoardTopbarStatusCaptionStyle}" />
+                        </StackPanel>
+                    </StackPanel>
                 </Border>
                 <Button
                     AutomationProperties.Name="Switch theme"
                     Command="{Binding ToggleThemeCommand}"
-                    Content="Theme"
-                    Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                    Style="{StaticResource EchoBoardIconButtonStyle}"
+                    ToolTipService.ToolTip="{Binding ThemeToggleToolTip}">
+                    <FontIcon Glyph="{Binding ThemeIconGlyph}" />
+                </Button>
+                <Button
+                    AutomationProperties.Name="Choose accent palette"
+                    Style="{StaticResource EchoBoardPaletteButtonStyle}"
+                    ToolTipService.ToolTip="Choose accent palette">
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="Blue" Command="{x:Bind ViewModel.ChangeAccentPaletteCommand}" CommandParameter="Blue" />
+                            <MenuFlyoutItem Text="Cyan" Command="{x:Bind ViewModel.ChangeAccentPaletteCommand}" CommandParameter="Cyan" />
+                            <MenuFlyoutItem Text="Violet" Command="{x:Bind ViewModel.ChangeAccentPaletteCommand}" CommandParameter="Violet" />
+                            <MenuFlyoutItem Text="Emerald" Command="{x:Bind ViewModel.ChangeAccentPaletteCommand}" CommandParameter="Emerald" />
+                            <MenuFlyoutItem Text="Rose" Command="{x:Bind ViewModel.ChangeAccentPaletteCommand}" CommandParameter="Rose" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}">
+                        <Border
+                            Width="10"
+                            Height="10"
+                            VerticalAlignment="Center"
+                            Background="{ThemeResource EchoBoardActionBrush}"
+                            CornerRadius="5" />
+                        <TextBlock VerticalAlignment="Center" Text="{Binding SelectedAccentPalette}" />
+                    </StackPanel>
+                </Button>
                 <Button
                     AutomationProperties.Name="Open settings"
                     Command="{Binding OpenSettingsCommand}"
@@ -119,6 +226,7 @@
                 Background="{ThemeResource EchoBoardBackgroundPrimaryBrush}"
                 CompactPaneLength="56"
                 IsBackButtonVisible="Collapsed"
+                IsPaneOpen="{Binding IsNavigationPaneOpen, Mode=TwoWay}"
                 IsSettingsVisible="False"
                 MenuItemsSource="{Binding NavigationItems}"
                 OpenPaneLength="224"
@@ -126,18 +234,27 @@
                 SelectedItem="{Binding SelectedNavigationItem, Mode=TwoWay}">
                 <NavigationView.MenuItemTemplate>
                     <DataTemplate>
-                        <StackPanel
+                        <Grid
+                            Width="{Binding ContentWidth}"
+                            Height="40"
+                            HorizontalAlignment="Center"
                             AutomationProperties.Name="{Binding AutomationName}"
-                            Orientation="Horizontal"
-                            Spacing="{StaticResource EchoBoardSpace12}">
-                            <SymbolIcon
-                                Foreground="{ThemeResource EchoBoardTextSecondaryBrush}"
-                                Symbol="{Binding Icon}" />
-                            <TextBlock
-                                Text="{Binding Label}"
-                                Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
-                                FontSize="{StaticResource EchoBoardFontSizeControl}" />
-                        </StackPanel>
+                            ToolTipService.ToolTip="{Binding Label}">
+                            <StackPanel
+                                HorizontalAlignment="{Binding ContentAlignment}"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal"
+                                Spacing="{StaticResource EchoBoardSpace12}">
+                                <SymbolIcon
+                                    Symbol="{Binding Icon}" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    Text="{Binding Label}"
+                                    FontSize="{StaticResource EchoBoardFontSizeControl}"
+                                    TextTrimming="None"
+                                    Visibility="{Binding LabelVisibility}" />
+                            </StackPanel>
+                        </Grid>
                     </DataTemplate>
                 </NavigationView.MenuItemTemplate>
 
@@ -234,100 +351,77 @@
 
         <Border
             Grid.Row="2"
-            Padding="24,16"
-            Background="{ThemeResource EchoBoardBackgroundSurfaceBrush}"
+            Padding="18,12"
+            Background="{ThemeResource EchoBoardBackgroundElevatedBrush}"
             BorderBrush="{ThemeResource EchoBoardBorderBrush}"
             BorderThickness="0,1,0,0">
-            <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+            <Grid RowSpacing="12" ColumnSpacing="18">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*" />
-                    <ColumnDefinition Width="3*" />
-                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition x:Name="PlayerLeftColumn" Width="1*" MinWidth="190" />
+                    <ColumnDefinition x:Name="PlayerCenterColumn" Width="1.35*" MinWidth="300" />
+                    <ColumnDefinition x:Name="PlayerRightColumn" Width="1.2*" MinWidth="340" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel
-                    VerticalAlignment="Center"
-                    Spacing="{StaticResource EchoBoardSpace8}">
-                    <TextBlock
-                        Text="{Binding CurrentSoundTitle}"
-                        Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                    <TextBlock
-                        Text="{Binding CurrentSoundSubtitle}"
-                        Style="{StaticResource EchoBoardCaptionTextStyle}" />
-                </StackPanel>
+                <Grid x:Name="NowPlayingPanel" VerticalAlignment="Center" ColumnSpacing="11">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="48" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="48" Height="48" Background="{ThemeResource EchoBoardActionBrush}" CornerRadius="11">
+                        <FontIcon Glyph="&#xE189;" Foreground="{ThemeResource EchoBoardOnActionBrush}" FontSize="22" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                        <TextBlock Text="{Binding PlaybackBar.Title}" Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding PlaybackBar.Metadata}" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" FontSize="10" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Grid>
 
-                <StackPanel
-                    Grid.Column="1"
-                    VerticalAlignment="Center"
-                    Spacing="{StaticResource EchoBoardSpace12}">
-                    <Slider
-                        AutomationProperties.Name="Playback progress placeholder"
-                        IsEnabled="False"
-                        Maximum="100"
-                        Minimum="0"
-                        Style="{StaticResource EchoBoardSliderStyle}"
-                        Value="0" />
-                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}">
+                <StackPanel x:Name="TransportPanel" Grid.Column="1" VerticalAlignment="Center" Spacing="8">
+                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Spacing="6">
+                        <Button Command="{Binding PlaybackBar.PreviousCommand}" Style="{StaticResource EchoBoardPlayerIconButtonStyle}" ToolTipService.ToolTip="Anterior"><FontIcon Glyph="&#xE892;" /></Button>
+                        <Button AutomationProperties.Name="{Binding PlaybackBar.PlayPauseLabel}" Command="{Binding PlaybackBar.PlayPauseCommand}" Style="{StaticResource EchoBoardPlayerPlayButtonStyle}" ToolTipService.ToolTip="{Binding PlaybackBar.PlayPauseLabel}"><FontIcon Glyph="{Binding PlaybackBar.PlayPauseGlyph}" /></Button>
+                        <Button Command="{Binding PlaybackBar.NextCommand}" Style="{StaticResource EchoBoardPlayerIconButtonStyle}" ToolTipService.ToolTip="Próximo"><FontIcon Glyph="&#xE893;" /></Button>
+                        <Button Command="{Binding PlaybackBar.StopCommand}" Style="{StaticResource EchoBoardPlayerIconButtonStyle}" ToolTipService.ToolTip="Parar"><FontIcon Glyph="&#xE71A;" /></Button>
+                        <ToggleButton IsChecked="{Binding PlaybackBar.IsRepeatEnabled, Mode=OneWay}" Command="{Binding PlaybackBar.ToggleRepeatCommand}" Style="{StaticResource EchoBoardPlayerToggleButtonStyle}" ToolTipService.ToolTip="Repetir"><FontIcon Glyph="&#xE8EE;" /></ToggleButton>
+                    </StackPanel>
+                    <Grid ColumnSpacing="9">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="38" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="38" />
                         </Grid.ColumnDefinitions>
-
-                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}">
-                            <Button Content="Play" IsEnabled="False" Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                            <Button Content="Pause" IsEnabled="False" Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                            <Button Content="Stop" IsEnabled="False" Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                        </StackPanel>
-
-                        <ItemsControl Grid.Column="1" ItemsSource="{Binding MixerVolumes}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace12}" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <controls:VolumeSlider
-                                        Width="160"
-                                        Label="{Binding Label}"
-                                        Icon="{Binding Icon}"
-                                        Value="{Binding Value}"
-                                        IsReadOnly="{Binding IsReadOnly}" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <ItemsControl Grid.Column="2" ItemsSource="{Binding MixerMeters}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace12}" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <controls:AudioLevelMeter
-                                        Width="128"
-                                        Label="{Binding Label}"
-                                        Level="{Binding Level}"
-                                        Variant="{Binding Variant}"
-                                        ValueText="{Binding ValueText}" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <TextBlock VerticalAlignment="Center" Text="{Binding PlaybackBar.ElapsedText}" Style="{StaticResource EchoBoardPlayerTimeTextStyle}" />
+                        <Slider x:Name="PlaybackTimeline" Grid.Column="1" MinWidth="0" Minimum="0" Maximum="100" Value="{Binding PlaybackBar.ProgressPercent, Mode=OneWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" PointerReleased="OnPlaybackTimelinePointerReleased" />
+                        <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Text="{Binding PlaybackBar.DurationText}" Style="{StaticResource EchoBoardPlayerTimeTextStyle}" />
                     </Grid>
                 </StackPanel>
 
-                <Border
-                    Grid.Column="2"
-                    VerticalAlignment="Center"
-                    Style="{StaticResource EchoBoardStatusBadgeStyle}">
-                    <TextBlock
-                        Foreground="{ThemeResource EchoBoardTextPrimaryBrush}"
-                        FontSize="{StaticResource EchoBoardFontSizeBadge}"
-                        FontWeight="SemiBold"
-                        Text="{Binding VirtualOutputStateLabel}" />
-                </Border>
+                <Grid x:Name="MixerPanel" Grid.Column="2" VerticalAlignment="Center" ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="4">
+                        <Grid><TextBlock Text="MIC" Style="{StaticResource EchoBoardMixerLabelStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding PlaybackBar.MicrophonePercentText}" Style="{StaticResource EchoBoardMixerLabelStyle}" /></Grid>
+                        <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><FontIcon Glyph="&#xE720;" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" FontSize="15" /><Slider Grid.Column="1" MinWidth="0" Value="{Binding PlaybackBar.MicrophonePercent, Mode=TwoWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" /></Grid>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="4">
+                        <Grid><TextBlock Text="EFEITOS" Style="{StaticResource EchoBoardMixerLabelStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding PlaybackBar.EffectsPercentText}" Style="{StaticResource EchoBoardMixerLabelStyle}" /></Grid>
+                        <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><FontIcon Glyph="&#xE189;" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" FontSize="15" /><Slider Grid.Column="1" MinWidth="0" Value="{Binding PlaybackBar.EffectsPercent, Mode=TwoWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" /></Grid>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <Grid><TextBlock Text="MONITOR" Style="{StaticResource EchoBoardMixerLabelStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding PlaybackBar.MonitorPercentText}" Style="{StaticResource EchoBoardMixerLabelStyle}" /></Grid>
+                        <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><FontIcon Glyph="&#xE767;" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" FontSize="15" /><Slider Grid.Column="1" MinWidth="0" Value="{Binding PlaybackBar.MonitorPercent, Mode=TwoWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" /></Grid>
+                    </StackPanel>
+                    <Button Grid.Column="3" VerticalAlignment="Center" AutomationProperties.Name="Parar tudo" Command="{Binding PlaybackBar.StopAllCommand}" Style="{StaticResource EchoBoardStopAllButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="6"><FontIcon Glyph="&#xE71A;" FontSize="14" /><TextBlock Text="Parar tudo" /></StackPanel></Button>
+                </Grid>
             </Grid>
         </Border>
     </Grid>

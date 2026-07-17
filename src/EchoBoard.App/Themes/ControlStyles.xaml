@@ -8,7 +8,7 @@
         <Setter Property="FontSize" Value="{StaticResource EchoBoardFontSizeControl}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Background" Value="{ThemeResource EchoBoardActionBrush}" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="{ThemeResource EchoBoardOnActionBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource EchoBoardActionBrush}" />
         <Setter Property="BorderThickness" Value="1" />
     </Style>
@@ -43,7 +43,7 @@
         <Setter Property="FontSize" Value="{StaticResource EchoBoardFontSizeControl}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Background" Value="{ThemeResource EchoBoardErrorBrush}" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="{ThemeResource EchoBoardOnActionBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource EchoBoardErrorBrush}" />
         <Setter Property="BorderThickness" Value="1" />
     </Style>
@@ -73,6 +73,44 @@
         <Setter Property="BorderThickness" Value="1" />
     </Style>
 
+    <Style x:Key="EchoBoardTopbarSearchTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource EchoBoardSearchTextBoxStyle}">
+        <Setter Property="MinHeight" Value="42" />
+        <Setter Property="Padding" Value="40,9,72,9" />
+        <Setter Property="Background" Value="{ThemeResource EchoBoardBackgroundElevatedBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource EchoBoardBorderSoftBrush}" />
+    </Style>
+
+    <Style x:Key="EchoBoardPaletteButtonStyle" TargetType="Button" BasedOn="{StaticResource EchoBoardSecondaryButtonStyle}">
+        <Setter Property="Height" Value="40" />
+        <Setter Property="MinWidth" Value="96" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="Background" Value="{ThemeResource EchoBoardBackgroundElevatedBrush}" />
+    </Style>
+
+    <Style x:Key="EchoBoardTopbarStatusStyle" TargetType="Border">
+        <Setter Property="Height" Value="44" />
+        <Setter Property="MinWidth" Value="112" />
+        <Setter Property="MaxWidth" Value="156" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Background" Value="{ThemeResource EchoBoardBackgroundElevatedBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource EchoBoardBorderSoftBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource EchoBoardRadiusLarge}" />
+    </Style>
+
+    <Style x:Key="EchoBoardTopbarStatusTitleStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource EchoBoardTextPrimaryBrush}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style x:Key="EchoBoardTopbarStatusCaptionStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource EchoBoardTextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="9" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
     <Style x:Key="EchoBoardToggleButtonStyle" TargetType="ToggleButton">
         <Setter Property="MinHeight" Value="36" />
         <Setter Property="Padding" Value="{StaticResource EchoBoardControlPadding}" />
@@ -87,6 +125,63 @@
     <Style x:Key="EchoBoardSliderStyle" TargetType="Slider">
         <Setter Property="MinWidth" Value="180" />
         <Setter Property="Foreground" Value="{ThemeResource EchoBoardActionBrush}" />
+    </Style>
+
+    <Style x:Key="EchoBoardPlayerIconButtonStyle" TargetType="Button" BasedOn="{StaticResource EchoBoardIconButtonStyle}">
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinWidth" Value="32" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="6" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="FontSize" Value="15" />
+    </Style>
+
+    <Style x:Key="EchoBoardPlayerPlayButtonStyle" TargetType="Button" BasedOn="{StaticResource EchoBoardIconButtonStyle}">
+        <Setter Property="Width" Value="38" />
+        <Setter Property="Height" Value="38" />
+        <Setter Property="MinWidth" Value="38" />
+        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="CornerRadius" Value="19" />
+        <Setter Property="Background" Value="{ThemeResource EchoBoardActionBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource EchoBoardOnActionBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource EchoBoardActionBrush}" />
+    </Style>
+
+    <Style x:Key="EchoBoardPlayerToggleButtonStyle" TargetType="ToggleButton" BasedOn="{StaticResource EchoBoardToggleButtonStyle}">
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinWidth" Value="32" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="6" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style x:Key="EchoBoardPlayerSliderStyle" TargetType="Slider">
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="Foreground" Value="{ThemeResource EchoBoardActionBrush}" />
+    </Style>
+
+    <Style x:Key="EchoBoardPlayerTimeTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource EchoBoardTextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="10" />
+    </Style>
+
+    <Style x:Key="EchoBoardMixerLabelStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{ThemeResource EchoBoardTextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="9" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style x:Key="EchoBoardStopAllButtonStyle" TargetType="Button" BasedOn="{StaticResource EchoBoardSecondaryButtonStyle}">
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Foreground" Value="{ThemeResource EchoBoardErrorBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource EchoBoardErrorBrush}" />
+        <Setter Property="FontSize" Value="11" />
     </Style>
 
     <Style x:Key="EchoBoardCardStyle" TargetType="Border">
