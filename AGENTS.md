@@ -70,3 +70,7 @@ Infrastructure -> Application + Domain
 - Keep manual test checklists for Discord, OBS, virtual routing, and device disconnects.
 - Update `docs/PRD.md` when product scope changes.
 - Before finishing: build the solution, run relevant tests, update docs when needed, and report changed files, tests run, and known limitations.
+
+## Git
+- Always start a new feature or bugfix branch from `main`.
+- Use descriptive branch names: `feature/<name>`, `bugfix/<name>`, `hotfix/<name>`.

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using EchoBoard.Application.Audio;
+using EchoBoard.Application.Appearance;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 
@@ -37,6 +38,8 @@ public static class DependencyInjection
         services.AddTransient<StartMicrophoneCaptureUseCase>();
         services.AddTransient<StopMicrophoneCaptureUseCase>();
         services.AddTransient<GetMicrophoneCaptureSnapshotUseCase>();
+        services.AddTransient<LoadAppearanceSettingsUseCase>();
+        services.AddTransient<SaveAppearanceSettingsUseCase>();
         services.AddSingleton<HotkeyRuntimeService>();
         services.AddSingleton<IHotkeyRuntimeService>(services => services.GetRequiredService<HotkeyRuntimeService>());
 

@@ -53,7 +53,7 @@ public sealed class ImportSoundsUseCase
         var extension = Path.GetExtension(normalizedPath);
         if (!Sound.AllowedExtensions.Contains(extension))
         {
-            return Failed(normalizedPath, ImportSoundStatus.InvalidExtension, "Only MP3 and WAV files can be imported.");
+            return Failed(normalizedPath, ImportSoundStatus.InvalidExtension, "Supported formats are MP3, WAV, OGG, FLAC, M4A, and AAC.");
         }
 
         if (await sounds.SoundFilePathExistsAsync(normalizedPath, excludingSoundId: null, cancellationToken))

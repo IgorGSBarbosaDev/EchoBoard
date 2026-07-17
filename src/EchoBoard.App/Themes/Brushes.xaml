@@ -3,9 +3,12 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <SolidColorBrush x:Key="EchoBoardBackgroundPrimaryBrush" Color="{ThemeResource EchoBoardBackgroundPrimaryColor}" />
     <SolidColorBrush x:Key="EchoBoardBackgroundSurfaceBrush" Color="{ThemeResource EchoBoardBackgroundSurfaceColor}" />
+    <SolidColorBrush x:Key="EchoBoardBackgroundElevatedBrush" Color="{ThemeResource EchoBoardBackgroundElevatedColor}" />
+    <SolidColorBrush x:Key="EchoBoardSurfaceHoverBrush" Color="{ThemeResource EchoBoardSurfaceHoverColor}" />
     <SolidColorBrush x:Key="EchoBoardCardBrush" Color="{ThemeResource EchoBoardCardColor}" />
     <SolidColorBrush x:Key="EchoBoardCardActiveBrush" Color="{ThemeResource EchoBoardCardActiveColor}" />
     <SolidColorBrush x:Key="EchoBoardBorderBrush" Color="{ThemeResource EchoBoardBorderColor}" />
+    <SolidColorBrush x:Key="EchoBoardBorderSoftBrush" Color="{ThemeResource EchoBoardBorderSoftColor}" />
     <SolidColorBrush x:Key="EchoBoardActionBrush" Color="{ThemeResource EchoBoardActionColor}" />
     <SolidColorBrush x:Key="EchoBoardActionHoverBrush" Color="{ThemeResource EchoBoardActionHoverColor}" />
     <SolidColorBrush x:Key="EchoBoardActionPressedBrush" Color="{ThemeResource EchoBoardActionPressedColor}" />
@@ -15,8 +18,19 @@
     <SolidColorBrush x:Key="EchoBoardTextPrimaryBrush" Color="{ThemeResource EchoBoardTextPrimaryColor}" />
     <SolidColorBrush x:Key="EchoBoardTextSecondaryBrush" Color="{ThemeResource EchoBoardTextSecondaryColor}" />
     <SolidColorBrush x:Key="EchoBoardTextDisabledBrush" Color="{ThemeResource EchoBoardTextDisabledColor}" />
+    <SolidColorBrush x:Key="EchoBoardOnActionBrush" Color="{ThemeResource EchoBoardOnActionColor}" />
     <SolidColorBrush x:Key="EchoBoardSuccessBrush" Color="{ThemeResource EchoBoardSuccessColor}" />
     <SolidColorBrush x:Key="EchoBoardWarningBrush" Color="{ThemeResource EchoBoardWarningColor}" />
     <SolidColorBrush x:Key="EchoBoardErrorBrush" Color="{ThemeResource EchoBoardErrorColor}" />
     <SolidColorBrush x:Key="EchoBoardOverlayBrush" Color="{ThemeResource EchoBoardOverlayColor}" />
+
+    <SolidColorBrush x:Key="NavigationViewItemForeground" Color="{ThemeResource EchoBoardTextSecondaryColor}" />
+    <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="{ThemeResource EchoBoardTextPrimaryColor}" />
+    <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="{ThemeResource EchoBoardActionColor}" />
+    <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="{ThemeResource EchoBoardActionHoverColor}" />
+    <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="{ThemeResource EchoBoardSurfaceHoverColor}" />
+    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="{ThemeResource EchoBoardCardActiveColor}" />
+    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="{ThemeResource EchoBoardCardActiveColor}" />
+    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="{ThemeResource EchoBoardCardActiveColor}" />
+    <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{ThemeResource EchoBoardActionColor}" />
 </ResourceDictionary>

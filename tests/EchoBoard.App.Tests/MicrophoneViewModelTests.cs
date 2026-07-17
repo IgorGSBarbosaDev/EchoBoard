@@ -50,6 +50,69 @@ public sealed class MicrophoneViewModelTests
     }
 
     [Fact]
+    public void SettingsViewModelUsesFastAttackAndGradualReleaseForMeterLevel()
+    {
+        var controller = new FakeMicrophoneCaptureController
+        {
+            Snapshot = new MicrophoneCaptureSnapshot(
+                MicrophoneCaptureState.Active,
+                "mic-1",
+                "Desk Mic",
+                1.0,
+                1.0,
+                IsMuted: false,
+                "Capturing",
+                null,
+                new AudioStreamFormatDto(48000, 1, 32, "IeeeFloat"))
+        };
+        controller.Devices.Add(new AudioInputDeviceDto("mic-1", "Desk Mic", IsDefault: true, IsAvailable: true));
+        var viewModel = CreateSettingsViewModel(new FakeAppSettingRepository(), controller);
+
+        viewModel.RefreshMicrophoneSnapshot(TimeSpan.FromMilliseconds(33));
+        var attackLevel = viewModel.MicrophoneLevel;
+
+        attackLevel.Should().BeGreaterThan(0.8);
+        viewModel.RefreshMicrophoneSnapshot(TimeSpan.FromMilliseconds(33));
+        viewModel.RefreshMicrophoneSnapshot(TimeSpan.FromMilliseconds(33));
+        viewModel.MicrophoneLevel.Should().BeGreaterThan(0.99, "the meter must respond within 100 ms");
+
+        attackLevel = viewModel.MicrophoneLevel;
+        controller.Snapshot = controller.Snapshot with { Level = 0 };
+        viewModel.RefreshMicrophoneSnapshot(TimeSpan.FromMilliseconds(33));
+
+        viewModel.MicrophoneLevel.Should().BeGreaterThan(0);
+        viewModel.MicrophoneLevel.Should().BeLessThan(attackLevel);
+    }
+
+    [Theory]
+    [InlineData(-0.5, 0.0)]
+    [InlineData(0.5, 0.5)]
+    [InlineData(1.5, 1.0)]
+    [InlineData(double.NaN, 0.0)]
+    public void MicrophoneLevelSmootherNormalizesTargets(double target, double expected)
+    {
+        var smoother = new MicrophoneLevelSmoother();
+
+        smoother.Reset(target);
+
+        smoother.Value.Should().Be(expected);
+    }
+
+    [Fact]
+    public void MicrophoneLevelSmootherSettlesAtZeroAfterRelease()
+    {
+        var smoother = new MicrophoneLevelSmoother();
+        smoother.Reset(1.0);
+
+        for (var frame = 0; frame < 30; frame++)
+        {
+            smoother.Update(0, TimeSpan.FromMilliseconds(33));
+        }
+
+        smoother.Value.Should().Be(0);
+    }
+
+    [Fact]
     public void AudioDiagnosticsViewModelMapsMicrophoneSnapshotToDisplayState()
     {
         var controller = new FakeMicrophoneCaptureController

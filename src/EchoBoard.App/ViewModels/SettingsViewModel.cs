@@ -12,6 +12,7 @@ namespace EchoBoard.App.ViewModels;
 
 public sealed class SettingsViewModel : ObservableObject
 {
+    private static readonly TimeSpan DefaultMeterInterval = TimeSpan.FromMilliseconds(1000.0 / 30.0);
     private readonly ListHotkeyBindingsUseCase listHotkeys;
     private readonly AssignGlobalHotkeyUseCase assignGlobalHotkey;
     private readonly RemoveHotkeyBindingUseCase removeHotkeyBinding;
@@ -24,6 +25,7 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly StartMicrophoneCaptureUseCase startMicrophoneCapture;
     private readonly StopMicrophoneCaptureUseCase stopMicrophoneCapture;
     private readonly GetMicrophoneCaptureSnapshotUseCase getMicrophoneCaptureSnapshot;
+    private readonly MicrophoneLevelSmoother microphoneLevelSmoother = new();
     private ToastPreviewModel? feedbackToast;
     private MicrophoneDeviceOptionViewModel? selectedMicrophoneDevice;
     private string microphoneStatusText = "Stopped";
@@ -219,9 +221,18 @@ public sealed class SettingsViewModel : ObservableObject
         FeedbackToast = new ToastPreviewModel(ToastNotificationKind.Info, "Microphone stopped", "Capture stopped and input level cleared.");
     }
 
-    public void RefreshMicrophoneSnapshot()
+    public void RefreshMicrophoneSnapshot(TimeSpan? elapsed = null)
     {
-        ApplyMicrophoneSnapshot(getMicrophoneCaptureSnapshot.Execute());
+        ApplyMicrophoneSnapshot(getMicrophoneCaptureSnapshot.Execute(), elapsed ?? DefaultMeterInterval);
+    }
+
+    public async Task DeactivateAsync(CancellationToken cancellationToken)
+    {
+        var snapshot = await stopMicrophoneCapture.ExecuteAsync(cancellationToken);
+        ApplyMicrophoneSnapshot(snapshot);
+        microphoneLevelSmoother.Reset();
+        MicrophoneLevel = 0;
+        MicrophoneLevelText = "Idle";
     }
 
     private GlobalHotkeySettingViewModel CreateRow(GlobalHotkeyCommand command, string title, string description)
@@ -251,14 +262,20 @@ public sealed class SettingsViewModel : ObservableObject
             snapshot.IsMuted ? "Microphone input is muted for capture." : "Microphone input is active when capture is running.");
     }
 
-    private void ApplyMicrophoneSnapshot(MicrophoneCaptureSnapshot snapshot)
+    private void ApplyMicrophoneSnapshot(MicrophoneCaptureSnapshot snapshot, TimeSpan? meterElapsed = null)
     {
         SelectedMicrophoneName = string.IsNullOrWhiteSpace(snapshot.SelectedDeviceName)
             ? "No microphone selected"
             : snapshot.SelectedDeviceName;
         MicrophoneStatusText = snapshot.State.ToString();
         MicrophoneStatusKind = ToDeviceStatus(snapshot.State);
-        MicrophoneLevel = Math.Clamp(snapshot.Level, 0, 1);
+        if (meterElapsed is { } elapsed)
+        {
+            var targetLevel = snapshot.State == MicrophoneCaptureState.Active && !snapshot.IsMuted
+                ? snapshot.Level
+                : 0.0;
+            MicrophoneLevel = microphoneLevelSmoother.Update(targetLevel, elapsed);
+        }
         MicrophoneLevelText = snapshot.IsMuted ? "Muted" : snapshot.State == MicrophoneCaptureState.Active ? $"{MicrophoneLevel:P0}" : "Idle";
         isMicrophoneMuted = snapshot.IsMuted;
         OnPropertyChanged(nameof(IsMicrophoneMuted));

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EchoBoard.App.Controls;
+using EchoBoard.Application.Audio;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 using EchoBoard.Domain.Enums;
@@ -24,7 +25,9 @@ public sealed partial class LibraryViewModel : ObservableObject
     private readonly AssignSoundHotkeyUseCase assignSoundHotkey;
     private readonly RemoveHotkeyBindingUseCase removeHotkeyBinding;
     private readonly SetHotkeyBindingEnabledUseCase setHotkeyBindingEnabled;
+    private readonly ISoundPlaybackEngine playback;
     private readonly Dictionary<Guid, HotkeyBindingDto> hotkeyBySoundId = [];
+    private readonly Dictionary<Guid, SoundLibraryItemDto> soundById = [];
     private bool isBusy;
     private string searchText = string.Empty;
     private string hotkeyPrimaryKey = string.Empty;
@@ -37,6 +40,8 @@ public sealed partial class LibraryViewModel : ObservableObject
     private bool isSelectedSoundHotkeyEnabled = true;
     private string? loadError;
     private ToastPreviewModel? importToast;
+    private ToastPreviewModel? playbackToast;
+    private Guid? playbackSoundId;
 
     public LibraryViewModel(
         QuerySoundLibraryUseCase queryLibrary,
@@ -49,7 +54,8 @@ public sealed partial class LibraryViewModel : ObservableObject
         ListHotkeyBindingsUseCase listHotkeys,
         AssignSoundHotkeyUseCase assignSoundHotkey,
         RemoveHotkeyBindingUseCase removeHotkeyBinding,
-        SetHotkeyBindingEnabledUseCase setHotkeyBindingEnabled)
+        SetHotkeyBindingEnabledUseCase setHotkeyBindingEnabled,
+        ISoundPlaybackEngine playback)
     {
         this.queryLibrary = queryLibrary;
         this.importSounds = importSounds;
@@ -62,14 +68,17 @@ public sealed partial class LibraryViewModel : ObservableObject
         this.assignSoundHotkey = assignSoundHotkey;
         this.removeHotkeyBinding = removeHotkeyBinding;
         this.setHotkeyBindingEnabled = setHotkeyBindingEnabled;
+        this.playback = playback;
 
         Categories = [];
         Sounds = [];
         ImportFeedbackItems = [];
         DismissImportFeedbackCommand = new RelayCommand(ClearImportFeedback);
+        DismissPlaybackFeedbackCommand = new RelayCommand(() => PlaybackToast = null);
         ClearFiltersCommand = new AsyncRelayCommand(ct => ClearFiltersAsync(ct));
         SelectCategoryCommand = new AsyncRelayCommand<CategoryPreviewModel>(SelectCategoryAsync);
         SelectSoundCommand = new RelayCommand<Guid>(SelectSound);
+        ActivateSoundCommand = new AsyncRelayCommand<Guid>(ActivateSoundAsync);
         SaveSoundHotkeyCommand = new AsyncRelayCommand(ct => SaveSelectedSoundHotkeyAsync(ct));
         RemoveSoundHotkeyCommand = new AsyncRelayCommand(ct => RemoveSelectedSoundHotkeyAsync(ct));
         ToggleSelectedSoundHotkeyEnabledCommand = new AsyncRelayCommand(ct => ToggleSelectedSoundHotkeyEnabledAsync(ct));
@@ -180,6 +189,18 @@ public sealed partial class LibraryViewModel : ObservableObject
         set => SetProperty(ref hotkeyPrimaryKey, value);
     }
 
+    public ToastPreviewModel? PlaybackToast
+    {
+        get => playbackToast;
+        private set
+        {
+            if (SetProperty(ref playbackToast, value))
+            {
+                OnPropertyChanged(nameof(PlaybackToastVisibility));
+            }
+        }
+    }
+
     public bool HotkeyCtrl
     {
         get => hotkeyCtrl;
@@ -232,15 +253,21 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     public Visibility ImportToastVisibility => ImportToast is null ? Visibility.Collapsed : Visibility.Visible;
 
+    public Visibility PlaybackToastVisibility => PlaybackToast is null ? Visibility.Collapsed : Visibility.Visible;
+
     public Visibility SoundHotkeyEditorVisibility => SelectedSoundId is null ? Visibility.Collapsed : Visibility.Visible;
 
     public IRelayCommand DismissImportFeedbackCommand { get; }
+
+    public IRelayCommand DismissPlaybackFeedbackCommand { get; }
 
     public IAsyncRelayCommand ClearFiltersCommand { get; }
 
     public IAsyncRelayCommand<CategoryPreviewModel> SelectCategoryCommand { get; }
 
     public IRelayCommand<Guid> SelectSoundCommand { get; }
+
+    public IAsyncRelayCommand<Guid> ActivateSoundCommand { get; }
 
     public IAsyncRelayCommand SaveSoundHotkeyCommand { get; }
 
@@ -386,6 +413,18 @@ public sealed partial class LibraryViewModel : ObservableObject
         }
     }
 
+    public async Task StopPlaybackAsync(CancellationToken cancellationToken)
+    {
+        await playback.StopAllAsync(cancellationToken);
+        playbackSoundId = null;
+        ApplyPlaybackSnapshot(SoundPlaybackSnapshot.Idle);
+    }
+
+    public void RefreshPlaybackState()
+    {
+        ApplyPlaybackSnapshot(playback.GetSnapshot());
+    }
+
     public async Task SaveSelectedSoundHotkeyAsync(CancellationToken cancellationToken)
     {
         if (SelectedSoundId is null)
@@ -497,11 +536,119 @@ public sealed partial class LibraryViewModel : ObservableObject
         NotifyHotkeyPropertiesChanged();
     }
 
+    private async Task ActivateSoundAsync(Guid soundId, CancellationToken cancellationToken)
+    {
+        SelectSound(soundId);
+        if (!soundById.TryGetValue(soundId, out var sound))
+        {
+            return;
+        }
+
+        if (sound.IsMissingFile)
+        {
+            await StopPlaybackAsync(cancellationToken);
+            ShowPlaybackError(sound.Name, "The audio file could not be found. It may have been moved or deleted.");
+            return;
+        }
+
+        try
+        {
+            var snapshot = playback.GetSnapshot();
+            if (playbackSoundId == soundId && (snapshot.IsPlaying || snapshot.IsPaused))
+            {
+                await playback.TogglePauseAsync(cancellationToken);
+                ApplyPlaybackSnapshot(playback.GetSnapshot());
+                return;
+            }
+
+            await playback.StopAllAsync(cancellationToken);
+            playbackSoundId = null;
+            ApplyPlaybackSnapshot(SoundPlaybackSnapshot.Idle);
+
+            await playback.PlayAsync(sound.FilePath, sound.Volume, cancellationToken);
+            playbackSoundId = soundId;
+            PlaybackToast = null;
+            ApplyPlaybackSnapshot(playback.GetSnapshot());
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            playbackSoundId = null;
+            ApplyPlaybackSnapshot(SoundPlaybackSnapshot.Idle);
+            ShowPlaybackError(sound.Name, "The audio file is missing, corrupted, unsupported, or no playback device is available.");
+        }
+    }
+
+    private void ApplyPlaybackSnapshot(SoundPlaybackSnapshot snapshot)
+    {
+        if (snapshot.IsPlaying || snapshot.IsPaused)
+        {
+            var snapshotSound = soundById.Values.FirstOrDefault(sound =>
+                string.Equals(sound.FilePath, snapshot.FilePath, StringComparison.OrdinalIgnoreCase));
+            playbackSoundId = snapshotSound?.Id;
+        }
+
+        if (playbackSoundId is not Guid activeSoundId)
+        {
+            UpdatePlaybackCards(null, SoundPlaybackSnapshot.Idle);
+            return;
+        }
+
+        if (!snapshot.IsPlaying && !snapshot.IsPaused)
+        {
+            playbackSoundId = null;
+            UpdatePlaybackCards(null, SoundPlaybackSnapshot.Idle);
+            return;
+        }
+
+        UpdatePlaybackCards(activeSoundId, snapshot);
+    }
+
+    private void UpdatePlaybackCards(Guid? activeSoundId, SoundPlaybackSnapshot snapshot)
+    {
+        for (var index = 0; index < Sounds.Count; index++)
+        {
+            var item = Sounds[index];
+            soundById.TryGetValue(item.Id, out var sound);
+            var isActive = item.Id == activeSoundId;
+            var duration = isActive && snapshot.Duration > TimeSpan.Zero
+                ? snapshot.Duration
+                : sound?.Duration ?? TimeSpan.Zero;
+            var durationText = isActive
+                ? $"{FormatDuration(snapshot.Position)} / {FormatDuration(duration)}"
+                : FormatDuration(duration);
+
+            Sounds[index] = item with
+            {
+                DurationText = durationText,
+                IsPlaying = isActive && snapshot.IsPlaying,
+                IsPaused = isActive && snapshot.IsPaused,
+                StatusText = item.IsMissingFile
+                    ? "File missing"
+                    : isActive && snapshot.IsPlaying
+                        ? "Playing"
+                        : isActive && snapshot.IsPaused
+                            ? "Paused"
+                            : "Stopped"
+            };
+        }
+    }
+
+    private void ShowPlaybackError(string soundName, string message)
+    {
+        PlaybackToast = new ToastPreviewModel(ToastNotificationKind.Error, $"Could not play {soundName}", message);
+    }
+
     private void ReplaceSounds(IReadOnlyList<SoundLibraryItemDto> sounds)
     {
+        soundById.Clear();
         Sounds.Clear();
         foreach (var sound in sounds)
         {
+            soundById[sound.Id] = sound;
             Sounds.Add(new SoundCardPreviewModel(
                 sound.Name,
                 BuildSoundSubtitle(sound),
@@ -514,10 +661,12 @@ public sealed partial class LibraryViewModel : ObservableObject
                 IsEnabled: true,
                 Id: sound.Id,
                 IsMissingFile: sound.IsMissingFile,
-                StatusText: sound.IsMissingFile ? "File missing" : string.Empty,
-                SelectCommand: SelectSoundCommand,
+                StatusText: sound.IsMissingFile ? "File missing" : "Stopped",
+                SelectCommand: ActivateSoundCommand,
                 FavoriteCommand: new AsyncRelayCommand(_ => ToggleFavoriteAsync(sound.Id, CancellationToken.None))));
         }
+
+        ApplyPlaybackSnapshot(playback.GetSnapshot());
 
         NotifyStatePropertiesChanged();
     }

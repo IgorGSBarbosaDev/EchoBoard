@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EchoBoard.App.Appearance;
 using EchoBoard.App.Controls;
 using EchoBoard.App.Navigation;
+using EchoBoard.Application.Appearance;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -11,11 +13,16 @@ namespace EchoBoard.App.ViewModels;
 public sealed partial class MainShellViewModel : ObservableObject
 {
     private readonly INavigationService navigationService;
+    private readonly LoadAppearanceSettingsUseCase loadAppearanceSettings;
+    private readonly SaveAppearanceSettingsUseCase saveAppearanceSettings;
+    private readonly IAppearanceResourceManager appearanceResourceManager;
     private readonly Dictionary<ShellRoute, ObservableObject> pages;
     private ShellNavigationItemViewModel selectedNavigationItem;
     private ObservableObject currentPage;
-    private ElementTheme requestedTheme = ElementTheme.Default;
-    private string selectedThemeLabel = "System theme";
+    private ElementTheme requestedTheme = ElementTheme.Dark;
+    private string selectedThemeLabel = "Dark theme";
+    private string selectedAccentPalette = AppearancePalettes.Blue;
+    private bool isNavigationPaneOpen = true;
     private bool isContextPanelOpen = true;
 
     public MainShellViewModel(
@@ -25,9 +32,17 @@ public sealed partial class MainShellViewModel : ObservableObject
         FavoritesViewModel favoritesViewModel,
         RecentViewModel recentViewModel,
         SettingsViewModel settingsViewModel,
-        AudioDiagnosticsViewModel audioDiagnosticsViewModel)
+        AudioDiagnosticsViewModel audioDiagnosticsViewModel,
+        PlaybackBarViewModel playbackBarViewModel,
+        LoadAppearanceSettingsUseCase loadAppearanceSettings,
+        SaveAppearanceSettingsUseCase saveAppearanceSettings,
+        IAppearanceResourceManager appearanceResourceManager)
     {
         this.navigationService = navigationService;
+        this.loadAppearanceSettings = loadAppearanceSettings;
+        this.saveAppearanceSettings = saveAppearanceSettings;
+        this.appearanceResourceManager = appearanceResourceManager;
+        PlaybackBar = playbackBarViewModel;
         pages = new Dictionary<ShellRoute, ObservableObject>
         {
             [ShellRoute.Dashboard] = dashboardViewModel,
@@ -52,10 +67,11 @@ public sealed partial class MainShellViewModel : ObservableObject
         currentPage = pages[selectedNavigationItem.Route];
 
         NavigateCommand = new RelayCommand<object?>(Navigate);
-        ToggleThemeCommand = new RelayCommand(ToggleTheme);
+        ToggleThemeCommand = new AsyncRelayCommand(ToggleThemeAsync);
         ToggleContextPanelCommand = new RelayCommand(ToggleContextPanel);
         OpenSettingsCommand = new RelayCommand(() => Navigate(ShellRoute.Settings));
-        ChangeThemeCommand = new RelayCommand<string>(ChangeTheme);
+        ChangeThemeCommand = new AsyncRelayCommand<string>(ChangeThemeAsync);
+        ChangeAccentPaletteCommand = new AsyncRelayCommand<string>(ChangeAccentPaletteAsync);
 
         ContextSound = new(
             "BRB bumper",
@@ -111,6 +127,8 @@ public sealed partial class MainShellViewModel : ObservableObject
 
     public string VirtualOutputStateLabel => "Output idle";
 
+    public PlaybackBarViewModel PlaybackBar { get; }
+
     public string ContextPanelTitle => "Session Panel";
 
     public string ContextPanelSubtitle => "Queue, active sounds, device state, and sound details will appear here.";
@@ -157,6 +175,35 @@ public sealed partial class MainShellViewModel : ObservableObject
         private set => SetProperty(ref selectedThemeLabel, value);
     }
 
+    public string ThemeIconGlyph => RequestedTheme == ElementTheme.Dark ? "\uE706" : "\uE708";
+
+    public string ThemeToggleToolTip => RequestedTheme == ElementTheme.Dark
+        ? "Switch to light theme"
+        : "Switch to dark theme";
+
+    public string SelectedAccentPalette
+    {
+        get => selectedAccentPalette;
+        private set => SetProperty(ref selectedAccentPalette, value);
+    }
+
+    public bool IsNavigationPaneOpen
+    {
+        get => isNavigationPaneOpen;
+        set
+        {
+            if (!SetProperty(ref isNavigationPaneOpen, value))
+            {
+                return;
+            }
+
+            foreach (var item in NavigationItems)
+            {
+                item.IsLabelVisible = value;
+            }
+        }
+    }
+
     public bool IsContextPanelOpen
     {
         get => isContextPanelOpen;
@@ -179,13 +226,22 @@ public sealed partial class MainShellViewModel : ObservableObject
 
     public IRelayCommand<object?> NavigateCommand { get; }
 
-    public IRelayCommand ToggleThemeCommand { get; }
+    public IAsyncRelayCommand ToggleThemeCommand { get; }
 
     public IRelayCommand ToggleContextPanelCommand { get; }
 
     public IRelayCommand OpenSettingsCommand { get; }
 
-    public IRelayCommand<string> ChangeThemeCommand { get; }
+    public IAsyncRelayCommand<string> ChangeThemeCommand { get; }
+
+    public IAsyncRelayCommand<string> ChangeAccentPaletteCommand { get; }
+
+    public async Task LoadAsync(CancellationToken cancellationToken)
+    {
+        await PlaybackBar.LoadAsync(cancellationToken);
+        var appearance = await loadAppearanceSettings.ExecuteAsync(cancellationToken);
+        ApplyAppearance(appearance.Theme, appearance.AccentPalette);
+    }
 
     private void Navigate(object? parameter)
     {
@@ -200,16 +256,11 @@ public sealed partial class MainShellViewModel : ObservableObject
         }
     }
 
-    private void ToggleTheme()
+    private async Task ToggleThemeAsync(CancellationToken cancellationToken)
     {
-        RequestedTheme = RequestedTheme switch
-        {
-            ElementTheme.Default => ElementTheme.Dark,
-            ElementTheme.Dark => ElementTheme.Light,
-            _ => ElementTheme.Default
-        };
-
-        UpdateSelectedThemeLabel();
+        var theme = RequestedTheme == ElementTheme.Dark ? AppearanceThemes.Light : AppearanceThemes.Dark;
+        ApplyAppearance(theme, SelectedAccentPalette);
+        await SaveAppearanceAsync(cancellationToken);
     }
 
     private void ToggleContextPanel()
@@ -217,16 +268,16 @@ public sealed partial class MainShellViewModel : ObservableObject
         IsContextPanelOpen = !IsContextPanelOpen;
     }
 
-    private void ChangeTheme(string? themeName)
+    private async Task ChangeThemeAsync(string? themeName, CancellationToken cancellationToken)
     {
-        RequestedTheme = themeName switch
-        {
-            "Light" => ElementTheme.Light,
-            "Dark" => ElementTheme.Dark,
-            _ => ElementTheme.Default
-        };
+        ApplyAppearance(AppearanceThemes.Normalize(themeName), SelectedAccentPalette);
+        await SaveAppearanceAsync(cancellationToken);
+    }
 
-        UpdateSelectedThemeLabel();
+    private async Task ChangeAccentPaletteAsync(string? palette, CancellationToken cancellationToken)
+    {
+        ApplyAppearance(CurrentThemeName(), AppearancePalettes.Normalize(palette));
+        await SaveAppearanceAsync(cancellationToken);
     }
 
     private void OnRouteChanged(object? sender, ShellRoute route)
@@ -241,7 +292,32 @@ public sealed partial class MainShellViewModel : ObservableObject
         {
             ElementTheme.Light => "Light theme",
             ElementTheme.Dark => "Dark theme",
-            _ => "System theme"
+            _ => "Dark theme"
         };
+
+        OnPropertyChanged(nameof(ThemeIconGlyph));
+        OnPropertyChanged(nameof(ThemeToggleToolTip));
+    }
+
+    private void ApplyAppearance(string theme, string palette)
+    {
+        RequestedTheme = AppearanceThemes.Normalize(theme) == AppearanceThemes.Light
+            ? ElementTheme.Light
+            : ElementTheme.Dark;
+        SelectedAccentPalette = AppearancePalettes.Normalize(palette);
+        UpdateSelectedThemeLabel();
+        appearanceResourceManager.Apply(SelectedAccentPalette, RequestedTheme);
+    }
+
+    private Task SaveAppearanceAsync(CancellationToken cancellationToken)
+    {
+        return saveAppearanceSettings.ExecuteAsync(
+            new AppearanceSettingsDto(CurrentThemeName(), SelectedAccentPalette),
+            cancellationToken);
+    }
+
+    private string CurrentThemeName()
+    {
+        return RequestedTheme == ElementTheme.Light ? AppearanceThemes.Light : AppearanceThemes.Dark;
     }
 }

@@ -9,6 +9,7 @@ EchoBoard uses a restrained audio-control-panel style: dark or light surfaces, e
 Theme resources live in `src/EchoBoard.App/Themes/` and are merged from `App.xaml`.
 
 - `Colors.xaml`: theme-aware primitive colors for dark, light, and system-default fallback.
+- `Palettes.xaml`: centralized dark/light accent palettes used by the global palette selector.
 - `Brushes.xaml`: reusable brushes based on color tokens.
 - `Typography.xaml`: shared font sizes for title, section title, body, caption, badge, and controls.
 - `Spacing.xaml`: spacing scale and common padding values.
@@ -16,6 +17,8 @@ Theme resources live in `src/EchoBoard.App/Themes/` and are merged from `App.xam
 - `ControlStyles.xaml`: global reusable styles for common WinUI controls.
 
 Use `{ThemeResource ...}` for theme-aware color and brush references. Do not hardcode PRD palette hex values in pages or reusable controls.
+
+The application starts in dark mode, persists the selected dark/light theme and accent palette in `AppSettings`, and restores both on launch. Runtime palette changes update the shared action, hover, pressed, focus, selection, and active-surface brushes so all screens remain consistent without duplicating colors in views.
 
 ## Typography
 

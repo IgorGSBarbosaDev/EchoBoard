@@ -14,7 +14,11 @@ public sealed class Sound
     public static readonly IReadOnlySet<string> AllowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         ".mp3",
-        ".wav"
+        ".wav",
+        ".ogg",
+        ".flac",
+        ".m4a",
+        ".aac"
     };
 
     private Sound()

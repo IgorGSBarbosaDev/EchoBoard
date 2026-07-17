@@ -21,6 +21,7 @@ public sealed class ThemeResourceContractTests
 
         mergedSources.Should().ContainInOrder(
             "Themes/Colors.xaml",
+            "Themes/Palettes.xaml",
             "Themes/Brushes.xaml",
             "Themes/Typography.xaml",
             "Themes/Spacing.xaml",

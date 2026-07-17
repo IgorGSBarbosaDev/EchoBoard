@@ -1,0 +1,48 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="EchoBoardPaletteBlueDarkActionColor">#2F80FF</Color>
+    <Color x:Key="EchoBoardPaletteBlueDarkHoverColor">#5A9BFF</Color>
+    <Color x:Key="EchoBoardPaletteBlueDarkPressedColor">#0D4EB5</Color>
+    <Color x:Key="EchoBoardPaletteBlueDarkTintColor">#1C2D4D</Color>
+    <Color x:Key="EchoBoardPaletteBlueLightActionColor">#146EF5</Color>
+    <Color x:Key="EchoBoardPaletteBlueLightHoverColor">#0E5CD1</Color>
+    <Color x:Key="EchoBoardPaletteBlueLightPressedColor">#0B49A6</Color>
+    <Color x:Key="EchoBoardPaletteBlueLightTintColor">#E7F0FF</Color>
+
+    <Color x:Key="EchoBoardPaletteCyanDarkActionColor">#1597A8</Color>
+    <Color x:Key="EchoBoardPaletteCyanDarkHoverColor">#38B7C7</Color>
+    <Color x:Key="EchoBoardPaletteCyanDarkPressedColor">#08717E</Color>
+    <Color x:Key="EchoBoardPaletteCyanDarkTintColor">#15343D</Color>
+    <Color x:Key="EchoBoardPaletteCyanLightActionColor">#087E8B</Color>
+    <Color x:Key="EchoBoardPaletteCyanLightHoverColor">#066A75</Color>
+    <Color x:Key="EchoBoardPaletteCyanLightPressedColor">#05545D</Color>
+    <Color x:Key="EchoBoardPaletteCyanLightTintColor">#DDF5F7</Color>
+
+    <Color x:Key="EchoBoardPaletteVioletDarkActionColor">#8B6FFF</Color>
+    <Color x:Key="EchoBoardPaletteVioletDarkHoverColor">#A38FFF</Color>
+    <Color x:Key="EchoBoardPaletteVioletDarkPressedColor">#6347D6</Color>
+    <Color x:Key="EchoBoardPaletteVioletDarkTintColor">#2C254B</Color>
+    <Color x:Key="EchoBoardPaletteVioletLightActionColor">#6D4DE3</Color>
+    <Color x:Key="EchoBoardPaletteVioletLightHoverColor">#583AC7</Color>
+    <Color x:Key="EchoBoardPaletteVioletLightPressedColor">#452D9E</Color>
+    <Color x:Key="EchoBoardPaletteVioletLightTintColor">#EEE9FF</Color>
+
+    <Color x:Key="EchoBoardPaletteEmeraldDarkActionColor">#25A978</Color>
+    <Color x:Key="EchoBoardPaletteEmeraldDarkHoverColor">#45C493</Color>
+    <Color x:Key="EchoBoardPaletteEmeraldDarkPressedColor">#147B55</Color>
+    <Color x:Key="EchoBoardPaletteEmeraldDarkTintColor">#17392F</Color>
+    <Color x:Key="EchoBoardPaletteEmeraldLightActionColor">#168A60</Color>
+    <Color x:Key="EchoBoardPaletteEmeraldLightHoverColor">#11734F</Color>
+    <Color x:Key="EchoBoardPaletteEmeraldLightPressedColor">#0D593D</Color>
+    <Color x:Key="EchoBoardPaletteEmeraldLightTintColor">#DEF5EB</Color>
+
+    <Color x:Key="EchoBoardPaletteRoseDarkActionColor">#E0527C</Color>
+    <Color x:Key="EchoBoardPaletteRoseDarkHoverColor">#F17398</Color>
+    <Color x:Key="EchoBoardPaletteRoseDarkPressedColor">#B42D58</Color>
+    <Color x:Key="EchoBoardPaletteRoseDarkTintColor">#442233</Color>
+    <Color x:Key="EchoBoardPaletteRoseLightActionColor">#C93663</Color>
+    <Color x:Key="EchoBoardPaletteRoseLightHoverColor">#AA294F</Color>
+    <Color x:Key="EchoBoardPaletteRoseLightPressedColor">#861F3E</Color>
+    <Color x:Key="EchoBoardPaletteRoseLightTintColor">#FCE5EC</Color>
+</ResourceDictionary>

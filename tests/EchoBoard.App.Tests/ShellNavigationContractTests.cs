@@ -1,8 +1,10 @@
 using EchoBoard.Application.Interfaces;
+using EchoBoard.Application.Appearance;
 using EchoBoard.Application.Audio;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 using EchoBoard.App.Navigation;
+using EchoBoard.App.Appearance;
 using EchoBoard.App.ViewModels;
 using EchoBoard.App.Views;
 using EchoBoard.Domain.Entities;
@@ -99,6 +101,40 @@ public sealed class ShellNavigationContractTests
     }
 
     [Fact]
+    public void MainShellViewModelCollapsesNavigationLabelsAndCentersIconContent()
+    {
+        var viewModel = CreateViewModel();
+
+        viewModel.IsNavigationPaneOpen = false;
+
+        viewModel.NavigationItems.Should().OnlyContain(item => !item.IsLabelVisible);
+        viewModel.NavigationItems.Should().OnlyContain(item => item.LabelVisibility == Visibility.Collapsed);
+        viewModel.NavigationItems.Should().OnlyContain(item => item.ContentWidth == 40);
+        viewModel.NavigationItems.Should().OnlyContain(item => item.ContentAlignment == HorizontalAlignment.Center);
+    }
+
+    [Fact]
+    public async Task MainShellViewModelRestoresAndPersistsAppearance()
+    {
+        var settings = new FakeAppSettingRepository();
+        await settings.UpsertValueAsync(AppearanceSettingKeys.Theme, AppearanceThemes.Light, CancellationToken.None);
+        await settings.UpsertValueAsync(AppearanceSettingKeys.AccentPalette, AppearancePalettes.Violet, CancellationToken.None);
+        var resources = new FakeAppearanceResourceManager();
+        var viewModel = CreateViewModel(settings, resources);
+
+        await viewModel.LoadAsync(TestContext.Current.CancellationToken);
+        await viewModel.ChangeAccentPaletteCommand.ExecuteAsync(AppearancePalettes.Emerald);
+        await viewModel.ToggleThemeCommand.ExecuteAsync(null);
+
+        viewModel.RequestedTheme.Should().Be(ElementTheme.Dark);
+        viewModel.SelectedAccentPalette.Should().Be(AppearancePalettes.Emerald);
+        resources.LastPalette.Should().Be(AppearancePalettes.Emerald);
+        resources.LastTheme.Should().Be(ElementTheme.Dark);
+        (await settings.GetValueAsync(AppearanceSettingKeys.Theme, CancellationToken.None)).Should().Be(AppearanceThemes.Dark);
+        (await settings.GetValueAsync(AppearanceSettingKeys.AccentPalette, CancellationToken.None)).Should().Be(AppearancePalettes.Emerald);
+    }
+
+    [Fact]
     public void AppHostRegistersShellDependencies()
     {
         using var host = Hosting.AppHost.Create();
@@ -134,8 +170,13 @@ public sealed class ShellNavigationContractTests
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("database unavailable");
     }
 
-    private static MainShellViewModel CreateViewModel()
+    private static MainShellViewModel CreateViewModel(
+        FakeAppSettingRepository? appearanceSettings = null,
+        FakeAppearanceResourceManager? appearanceResources = null)
     {
+        appearanceSettings ??= new FakeAppSettingRepository();
+        appearanceResources ??= new FakeAppearanceResourceManager();
+
         return new MainShellViewModel(
             new NavigationService(),
             new DashboardViewModel(),
@@ -143,7 +184,11 @@ public sealed class ShellNavigationContractTests
             CreateFavoritesViewModel(),
             new RecentViewModel(),
             CreateSettingsViewModel(),
-            CreateAudioDiagnosticsViewModel());
+            CreateAudioDiagnosticsViewModel(),
+            CreatePlaybackBarViewModel(),
+            new LoadAppearanceSettingsUseCase(appearanceSettings),
+            new SaveAppearanceSettingsUseCase(appearanceSettings),
+            appearanceResources);
     }
 
     private static LibraryViewModel CreateLibraryViewModel()
@@ -165,7 +210,8 @@ public sealed class ShellNavigationContractTests
             new ListHotkeyBindingsUseCase(hotkeys, runtime),
             new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
             new RemoveHotkeyBindingUseCase(hotkeys, runtime),
-            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime));
+            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime),
+            new FakeSoundPlaybackEngine());
     }
 
     private static SettingsViewModel CreateSettingsViewModel()
@@ -369,14 +415,42 @@ public sealed class ShellNavigationContractTests
 
     private sealed class FakeAppSettingRepository : IAppSettingRepository
     {
+        private readonly Dictionary<string, string> values = [];
+
         public Task<string?> GetValueAsync(string key, CancellationToken cancellationToken)
         {
-            return Task.FromResult<string?>(null);
+            return Task.FromResult(values.GetValueOrDefault(key));
         }
 
         public Task UpsertValueAsync(string key, string value, CancellationToken cancellationToken)
         {
+            values[key] = value;
             return Task.CompletedTask;
+        }
+    }
+
+    private static PlaybackBarViewModel CreatePlaybackBarViewModel()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var microphone = new FakeMicrophoneCaptureController();
+        var settings = new FakeAppSettingRepository();
+        return new PlaybackBarViewModel(
+            new FakeSoundPlaybackEngine(),
+            new QuerySoundLibraryUseCase(sounds, new FakeCategoryRepository(), new FakeSoundFileAvailabilityReader()),
+            new GetMicrophoneCaptureSnapshotUseCase(microphone),
+            new SetMicrophoneGainUseCase(settings, microphone));
+    }
+
+    private sealed class FakeAppearanceResourceManager : IAppearanceResourceManager
+    {
+        public string? LastPalette { get; private set; }
+
+        public ElementTheme LastTheme { get; private set; }
+
+        public void Apply(string palette, ElementTheme theme)
+        {
+            LastPalette = palette;
+            LastTheme = theme;
         }
     }
 
@@ -423,5 +497,15 @@ public sealed class ShellNavigationContractTests
         {
             return MicrophoneCaptureSnapshot.Unavailable("No microphone available. Connect an input device.", MicrophoneSettingsDto.Default);
         }
+    }
+
+    private sealed class FakeSoundPlaybackEngine : ISoundPlaybackEngine
+    {
+        public Task PlayAsync(string filePath, double volume, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task StopAllAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task TogglePauseAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task SeekAsync(TimeSpan position, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task SetVolumeAsync(double volume, CancellationToken cancellationToken) => Task.CompletedTask;
+        public SoundPlaybackSnapshot GetSnapshot() => SoundPlaybackSnapshot.Idle;
     }
 }
