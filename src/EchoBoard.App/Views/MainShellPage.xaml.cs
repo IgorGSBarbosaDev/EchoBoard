@@ -12,6 +12,7 @@ public sealed partial class MainShellPage : Page
 {
     private readonly DispatcherTimer playbackTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private Control? drawerFocusReturnTarget;
+    private bool hasLoaded;
 
     public MainShellPage(MainShellViewModel viewModel)
     {
@@ -28,9 +29,14 @@ public sealed partial class MainShellPage : Page
 
     private async void OnLoaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
-        Loaded -= OnLoaded;
-        await ViewModel.LoadAsync(CancellationToken.None);
         playbackTimer.Start();
+        if (hasLoaded)
+        {
+            return;
+        }
+
+        hasLoaded = true;
+        await ViewModel.LoadAsync(CancellationToken.None);
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -40,15 +46,19 @@ public sealed partial class MainShellPage : Page
 
     private void OnPlaybackTimerTick(object? sender, object e)
     {
-        ViewModel.PlaybackBar.Refresh();
-        ViewModel.RefreshAudioStatus();
+        ViewModel.RefreshPlaybackState();
+    }
+
+    private void OnPlaybackTimelinePointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        ViewModel.PlaybackBar.BeginSeek();
     }
 
     private async void OnPlaybackTimelinePointerReleased(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
         if (sender is Slider slider)
         {
-            await ViewModel.PlaybackBar.SeekAsync(slider.Value, CancellationToken.None);
+            await ViewModel.PlaybackBar.CommitSeekAsync(slider.Value, CancellationToken.None);
         }
     }
 

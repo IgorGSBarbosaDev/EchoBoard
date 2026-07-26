@@ -36,6 +36,7 @@
 
     <Grid x:Name="ShellRoot"
         Background="{ThemeResource EchoBoardBackgroundPrimaryBrush}"
+        HorizontalAlignment="Stretch"
         KeyDown="OnShellKeyDown"
         RequestedTheme="{Binding RequestedTheme}">
         <Grid.RowDefinitions>
@@ -234,6 +235,8 @@
                 AlwaysShowHeader="False"
                 Background="{ThemeResource EchoBoardBackgroundPrimaryBrush}"
                 CompactPaneLength="56"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
                 IsBackButtonVisible="Collapsed"
                 IsPaneOpen="{Binding IsNavigationPaneOpen, Mode=TwoWay}"
                 IsSettingsVisible="False"
@@ -267,9 +270,14 @@
                     </DataTemplate>
                 </NavigationView.MenuItemTemplate>
 
-                <Grid Padding="{StaticResource EchoBoardPagePadding}">
+                <Grid
+                    Padding="{StaticResource EchoBoardPagePadding}"
+                    HorizontalAlignment="Stretch">
                     <ContentControl
                         Content="{Binding CurrentPage}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
                         ContentTemplateSelector="{StaticResource ShellPageTemplateSelector}" />
                 </Grid>
             </NavigationView>
@@ -342,7 +350,7 @@
                             <ColumnDefinition Width="38" />
                         </Grid.ColumnDefinitions>
                         <TextBlock VerticalAlignment="Center" Text="{Binding PlaybackBar.ElapsedText}" Style="{StaticResource EchoBoardPlayerTimeTextStyle}" />
-                        <Slider x:Name="PlaybackTimeline" Grid.Column="1" MinWidth="0" Minimum="0" Maximum="100" Value="{Binding PlaybackBar.ProgressPercent, Mode=OneWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" PointerReleased="OnPlaybackTimelinePointerReleased" />
+                        <Slider x:Name="PlaybackTimeline" Grid.Column="1" MinWidth="0" Minimum="0" Maximum="100" Value="{Binding PlaybackBar.ProgressPercent, Mode=OneWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" PointerPressed="OnPlaybackTimelinePointerPressed" PointerReleased="OnPlaybackTimelinePointerReleased" />
                         <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Text="{Binding PlaybackBar.DurationText}" Style="{StaticResource EchoBoardPlayerTimeTextStyle}" />
                     </Grid>
                 </StackPanel>
@@ -352,23 +360,40 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Spacing="4">
                         <Grid><TextBlock Text="MIC" Style="{StaticResource EchoBoardMixerLabelStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding PlaybackBar.MicrophonePercentText}" Style="{StaticResource EchoBoardMixerLabelStyle}" /></Grid>
-                        <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><FontIcon Glyph="&#xE720;" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" FontSize="15" /><Slider Grid.Column="1" MinWidth="0" Value="{Binding PlaybackBar.MicrophonePercent, Mode=TwoWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" /></Grid>
+                        <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><ToggleButton IsChecked="{Binding PlaybackBar.IsMicrophoneMuted, Mode=OneWay}" Command="{Binding PlaybackBar.ToggleMicrophoneMuteCommand}" Style="{StaticResource EchoBoardPlayerToggleButtonStyle}" ToolTipService.ToolTip="Silenciar microfone" AutomationProperties.Name="Silenciar microfone"><FontIcon Glyph="&#xE720;" FontSize="15" /></ToggleButton><Slider Grid.Column="1" MinWidth="0" Value="{Binding PlaybackBar.MicrophonePercent, Mode=TwoWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" /></Grid>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Spacing="4">
                         <Grid><TextBlock Text="EFEITOS" Style="{StaticResource EchoBoardMixerLabelStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding PlaybackBar.EffectsPercentText}" Style="{StaticResource EchoBoardMixerLabelStyle}" /></Grid>
-                        <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><FontIcon Glyph="&#xE189;" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" FontSize="15" /><Slider Grid.Column="1" MinWidth="0" Value="{Binding PlaybackBar.EffectsPercent, Mode=TwoWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" /></Grid>
+                        <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><ToggleButton IsChecked="{Binding PlaybackBar.AreEffectsMuted, Mode=OneWay}" Command="{Binding PlaybackBar.ToggleEffectsMuteCommand}" Style="{StaticResource EchoBoardPlayerToggleButtonStyle}" ToolTipService.ToolTip="Silenciar efeitos" AutomationProperties.Name="Silenciar efeitos"><FontIcon Glyph="&#xE189;" FontSize="15" /></ToggleButton><Slider Grid.Column="1" MinWidth="0" Value="{Binding PlaybackBar.EffectsPercent, Mode=TwoWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" /></Grid>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Spacing="4">
                         <Grid><TextBlock Text="MONITOR" Style="{StaticResource EchoBoardMixerLabelStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding PlaybackBar.MonitorPercentText}" Style="{StaticResource EchoBoardMixerLabelStyle}" /></Grid>
-                        <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><FontIcon Glyph="&#xE767;" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" FontSize="15" /><Slider Grid.Column="1" MinWidth="0" Value="{Binding PlaybackBar.MonitorPercent, Mode=TwoWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" /></Grid>
+                        <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><ToggleButton IsChecked="{Binding PlaybackBar.IsMonitorMuted, Mode=OneWay}" Command="{Binding PlaybackBar.ToggleMonitorMuteCommand}" Style="{StaticResource EchoBoardPlayerToggleButtonStyle}" ToolTipService.ToolTip="Silenciar monitor" AutomationProperties.Name="Silenciar monitor"><FontIcon Glyph="&#xE767;" FontSize="15" /></ToggleButton><Slider Grid.Column="1" MinWidth="0" Value="{Binding PlaybackBar.MonitorPercent, Mode=TwoWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" /></Grid>
                     </StackPanel>
-                    <Button Grid.Column="3" VerticalAlignment="Center" AutomationProperties.Name="Parar tudo" Command="{Binding PlaybackBar.StopAllCommand}" Style="{StaticResource EchoBoardStopAllButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="6"><FontIcon Glyph="&#xE71A;" FontSize="14" /><TextBlock Text="Parar tudo" /></StackPanel></Button>
+                    <StackPanel Grid.Column="3" Spacing="4">
+                        <Grid><TextBlock Text="SAÍDA" Style="{StaticResource EchoBoardMixerLabelStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding PlaybackBar.VirtualOutputPercentText}" Style="{StaticResource EchoBoardMixerLabelStyle}" /></Grid>
+                        <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><ToggleButton IsChecked="{Binding PlaybackBar.IsVirtualOutputMuted, Mode=OneWay}" Command="{Binding PlaybackBar.ToggleVirtualOutputMuteCommand}" Style="{StaticResource EchoBoardPlayerToggleButtonStyle}" ToolTipService.ToolTip="Silenciar saída virtual" AutomationProperties.Name="Silenciar saída virtual"><FontIcon Glyph="&#xE7F5;" FontSize="15" /></ToggleButton><Slider Grid.Column="1" MinWidth="0" Value="{Binding PlaybackBar.VirtualOutputPercent, Mode=TwoWay}" Style="{StaticResource EchoBoardPlayerSliderStyle}" /></Grid>
+                    </StackPanel>
                 </Grid>
             </Grid>
         </Border>
+
+        <controls:ToastNotification
+            Grid.RowSpan="3"
+            Width="360"
+            MaxWidth="360"
+            Margin="16,92,16,0"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            Canvas.ZIndex="40"
+            Description="{Binding Notifications.Current.Description}"
+            DismissCommand="{Binding Notifications.DismissCommand}"
+            Kind="{Binding Notifications.Current.Kind}"
+            Title="{Binding Notifications.Current.Title}"
+            Visibility="{Binding Notifications.Visibility}" />
     </Grid>
 </Page>

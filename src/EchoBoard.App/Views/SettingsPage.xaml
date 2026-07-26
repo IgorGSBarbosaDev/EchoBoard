@@ -21,14 +21,12 @@
                 <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
                     <TextBlock Text="Microphone input" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
                     <TextBlock
-                        Text="Select a physical input device and start capture when you want to feed the future mixer."
+                        Text="Select the physical input mixed continuously with sound effects."
                         Style="{StaticResource EchoBoardCaptionTextStyle}" />
 
                     <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
@@ -44,16 +42,6 @@
                             Content="Refresh"
                             Command="{Binding RefreshMicrophoneDevicesCommand}"
                             Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                        <Button
-                            Grid.Column="2"
-                            Content="Start"
-                            Command="{Binding StartMicrophoneCaptureCommand}"
-                            Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                        <Button
-                            Grid.Column="3"
-                            Content="Stop"
-                            Command="{Binding StopMicrophoneCaptureCommand}"
-                            Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
                     </Grid>
 
                     <controls:DeviceStatusBadge
@@ -62,30 +50,93 @@
                         Icon="Microphone"
                         Status="{Binding MicrophoneStatusKind}" />
 
-                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
                         <controls:AudioLevelMeter
+                            Height="52"
+                            HorizontalAlignment="Stretch"
                             Label="Input level"
                             Level="{Binding MicrophoneLevel}"
                             Variant="Microphone"
                             ValueText="{Binding MicrophoneLevelText}" />
+                        <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <controls:VolumeSlider
+                                Label="Mic gain"
+                                Icon="Microphone"
+                                Value="{Binding MicrophoneGainPercent, Mode=TwoWay}"
+                                IsReadOnly="False" />
+                            <Button
+                                Grid.Column="1"
+                                VerticalAlignment="Bottom"
+                                Content="{Binding MicrophoneMuteButtonText}"
+                                Command="{Binding ToggleMicrophoneMuteCommand}"
+                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource EchoBoardPanelStyle}">
+                <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace4}">
+                        <TextBlock Text="Mixer and routing" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                        <TextBlock Text="{Binding RoutingStatusText}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                    </StackPanel>
+
+                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox
+                            Header="Local monitor"
+                            ItemsSource="{Binding MonitorDevices}"
+                            DisplayMemberPath="DisplayName"
+                            SelectedItem="{Binding SelectedMonitorDevice, Mode=TwoWay}"
+                            PlaceholderText="Windows default output" />
+                        <ComboBox
+                            Grid.Column="1"
+                            Header="Virtual output"
+                            ItemsSource="{Binding VirtualOutputDevices}"
+                            DisplayMemberPath="DisplayName"
+                            SelectedItem="{Binding SelectedVirtualOutputDevice, Mode=TwoWay}"
+                            PlaceholderText="Select VB-CABLE or VoiceMeeter" />
+                    </Grid>
+
+                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <controls:VolumeSlider
+                            Label="Effects"
+                            Icon="Audio"
+                            Value="{Binding EffectsVolumePercent, Mode=TwoWay}"
+                            IsReadOnly="False" />
                         <controls:VolumeSlider
                             Grid.Column="1"
-                            Label="Mic gain"
-                            Icon="Microphone"
-                            Value="{Binding MicrophoneGainPercent, Mode=TwoWay}"
+                            Label="Monitor"
+                            Icon="Audio"
+                            Value="{Binding MonitorVolumePercent, Mode=TwoWay}"
                             IsReadOnly="False" />
-                        <Button
+                        <controls:VolumeSlider
                             Grid.Column="2"
-                            VerticalAlignment="Bottom"
-                            Content="{Binding MicrophoneMuteButtonText}"
-                            Command="{Binding ToggleMicrophoneMuteCommand}"
-                            Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                            Label="Virtual output"
+                            Icon="Audio"
+                            Value="{Binding VirtualOutputVolumePercent, Mode=TwoWay}"
+                            IsReadOnly="False" />
                     </Grid>
+
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace24}">
+                        <ToggleSwitch Header="Local monitor" IsOn="{Binding IsMonitorEnabled, Mode=TwoWay}" />
+                        <ToggleSwitch Header="Mute effects" IsOn="{Binding AreEffectsMuted, Mode=TwoWay}" />
+                        <ToggleSwitch Header="Mute monitor" IsOn="{Binding IsMonitorMuted, Mode=TwoWay}" />
+                        <ToggleSwitch Header="Mute virtual output" IsOn="{Binding IsVirtualOutputMuted, Mode=TwoWay}" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
 
