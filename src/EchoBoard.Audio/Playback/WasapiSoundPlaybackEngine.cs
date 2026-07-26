@@ -16,13 +16,17 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
     private readonly ConcurrentDictionary<Guid, PlaybackSession> sessions = new();
     private readonly IMicrophoneCaptureController microphone;
     private readonly ILogger<WasapiSoundPlaybackEngine> logger;
+    private readonly IAudioRenderSessionFactory renderSessions;
     private readonly AudioMixerBus monitorMixer;
     private readonly AudioMixerBus virtualMixer;
-    private WasapiOut? monitorOutput;
-    private WasapiOut? virtualOutput;
+    private IAudioRenderSession? monitorOutput;
+    private IAudioRenderSession? virtualOutput;
     private MicrophoneSampleProvider? microphoneProvider;
     private AudioRoutingSettingsDto settings = AudioRoutingSettingsDto.Default;
     private AudioRoutingSnapshot routingSnapshot = AudioRoutingSnapshot.Stopped;
+    private string? monitorError;
+    private string? virtualOutputError;
+    private bool virtualOutputFeedbackBlocked;
     private Guid? latestSessionId;
     private Timer? reconnectTimer;
     private int reconnecting;
@@ -32,9 +36,18 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
     public WasapiSoundPlaybackEngine(
         IMicrophoneCaptureController microphone,
         ILogger<WasapiSoundPlaybackEngine> logger)
+        : this(microphone, logger, new WasapiAudioRenderSessionFactory())
+    {
+    }
+
+    internal WasapiSoundPlaybackEngine(
+        IMicrophoneCaptureController microphone,
+        ILogger<WasapiSoundPlaybackEngine> logger,
+        IAudioRenderSessionFactory renderSessions)
     {
         this.microphone = microphone;
         this.logger = logger;
+        this.renderSessions = renderSessions;
         monitorMixer = new AudioMixerBus(
             MixerFormat,
             () => settings.IsMonitorEnabled && !settings.IsMonitorMuted ? settings.MonitorVolume : 0);
@@ -74,8 +87,8 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
         lock (sync)
         {
             var monitorActive = settings.IsMonitorEnabled &&
-                                monitorOutput?.PlaybackState == PlaybackState.Playing;
-            var virtualActive = virtualOutput?.PlaybackState == PlaybackState.Playing;
+                                monitorOutput?.IsActive == true;
+            var virtualActive = virtualOutput?.IsActive == true;
             if (!monitorActive && !virtualActive)
             {
                 logger.LogError("No audio output route is available for {FilePath}.", filePath);
@@ -210,13 +223,37 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
             await microphone.SetMutedAsync(this.settings.IsMicrophoneMuted, cancellationToken);
         }
 
-        var outputConfigurationChanged =
-            previous.IsMonitorEnabled != this.settings.IsMonitorEnabled ||
-            !string.Equals(previous.MonitorDeviceId, this.settings.MonitorDeviceId, StringComparison.Ordinal) ||
-            !string.Equals(previous.VirtualOutputDeviceId, this.settings.VirtualOutputDeviceId, StringComparison.Ordinal);
-        if (outputConfigurationChanged || OutputsNeedConfiguration())
+        virtualOutputFeedbackBlocked = AudioEndpointClassifier.WouldCreateFeedback(
+            this.settings.InputDeviceName,
+            this.settings.VirtualOutputDeviceName);
+        if (virtualOutputFeedbackBlocked)
         {
-            ConfigureOutputs();
+            virtualOutputError = "The selected microphone and virtual output belong to the same endpoint family.";
+            logger.LogWarning(
+                "Virtual output {VirtualOutput} was blocked because it matches microphone endpoint family {Input}.",
+                this.settings.VirtualOutputDeviceName,
+                this.settings.InputDeviceName);
+        }
+
+        var monitorChanged =
+            previous.IsMonitorEnabled != this.settings.IsMonitorEnabled ||
+            !string.Equals(previous.MonitorDeviceId, this.settings.MonitorDeviceId, StringComparison.Ordinal);
+        var virtualChanged =
+            !string.Equals(previous.VirtualOutputDeviceId, this.settings.VirtualOutputDeviceId, StringComparison.Ordinal) ||
+            !string.Equals(previous.InputDeviceId, this.settings.InputDeviceId, StringComparison.Ordinal) ||
+            AudioEndpointClassifier.WouldCreateFeedback(previous.InputDeviceName, previous.VirtualOutputDeviceName) !=
+            virtualOutputFeedbackBlocked;
+        lock (sync)
+        {
+            if (monitorChanged || MonitorNeedsConfiguration())
+            {
+                ConfigureMonitorOutput();
+            }
+
+            if (virtualChanged || VirtualOutputNeedsConfiguration())
+            {
+                ConfigureVirtualOutput();
+            }
         }
 
         reconnectTimer ??= new Timer(_ => TryReconnectOutputs(), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
@@ -230,6 +267,8 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
         {
             DisposeOutput(ref monitorOutput);
             DisposeOutput(ref virtualOutput);
+            monitorError = null;
+            virtualOutputError = null;
             if (microphoneProvider is not null)
             {
                 virtualMixer.RemoveInput(microphoneProvider);
@@ -299,52 +338,89 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
         }
     }
 
-    private void ConfigureOutputs()
+    private void ConfigureMonitorOutput()
     {
-        lock (sync)
+        DisposeOutput(ref monitorOutput);
+        monitorError = null;
+        if (!settings.IsMonitorEnabled)
         {
-            DisposeOutput(ref monitorOutput);
-            DisposeOutput(ref virtualOutput);
+            return;
+        }
 
-            if (settings.IsMonitorEnabled)
+        try
+        {
+            monitorOutput = CreateOutput(
+                settings.MonitorDeviceId,
+                monitorMixer,
+                "monitor",
+                HandleMonitorStopped);
+            if (logger.IsEnabled(LogLevel.Information))
             {
-                try
-                {
-                    monitorOutput = CreateOutput(
-                        settings.MonitorDeviceId,
-                        monitorMixer,
-                        "monitor");
-                }
-                catch (Exception exception)
-                {
-                    logger.LogError(exception, "Monitor output is unavailable: {DeviceName}.", settings.MonitorDeviceName);
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(settings.VirtualOutputDeviceId))
-            {
-                try
-                {
-                    virtualOutput = CreateOutput(
-                        settings.VirtualOutputDeviceId,
-                        virtualMixer,
-                        "virtual output");
-                }
-                catch (Exception exception)
-                {
-                    logger.LogError(exception, "Virtual output is unavailable: {DeviceName}.", settings.VirtualOutputDeviceName);
-                }
+                logger.LogInformation(
+                    "Monitor route started on {DeviceName} using {Format}.",
+                    monitorOutput.DeviceName,
+                    monitorOutput.Format.DisplayText);
             }
         }
+        catch (Exception exception)
+        {
+            monitorError = exception.Message;
+            logger.LogError(exception, "Monitor output is unavailable: {DeviceName}.", settings.MonitorDeviceName);
+        }
+    }
+
+    private void ConfigureVirtualOutput()
+    {
+        DisposeOutput(ref virtualOutput);
+        if (string.IsNullOrWhiteSpace(settings.VirtualOutputDeviceId))
+        {
+            virtualOutputError = null;
+            return;
+        }
+
+        if (virtualOutputFeedbackBlocked)
+        {
+            return;
+        }
+
+        virtualOutputError = null;
+        try
+        {
+            virtualOutput = CreateOutput(
+                settings.VirtualOutputDeviceId,
+                virtualMixer,
+                "virtual output",
+                HandleVirtualOutputStopped);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Virtual output route started on {DeviceName} using {Format}.",
+                    virtualOutput.DeviceName,
+                    virtualOutput.Format.DisplayText);
+            }
+        }
+        catch (Exception exception)
+        {
+            virtualOutputError = exception.Message;
+            logger.LogError(exception, "Virtual output is unavailable: {DeviceName}.", settings.VirtualOutputDeviceName);
+        }
+    }
+
+    private bool MonitorNeedsConfiguration()
+    {
+        return settings.IsMonitorEnabled && monitorOutput?.IsActive != true;
+    }
+
+    private bool VirtualOutputNeedsConfiguration()
+    {
+        return !virtualOutputFeedbackBlocked &&
+               !string.IsNullOrWhiteSpace(settings.VirtualOutputDeviceId) &&
+               virtualOutput?.IsActive != true;
     }
 
     private bool OutputsNeedConfiguration()
     {
-        var monitorMissing = settings.IsMonitorEnabled &&
-                             monitorOutput?.PlaybackState != PlaybackState.Playing;
-        var virtualMissing = !string.IsNullOrWhiteSpace(settings.VirtualOutputDeviceId) &&
-                             virtualOutput?.PlaybackState != PlaybackState.Playing;
-        return monitorMissing || virtualMissing;
+        return MonitorNeedsConfiguration() || VirtualOutputNeedsConfiguration();
     }
 
     private void TryReconnectOutputs()
@@ -404,85 +480,73 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
     {
         lock (sync)
         {
-            if (settings.IsMonitorEnabled && monitorOutput?.PlaybackState != PlaybackState.Playing)
+            if (MonitorNeedsConfiguration())
             {
-                DisposeOutput(ref monitorOutput);
-                try
-                {
-                    monitorOutput = CreateOutput(
-                        settings.MonitorDeviceId,
-                        monitorMixer,
-                        "monitor");
-                }
-                catch (Exception exception)
-                {
-                    logger.LogDebug(exception, "Monitor output is still unavailable.");
-                }
+                ConfigureMonitorOutput();
             }
 
-            if (!string.IsNullOrWhiteSpace(settings.VirtualOutputDeviceId) &&
-                virtualOutput?.PlaybackState != PlaybackState.Playing)
+            if (VirtualOutputNeedsConfiguration())
             {
-                DisposeOutput(ref virtualOutput);
-                try
-                {
-                    virtualOutput = CreateOutput(
-                        settings.VirtualOutputDeviceId,
-                        virtualMixer,
-                        "virtual output");
-                }
-                catch (Exception exception)
-                {
-                    logger.LogDebug(exception, "Virtual output is still unavailable.");
-                }
+                ConfigureVirtualOutput();
             }
         }
     }
 
-    private WasapiOut CreateOutput(string? deviceId, ISampleProvider source, string route)
+    private IAudioRenderSession CreateOutput(
+        string? deviceId,
+        ISampleProvider source,
+        string route,
+        EventHandler<AudioRenderSessionStoppedEventArgs> stopped)
     {
-        using var enumerator = new MMDeviceEnumerator();
-        using var device = string.IsNullOrWhiteSpace(deviceId)
-            ? enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia)
-            : enumerator.GetDevice(deviceId);
-        if (device.State != DeviceState.Active)
+        var output = renderSessions.Create(deviceId, source, route);
+        output.Stopped += stopped;
+        try
         {
-            throw new InvalidOperationException($"{device.FriendlyName} is not active.");
-        }
-
-        var output = new WasapiOut(device, AudioClientShareMode.Shared, useEventSync: true, latency: 50);
-        output.PlaybackStopped += (_, args) =>
-        {
-            if (args.Exception is not null)
+            output.Start();
+            if (!output.IsActive)
             {
-                logger.LogError(args.Exception, "{Route} stopped unexpectedly.", route);
+                throw new InvalidOperationException($"{route} could not be started.");
             }
-        };
-        output.Init(source);
-        output.Play();
-        if (output.PlaybackState != PlaybackState.Playing)
-        {
-            output.Dispose();
-            throw new InvalidOperationException($"{route} could not be started.");
-        }
 
-        return output;
+            return output;
+        }
+        catch
+        {
+            output.Stopped -= stopped;
+            output.Dispose();
+            throw;
+        }
     }
 
     private void UpdateRoutingSnapshot()
     {
         var microphoneSnapshot = microphone.GetSnapshot();
-        var monitorState = monitorOutput?.PlaybackState == PlaybackState.Playing
+        var monitorState = monitorOutput?.IsActive == true
             ? AudioRouteState.Active
-            : settings.IsMonitorEnabled ? AudioRouteState.Unavailable : AudioRouteState.Stopped;
+            : settings.IsMonitorEnabled
+                ? monitorError is null ? AudioRouteState.Unavailable : AudioRouteState.Failed
+                : AudioRouteState.Stopped;
         var virtualState = string.IsNullOrWhiteSpace(settings.VirtualOutputDeviceId)
             ? AudioRouteState.Unconfigured
-            : virtualOutput?.PlaybackState == PlaybackState.Playing
+            : virtualOutput?.IsActive == true
                 ? AudioRouteState.Active
-                : AudioRouteState.Unavailable;
+                : virtualOutputFeedbackBlocked || virtualOutputError is not null
+                    ? AudioRouteState.Failed
+                    : AudioRouteState.Unavailable;
         var engineState = monitorState == AudioRouteState.Active || virtualState == AudioRouteState.Active
             ? AudioRouteState.Active
             : AudioRouteState.Unavailable;
+        var status = virtualState switch
+        {
+            AudioRouteState.Unconfigured => "Local playback active. Select a virtual output to transmit.",
+            AudioRouteState.Active => "Microphone and effects are routed to the selected virtual output.",
+            AudioRouteState.Failed when virtualOutputFeedbackBlocked =>
+                "Virtual output blocked to prevent an audio feedback loop.",
+            AudioRouteState.Failed => "Virtual output failed. Local playback remains available.",
+            AudioRouteState.Unavailable => "Virtual output is unavailable and will be reconnected automatically.",
+            _ when engineState == AudioRouteState.Active => "Audio engine active.",
+            _ => "No output route is active."
+        };
         routingSnapshot = new AudioRoutingSnapshot(
             engineState,
             microphoneSnapshot.State switch
@@ -498,11 +562,45 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
             microphoneSnapshot.SelectedDeviceName,
             settings.MonitorDeviceName,
             settings.VirtualOutputDeviceName,
-            virtualState == AudioRouteState.Unconfigured
-                ? "Local playback active. Select a virtual output to transmit."
-                : engineState == AudioRouteState.Active ? "Audio engine active." : "No output route is active.",
+            status,
             microphoneSnapshot.ErrorMessage,
-            new AudioStreamFormatDto(48000, 2, 32, "IEEE Float"));
+            new AudioStreamFormatDto(48000, 2, 32, "IEEE Float"),
+            monitorError,
+            virtualOutputError,
+            monitorOutput?.Format,
+            virtualOutput?.Format);
+    }
+
+    private void HandleMonitorStopped(object? sender, AudioRenderSessionStoppedEventArgs args)
+    {
+        lock (sync)
+        {
+            if (!ReferenceEquals(sender, monitorOutput))
+            {
+                return;
+            }
+
+            monitorError = args.Exception?.Message ?? "The monitor endpoint stopped unexpectedly.";
+            logger.LogError(args.Exception, "Monitor route stopped unexpectedly.");
+            DisposeOutput(ref monitorOutput);
+            UpdateRoutingSnapshot();
+        }
+    }
+
+    private void HandleVirtualOutputStopped(object? sender, AudioRenderSessionStoppedEventArgs args)
+    {
+        lock (sync)
+        {
+            if (!ReferenceEquals(sender, virtualOutput))
+            {
+                return;
+            }
+
+            virtualOutputError = args.Exception?.Message ?? "The virtual output endpoint stopped unexpectedly.";
+            logger.LogError(args.Exception, "Virtual output route stopped unexpectedly.");
+            DisposeOutput(ref virtualOutput);
+            UpdateRoutingSnapshot();
+        }
     }
 
     private PlaybackSession? GetLatestSession()
@@ -563,13 +661,15 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
         };
     }
 
-    private static void DisposeOutput(ref WasapiOut? output)
+    private void DisposeOutput(ref IAudioRenderSession? output)
     {
         if (output is null)
         {
             return;
         }
 
+        output.Stopped -= HandleMonitorStopped;
+        output.Stopped -= HandleVirtualOutputStopped;
         try
         {
             output.Stop();
@@ -838,12 +938,15 @@ public sealed class WasapiAudioOutputDeviceEnumerator : IAudioOutputDeviceEnumer
                     device.ID,
                     device.FriendlyName,
                     string.Equals(device.ID, defaultId, StringComparison.Ordinal),
-                    device.State == DeviceState.Active));
+                    device.State == DeviceState.Active,
+                    AudioEndpointClassifier.IsVirtualOutputCandidate(device.FriendlyName),
+                    AudioEndpointClassifier.GetFamily(device.FriendlyName)));
             }
         }
 
         var ordered = devices
             .OrderByDescending(device => device.IsDefault)
+            .ThenByDescending(device => device.IsVirtualOutputCandidate)
             .ThenBy(device => device.Name)
             .ToArray();
         return Task.FromResult<IReadOnlyList<AudioOutputDeviceDto>>(ordered);

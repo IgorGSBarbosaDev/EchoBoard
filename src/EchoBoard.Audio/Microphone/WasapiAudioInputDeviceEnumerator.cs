@@ -1,4 +1,5 @@
 using EchoBoard.Application.Audio;
+using EchoBoard.Audio.Playback;
 using NAudio.CoreAudioApi;
 
 namespace EchoBoard.Audio.Microphone;
@@ -28,7 +29,8 @@ public sealed class WasapiAudioInputDeviceEnumerator : IAudioInputDeviceEnumerat
                 device.ID,
                 device.FriendlyName,
                 string.Equals(device.ID, defaultId, StringComparison.Ordinal),
-                    IsAvailable: true));
+                    IsAvailable: true,
+                    AudioEndpointClassifier.GetFamily(device.FriendlyName)));
             }
         }
 

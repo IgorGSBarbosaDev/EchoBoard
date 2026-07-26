@@ -19,7 +19,12 @@ public enum MicrophoneCaptureState
     Failed
 }
 
-public sealed record AudioInputDeviceDto(string Id, string Name, bool IsDefault, bool IsAvailable);
+public sealed record AudioInputDeviceDto(
+    string Id,
+    string Name,
+    bool IsDefault,
+    bool IsAvailable,
+    string? EndpointFamily = null);
 
 public sealed record AudioStreamFormatDto(int SampleRate, int Channels, int BitsPerSample, string Encoding)
 {
@@ -216,7 +221,13 @@ public enum AudioRouteState
     Stopped
 }
 
-public sealed record AudioOutputDeviceDto(string Id, string Name, bool IsDefault, bool IsAvailable);
+public sealed record AudioOutputDeviceDto(
+    string Id,
+    string Name,
+    bool IsDefault,
+    bool IsAvailable,
+    bool IsVirtualOutputCandidate = false,
+    string? EndpointFamily = null);
 
 public sealed record AudioRoutingSettingsDto(
     string? InputDeviceId,
@@ -251,7 +262,11 @@ public sealed record AudioRoutingSnapshot(
     string? VirtualOutputDeviceName,
     string StatusMessage,
     string? ErrorMessage,
-    AudioStreamFormatDto Format)
+    AudioStreamFormatDto Format,
+    string? MonitorErrorMessage = null,
+    string? VirtualOutputErrorMessage = null,
+    AudioStreamFormatDto? MonitorFormat = null,
+    AudioStreamFormatDto? VirtualOutputFormat = null)
 {
     public static AudioRoutingSnapshot Stopped { get; } = new(
         AudioRouteState.Stopped,
