@@ -13,8 +13,10 @@ Atualizado após o merge de `bugfix/audio-playback-mixer` na `main`.
 - PlaybackCoordinator, progresso, pausa, stop e seek centralizados.
 - Cards, favoritos, menus, exclusão e atualização entre as telas.
 - Diagnóstico de microfone, monitor e saída virtual.
+- Medidores reais de efeitos, monitor e saída virtual no Dashboard e Diagnóstico.
 - Proteção contra famílias conhecidas de endpoints que causariam feedback.
-- Build sem avisos/erros e 200/200 testes automatizados aprovados.
+- Classificação expandida para famílias adicionais de cabos e roteadores virtuais.
+- Build sem avisos/erros e 205/205 testes automatizados aprovados.
 
 ## Pendências de hardware e validação manual
 
@@ -30,10 +32,10 @@ Atualizado após o merge de `bugfix/audio-playback-mixer` na `main`.
 
 ## Melhorias futuras
 
-- Exibir medidores reais dos barramentos de efeitos e saída virtual; atualmente o medidor físico do microfone é o único nível contínuo exposto na interface.
-- Expandir a classificação de famílias de dispositivos para cabos virtuais de outros fabricantes além dos padrões conhecidos.
-- Validar em hardware adicional os formatos MP3, WAV, Ogg/Vorbis, FLAC, M4A e AAC; a suíte automatizada cobre decodificação e o smoke físico atual usou Ogg/Opus.
-- Avaliar telemetria local de falhas de rota somente em logs, mantendo o produto sem backend ou coleta externa.
+- [x] Exibir medidores reais dos barramentos de efeitos, monitor e saída virtual; os níveis são capturados no mixer e publicados pelo snapshot compartilhado.
+- [x] Expandir a classificação de famílias de dispositivos para cabos e roteadores virtuais adicionais, preservando a proteção contra feedback por família.
+- [ ] Validar em hardware adicional os formatos MP3, WAV, Ogg/Vorbis, FLAC, M4A e AAC; a suíte automatizada cobre decodificação e mixagem, mas a validação física depende do reinício e dos dispositivos externos.
+- [x] Avaliar telemetria local de falhas de rota somente em logs; não há coleta externa, backend ou persistência de áudio.
 
 ## Dependência externa
 
