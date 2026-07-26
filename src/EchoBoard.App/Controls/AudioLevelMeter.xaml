@@ -23,9 +23,10 @@
         </Grid>
 
         <Border
-            Height="8"
+            Height="12"
+            HorizontalAlignment="Stretch"
             Background="{ThemeResource EchoBoardDisabledBrush}"
-            CornerRadius="{StaticResource EchoBoardRadiusSmall}">
+            CornerRadius="6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="{x:Bind FilledWidth, Mode=OneTime}" />
@@ -33,7 +34,7 @@
                 </Grid.ColumnDefinitions>
                 <Border
                     Background="{x:Bind MeterBrush, Mode=OneTime}"
-                    CornerRadius="{StaticResource EchoBoardRadiusSmall}" />
+                    CornerRadius="6" />
             </Grid>
         </Border>
     </StackPanel>

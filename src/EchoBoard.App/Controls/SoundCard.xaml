@@ -5,19 +5,18 @@
     xmlns:controls="using:EchoBoard.App.Controls"
     MinWidth="180"
     AutomationProperties.Name="{x:Bind AccessibleLabel, Mode=OneTime}">
-    <Grid>
-        <Button
-            Command="{x:Bind Command, Mode=OneWay}"
-            CommandParameter="{x:Bind CommandParameter, Mode=OneWay}"
-            IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
-            HorizontalAlignment="Stretch"
-            HorizontalContentAlignment="Stretch"
-            Background="{x:Bind CardBackground, Mode=OneWay}"
-            BorderBrush="{x:Bind CardBorderBrush, Mode=OneWay}"
+    <Grid
+        x:Name="CardRoot"
+        PointerEntered="OnCardPointerEntered"
+        PointerExited="OnCardPointerExited">
+        <Border
+            x:Name="CardSurface"
+            MinHeight="{x:Bind CardMinHeight, Mode=OneTime}"
+            Background="{x:Bind CardBackground, Mode=OneTime}"
+            BorderBrush="{x:Bind CardBorderBrush, Mode=OneTime}"
             BorderThickness="1"
-            CornerRadius="{StaticResource EchoBoardRadiusLarge}"
-            Padding="0">
-            <Grid MinHeight="{x:Bind CardMinHeight, Mode=OneWay}">
+            CornerRadius="{StaticResource EchoBoardRadiusLarge}">
+            <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="4" />
                     <RowDefinition Height="*" />
@@ -33,7 +32,7 @@
                     </Grid.RowDefinitions>
 
                     <TextBlock
-                        Margin="0,0,70,0"
+                        Margin="0,0,40,0"
                         Text="{x:Bind CategoryLabel, Mode=OneWay}"
                         Foreground="{ThemeResource EchoBoardTextSecondaryBrush}"
                         FontSize="{StaticResource EchoBoardFontSizeBadge}"
@@ -87,51 +86,46 @@
 
                     <Grid Grid.Row="4" ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <controls:HotkeyBadge Text="{x:Bind HotkeyText, Mode=OneWay}" IsUnavailable="{x:Bind HotkeyUnavailable, Mode=OneWay}" />
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5">
-                            <Ellipse Width="5" Height="5" VerticalAlignment="Center" Fill="{x:Bind StatusForeground, Mode=OneWay}" />
+                        <StackPanel VerticalAlignment="Center" Spacing="3">
+                            <controls:HotkeyBadge HorizontalAlignment="Left" Text="{x:Bind HotkeyText, Mode=OneWay}" IsUnavailable="{x:Bind HotkeyUnavailable, Mode=OneWay}" />
                             <TextBlock
-                                VerticalAlignment="Center"
                                 Text="{x:Bind StatusText, Mode=OneWay}"
                                 Foreground="{x:Bind StatusForeground, Mode=OneWay}"
-                                FontSize="{StaticResource EchoBoardFontSizeBadge}" />
+                                FontSize="{StaticResource EchoBoardFontSizeBadge}"
+                                Visibility="{x:Bind StatusVisibility, Mode=OneWay}" />
                         </StackPanel>
+                        <Button
+                            Grid.Column="1"
+                            AutomationProperties.Name="{x:Bind PlayPauseLabel, Mode=OneTime}"
+                            Command="{x:Bind Command, Mode=OneWay}"
+                            CommandParameter="{x:Bind CommandParameter, Mode=OneWay}"
+                            IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
+                            Style="{StaticResource EchoBoardCardActionButtonStyle}">
+                            <FontIcon Glyph="{x:Bind PlayPauseGlyph, Mode=OneTime}" FontSize="16" />
+                        </Button>
                     </Grid>
                 </Grid>
             </Grid>
-        </Button>
+        </Border>
 
         <Button
-            Width="30"
-            Height="30"
-            Margin="0,10,44,0"
-            HorizontalAlignment="Right"
-            VerticalAlignment="Top"
-            AutomationProperties.Name="{x:Bind FavoriteLabel, Mode=OneWay}"
-            Command="{x:Bind FavoriteCommand, Mode=OneWay}"
-            CommandParameter="{x:Bind FavoriteCommandParameter, Mode=OneWay}"
-            Style="{StaticResource EchoBoardIconButtonStyle}">
-            <SymbolIcon Symbol="Favorite" Foreground="{ThemeResource EchoBoardWarningBrush}" />
-        </Button>
-
-        <Button
-            Width="30"
-            Height="30"
             Margin="0,10,8,0"
             HorizontalAlignment="Right"
             VerticalAlignment="Top"
             AutomationProperties.Name="Mais opções"
-            Style="{StaticResource EchoBoardIconButtonStyle}"
-            Visibility="{x:Bind OptionsVisibility, Mode=OneWay}">
+            Style="{StaticResource EchoBoardCardActionButtonStyle}"
+            Visibility="{x:Bind OptionsVisibility, Mode=OneTime}">
             <FontIcon Glyph="&#xE712;" />
             <Button.Flyout>
                 <MenuFlyout>
                     <MenuFlyoutItem Text="Detalhes" Command="{x:Bind DetailsCommand, Mode=OneWay}" CommandParameter="{x:Bind CommandParameter, Mode=OneWay}" />
                     <MenuFlyoutItem Text="Editar" Command="{x:Bind EditCommand, Mode=OneWay}" CommandParameter="{x:Bind CommandParameter, Mode=OneWay}" />
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="{x:Bind FavoriteLabel, Mode=OneWay}" Command="{x:Bind FavoriteCommand, Mode=OneWay}" CommandParameter="{x:Bind FavoriteCommandParameter, Mode=OneWay}" />
+                    <MenuFlyoutItem Text="Excluir áudio" Click="OnDeleteClicked" />
                 </MenuFlyout>
             </Button.Flyout>
         </Button>

@@ -1,11 +1,13 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EchoBoard.App.Controls;
 using EchoBoard.Application.Audio;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 using EchoBoard.Domain.Enums;
 using Microsoft.UI.Xaml;
+using System.Windows.Input;
 
 namespace EchoBoard.App.ViewModels;
 
@@ -18,6 +20,9 @@ public sealed class SoundDetailsViewModel : ObservableObject
     private readonly AssignSoundHotkeyUseCase assignSoundHotkey;
     private readonly RemoveHotkeyBindingUseCase removeHotkey;
     private readonly PlaySoundUseCase playSound;
+    private readonly PlaybackCoordinator? playbackCoordinator;
+    private readonly TransientNotificationService? notifications;
+    private readonly AsyncRelayCommand? localPlayCommand;
     private SoundLibraryItemDto? selectedSound;
     private HotkeyBindingDto? selectedHotkey;
     private bool isOpen;
@@ -43,7 +48,9 @@ public sealed class SoundDetailsViewModel : ObservableObject
         ListHotkeyBindingsUseCase listHotkeys,
         AssignSoundHotkeyUseCase assignSoundHotkey,
         RemoveHotkeyBindingUseCase removeHotkey,
-        PlaySoundUseCase playSound)
+        PlaySoundUseCase playSound,
+        PlaybackCoordinator? playbackCoordinator = null,
+        TransientNotificationService? notifications = null)
     {
         this.queryLibrary = queryLibrary;
         this.updateSound = updateSound;
@@ -52,6 +59,8 @@ public sealed class SoundDetailsViewModel : ObservableObject
         this.assignSoundHotkey = assignSoundHotkey;
         this.removeHotkey = removeHotkey;
         this.playSound = playSound;
+        this.playbackCoordinator = playbackCoordinator;
+        this.notifications = notifications;
 
         Categories = [];
         OpenCommand = new AsyncRelayCommand<Guid>(id => OpenAsync(id, edit: false, CancellationToken.None));
@@ -60,7 +69,8 @@ public sealed class SoundDetailsViewModel : ObservableObject
         BeginEditCommand = new RelayCommand(() => IsEditing = true);
         CancelEditCommand = new RelayCommand(CancelEdit);
         SaveCommand = new AsyncRelayCommand(SaveAsync);
-        PlayCommand = new AsyncRelayCommand(PlayAsync, () => selectedSound is { IsMissingFile: false });
+        localPlayCommand = new AsyncRelayCommand(PlayAsync, () => selectedSound is { IsMissingFile: false });
+        PlayCommand = (ICommand?)playbackCoordinator?.PlaySoundCommand ?? localPlayCommand;
     }
 
     public event EventHandler? SoundChanged;
@@ -73,7 +83,8 @@ public sealed class SoundDetailsViewModel : ObservableObject
     public IRelayCommand BeginEditCommand { get; }
     public IRelayCommand CancelEditCommand { get; }
     public IAsyncRelayCommand SaveCommand { get; }
-    public IAsyncRelayCommand PlayCommand { get; }
+    public ICommand PlayCommand { get; }
+    public Guid SelectedSoundId => selectedSound?.Id ?? Guid.Empty;
 
     public bool IsOpen
     {
@@ -173,7 +184,12 @@ public sealed class SoundDetailsViewModel : ObservableObject
         IsEditing = edit;
         IsOpen = true;
         NotifySelectionChanged();
-        PlayCommand.NotifyCanExecuteChanged();
+        localPlayCommand?.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(SelectedSoundId));
+        if (selectedSound is not null)
+        {
+            playbackCoordinator?.TrackSound(selectedSound.Id, selectedSound.FilePath);
+        }
     }
 
     public void Toggle()
@@ -200,12 +216,12 @@ public sealed class SoundDetailsViewModel : ObservableObject
             return;
         }
 
-        if (selectedHotkey is not null)
+        var deletedSound = selectedSound;
+        await deleteSound.ExecuteAsync(deletedSound.Id, cancellationToken);
+        if (playbackCoordinator is not null)
         {
-            await removeHotkey.ExecuteAsync(selectedHotkey.Id, cancellationToken);
+            await playbackCoordinator.StopSoundAsync(deletedSound.Id, deletedSound.FilePath, cancellationToken);
         }
-
-        await deleteSound.ExecuteAsync(selectedSound.Id, cancellationToken);
         selectedSound = null;
         selectedHotkey = null;
         Close();
@@ -277,12 +293,13 @@ public sealed class SoundDetailsViewModel : ObservableObject
         try
         {
             await playSound.ExecuteAsync(new PlaySoundRequest(selectedSound.Id, DateTimeOffset.UtcNow), cancellationToken);
-            FeedbackMessage = "Reprodução iniciada.";
+            FeedbackMessage = string.Empty;
             SoundChanged?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception exception) when (exception is IOException or InvalidOperationException or ArgumentException)
         {
             FeedbackMessage = exception.Message;
+            notifications?.Show(ToastNotificationKind.Error, "Não foi possível reproduzir", exception.Message);
         }
     }
 

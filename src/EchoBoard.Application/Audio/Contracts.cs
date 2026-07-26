@@ -19,7 +19,12 @@ public enum MicrophoneCaptureState
     Failed
 }
 
-public sealed record AudioInputDeviceDto(string Id, string Name, bool IsDefault, bool IsAvailable);
+public sealed record AudioInputDeviceDto(
+    string Id,
+    string Name,
+    bool IsDefault,
+    bool IsAvailable,
+    string? EndpointFamily = null);
 
 public sealed record AudioStreamFormatDto(int SampleRate, int Channels, int BitsPerSample, string Encoding)
 {
@@ -134,9 +139,9 @@ public interface IMicrophoneCaptureController
 
 public interface ISoundPlaybackEngine
 {
-    Task PlayAsync(string filePath, double volume, CancellationToken cancellationToken);
+    Task<SoundPlaybackStartResult> PlayAsync(string filePath, double volume, CancellationToken cancellationToken);
 
-    Task PlayAsync(string filePath, double volume, SoundPlaybackOptions options, CancellationToken cancellationToken)
+    Task<SoundPlaybackStartResult> PlayAsync(string filePath, double volume, SoundPlaybackOptions options, CancellationToken cancellationToken)
         => PlayAsync(filePath, volume, cancellationToken);
 
     Task StopAllAsync(CancellationToken cancellationToken);
@@ -153,6 +158,21 @@ public interface ISoundPlaybackEngine
     SoundPlaybackSnapshot GetSnapshot();
 }
 
+public enum SoundPlaybackState
+{
+    Stopped,
+    Playing,
+    Paused
+}
+
+public sealed record SoundPlaybackStartResult(
+    Guid SessionId,
+    string FilePath,
+    TimeSpan Duration,
+    bool IsMonitorActive,
+    bool IsVirtualOutputActive,
+    SoundPlaybackSnapshot Snapshot);
+
 public sealed record SoundPlaybackOptions(bool IsLoopEnabled)
 {
     public static SoundPlaybackOptions Default { get; } = new(IsLoopEnabled: false);
@@ -166,4 +186,113 @@ public sealed record SoundPlaybackSnapshot(
     bool IsPaused)
 {
     public static SoundPlaybackSnapshot Idle { get; } = new(null, TimeSpan.Zero, TimeSpan.Zero, false, false);
+
+    public SoundPlaybackState State => IsPlaying
+        ? SoundPlaybackState.Playing
+        : IsPaused ? SoundPlaybackState.Paused : SoundPlaybackState.Stopped;
+}
+
+public static class AudioRoutingSettingKeys
+{
+    public const string InputDeviceId = "audio.routing.v1.inputDeviceId";
+    public const string InputDeviceName = "audio.routing.v1.inputDeviceName";
+    public const string MonitorDeviceId = "audio.routing.v1.monitorDeviceId";
+    public const string MonitorDeviceName = "audio.routing.v1.monitorDeviceName";
+    public const string VirtualOutputDeviceId = "audio.routing.v1.virtualOutputDeviceId";
+    public const string VirtualOutputDeviceName = "audio.routing.v1.virtualOutputDeviceName";
+    public const string MicrophoneVolume = "audio.routing.v1.microphoneVolume";
+    public const string EffectsVolume = "audio.routing.v1.effectsVolume";
+    public const string MonitorVolume = "audio.routing.v1.monitorVolume";
+    public const string VirtualOutputVolume = "audio.routing.v1.virtualOutputVolume";
+    public const string IsMicrophoneMuted = "audio.routing.v1.isMicrophoneMuted";
+    public const string AreEffectsMuted = "audio.routing.v1.areEffectsMuted";
+    public const string IsMonitorEnabled = "audio.routing.v1.isMonitorEnabled";
+    public const string IsMonitorMuted = "audio.routing.v1.isMonitorMuted";
+    public const string IsVirtualOutputMuted = "audio.routing.v1.isVirtualOutputMuted";
+}
+
+public enum AudioRouteState
+{
+    Unconfigured,
+    Starting,
+    Active,
+    Unavailable,
+    Failed,
+    Stopped
+}
+
+public sealed record AudioOutputDeviceDto(
+    string Id,
+    string Name,
+    bool IsDefault,
+    bool IsAvailable,
+    bool IsVirtualOutputCandidate = false,
+    string? EndpointFamily = null);
+
+public sealed record AudioRoutingSettingsDto(
+    string? InputDeviceId,
+    string? InputDeviceName,
+    string? MonitorDeviceId,
+    string? MonitorDeviceName,
+    string? VirtualOutputDeviceId,
+    string? VirtualOutputDeviceName,
+    double MicrophoneVolume,
+    double EffectsVolume,
+    double MonitorVolume,
+    double VirtualOutputVolume,
+    bool IsMicrophoneMuted,
+    bool AreEffectsMuted,
+    bool IsMonitorEnabled,
+    bool IsMonitorMuted,
+    bool IsVirtualOutputMuted)
+{
+    public static AudioRoutingSettingsDto Default { get; } = new(
+        null, null, null, null, null, null,
+        1.0, 1.0, 0.8, 1.0,
+        false, false, true, false, false);
+}
+
+public sealed record AudioRoutingSnapshot(
+    AudioRouteState EngineState,
+    AudioRouteState MicrophoneState,
+    AudioRouteState MonitorState,
+    AudioRouteState VirtualOutputState,
+    string? InputDeviceName,
+    string? MonitorDeviceName,
+    string? VirtualOutputDeviceName,
+    string StatusMessage,
+    string? ErrorMessage,
+    AudioStreamFormatDto Format,
+    string? MonitorErrorMessage = null,
+    string? VirtualOutputErrorMessage = null,
+    AudioStreamFormatDto? MonitorFormat = null,
+    AudioStreamFormatDto? VirtualOutputFormat = null)
+{
+    public static AudioRoutingSnapshot Stopped { get; } = new(
+        AudioRouteState.Stopped,
+        AudioRouteState.Stopped,
+        AudioRouteState.Stopped,
+        AudioRouteState.Unconfigured,
+        null,
+        null,
+        null,
+        "Audio engine stopped.",
+        null,
+        new AudioStreamFormatDto(48000, 2, 32, "IEEE Float"));
+}
+
+public interface IAudioOutputDeviceEnumerator
+{
+    Task<IReadOnlyList<AudioOutputDeviceDto>> ListOutputDevicesAsync(CancellationToken cancellationToken);
+}
+
+public interface IAudioRoutingEngine
+{
+    Task InitializeAsync(AudioRoutingSettingsDto settings, CancellationToken cancellationToken);
+
+    Task ApplySettingsAsync(AudioRoutingSettingsDto settings, CancellationToken cancellationToken);
+
+    Task StopAsync(CancellationToken cancellationToken);
+
+    AudioRoutingSnapshot GetRoutingSnapshot();
 }

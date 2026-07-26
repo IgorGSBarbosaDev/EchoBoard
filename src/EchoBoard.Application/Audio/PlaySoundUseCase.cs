@@ -5,7 +5,7 @@ namespace EchoBoard.Application.Audio;
 
 public sealed record PlaySoundRequest(Guid SoundId, DateTimeOffset PlayedAt);
 
-public sealed record PlaySoundResult(string SoundName, SoundPlaybackSnapshot Snapshot);
+public sealed record PlaySoundResult(string SoundName, Guid SessionId, SoundPlaybackSnapshot Snapshot);
 
 public sealed class PlaySoundUseCase
 {
@@ -50,13 +50,24 @@ public sealed class PlaySoundUseCase
             await playback.StopSoundAsync(sound.FilePath, cancellationToken);
         }
 
-        await playback.PlayAsync(
+        var started = await playback.PlayAsync(
             sound.FilePath,
             sound.Volume,
             new SoundPlaybackOptions(sound.IsLoopEnabled),
             cancellationToken);
+        if (started.Duration > TimeSpan.Zero &&
+            Math.Abs((sound.Duration - started.Duration).TotalMilliseconds) >= 10)
+        {
+            sound.UpdateFileMetadata(
+                sound.Extension,
+                started.Duration,
+                sound.FileSize,
+                request.PlayedAt);
+            await sounds.UpdateSoundAsync(sound, cancellationToken);
+        }
+
         await recentlyPlayed.AddAsync(RecentlyPlayed.Create(sound.Id, request.PlayedAt), cancellationToken);
 
-        return new PlaySoundResult(sound.Name, playback.GetSnapshot());
+        return new PlaySoundResult(sound.Name, started.SessionId, started.Snapshot);
     }
 }

@@ -1,4 +1,5 @@
 using EchoBoard.App.ViewModels;
+using EchoBoard.App.Dialogs;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -23,17 +24,7 @@ public sealed partial class SoundDetailsDrawer : UserControl
             return;
         }
 
-        var confirmation = new ContentDialog
-        {
-            XamlRoot = XamlRoot,
-            Title = "Remover som da biblioteca?",
-            Content = "A referência será removida do EchoBoard. O arquivo original permanecerá no computador.",
-            PrimaryButtonText = "Remover",
-            CloseButtonText = "Cancelar",
-            DefaultButton = ContentDialogButton.Close
-        };
-
-        if (await confirmation.ShowAsync() == ContentDialogResult.Primary)
+        if (await SoundDeletionConfirmation.ShowAsync(XamlRoot))
         {
             await viewModel.DeleteSelectedAsync(CancellationToken.None);
         }

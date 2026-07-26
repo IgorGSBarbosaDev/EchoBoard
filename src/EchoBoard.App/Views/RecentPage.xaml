@@ -22,7 +22,13 @@
                                 <Border Margin="0,0,0,8" Style="{StaticResource EchoBoardCardStyle}">
                                     <Grid ColumnSpacing="12">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                        <Button Command="{Binding PlayCommand}" Style="{StaticResource EchoBoardIconButtonStyle}"><SymbolIcon Symbol="Play" /></Button>
+                                        <Button
+                                            AutomationProperties.Name="{Binding PlaybackLabel}"
+                                            Command="{Binding PlayCommand}"
+                                            CommandParameter="{Binding Id}"
+                                            Style="{StaticResource EchoBoardIconButtonStyle}">
+                                            <FontIcon Glyph="{Binding PlayGlyph}" />
+                                        </Button>
                                         <StackPanel Grid.Column="1" Spacing="2"><TextBlock Text="{Binding Title}" FontWeight="SemiBold" /><TextBlock Text="{Binding Format}" Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel>
                                         <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{Binding PlayedAt}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
                                         <Button Grid.Column="3" Command="{Binding DetailsCommand}" CommandParameter="{Binding Id}" Style="{StaticResource EchoBoardIconButtonStyle}"><FontIcon Glyph="&#xE712;" /></Button>

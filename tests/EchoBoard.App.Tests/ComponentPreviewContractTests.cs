@@ -8,6 +8,8 @@ using EchoBoard.Domain.Entities;
 using EchoBoard.Domain.Enums;
 using EchoBoard.Domain.ValueObjects;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace EchoBoard.App.Tests;
@@ -149,7 +151,7 @@ public sealed class ComponentPreviewContractTests
 
         playback.PlayedPaths.Should().Equal(sound.FilePath);
         viewModel.SelectedSoundId.Should().Be(sound.Id);
-        viewModel.Sounds.Should().ContainSingle(item => item.IsPlaying && !item.IsPaused && item.StatusText == "Playing" && item.DurationText == "0:04 / 0:30");
+        viewModel.Sounds.Should().ContainSingle(item => item.IsPlaying && !item.IsPaused && item.StatusText == string.Empty && item.DurationText == "0:30");
     }
 
     [Fact]
@@ -166,7 +168,7 @@ public sealed class ComponentPreviewContractTests
         await viewModel.ActivateSoundCommand.ExecuteAsync(sound.Id);
 
         playback.ToggleCount.Should().Be(1);
-        viewModel.Sounds.Should().ContainSingle(item => item.IsPaused && !item.IsPlaying && item.StatusText == "Paused");
+        viewModel.Sounds.Should().ContainSingle(item => item.IsPaused && !item.IsPlaying && item.StatusText == string.Empty);
 
         await viewModel.ActivateSoundCommand.ExecuteAsync(sound.Id);
         viewModel.Sounds.Should().ContainSingle(item => item.IsPlaying && !item.IsPaused);
@@ -188,7 +190,7 @@ public sealed class ComponentPreviewContractTests
         await viewModel.ActivateSoundCommand.ExecuteAsync(second.Id);
 
         playback.Operations.TakeLast(2).Should().Equal("stop", $"play:{second.FilePath}");
-        viewModel.Sounds.Single(item => item.Id == first.Id).StatusText.Should().Be("Stopped");
+        viewModel.Sounds.Single(item => item.Id == first.Id).StatusText.Should().BeEmpty();
         viewModel.Sounds.Single(item => item.Id == second.Id).IsPlaying.Should().BeTrue();
     }
 
@@ -206,7 +208,7 @@ public sealed class ComponentPreviewContractTests
         playback.Complete();
         viewModel.RefreshPlaybackState();
 
-        viewModel.Sounds.Should().ContainSingle(item => !item.IsPlaying && !item.IsPaused && item.StatusText == "Stopped" && item.DurationText == "0:03");
+        viewModel.Sounds.Should().ContainSingle(item => !item.IsPlaying && !item.IsPaused && item.StatusText == string.Empty && item.DurationText == "0:03");
     }
 
     [Fact]
@@ -224,7 +226,7 @@ public sealed class ComponentPreviewContractTests
         await action.Should().NotThrowAsync();
         viewModel.PlaybackToast.Should().NotBeNull();
         viewModel.PlaybackToast!.Description.Should().Contain("corrupted");
-        viewModel.Sounds.Should().ContainSingle(item => item.StatusText == "Stopped" && !item.IsPlaying);
+        viewModel.Sounds.Should().ContainSingle(item => item.StatusText == string.Empty && !item.IsPlaying);
     }
 
     [Fact]
@@ -250,7 +252,68 @@ public sealed class ComponentPreviewContractTests
     }
 
     [Fact]
-    public async Task PlaybackBarUpdatesMixersRepeatAndStopsAll()
+    public async Task PlaybackBarConsumesCoordinatorProgressAndGuardsSeekDragging()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(30), 123, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var playback = new FakeSoundPlaybackEngine();
+        await using var services = new ServiceCollection().BuildServiceProvider();
+        var coordinator = new PlaybackCoordinator(
+            services.GetRequiredService<IServiceScopeFactory>(),
+            playback,
+            new TransientNotificationService(),
+            NullLogger<PlaybackCoordinator>.Instance);
+        var microphone = new FakeMicrophoneCaptureController();
+        var viewModel = new PlaybackBarViewModel(
+            playback,
+            new QuerySoundLibraryUseCase(sounds, new FakeCategoryRepository(), new FakeSoundFileAvailabilityReader(DefaultExists: true)),
+            new GetMicrophoneCaptureSnapshotUseCase(microphone),
+            new SetMicrophoneGainUseCase(new FakeAppSettingRepository(), microphone),
+            coordinator);
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        await playback.PlayAsync(sound.FilePath, sound.Volume, CancellationToken.None);
+        var started = new PlaySoundResult(
+            sound.Name,
+            Guid.NewGuid(),
+            new SoundPlaybackSnapshot(sound.FilePath, TimeSpan.Zero, sound.Duration, true, false));
+        coordinator.NotifyPlaybackConfirmed(sound.Id, started);
+        playback.AdvanceTo(TimeSpan.FromSeconds(12), sound.Duration);
+        coordinator.Refresh();
+
+        viewModel.ProgressPercent.Should().BeApproximately(40, 0.01);
+        viewModel.BeginSeek();
+        playback.AdvanceTo(TimeSpan.FromSeconds(18), sound.Duration);
+        coordinator.Refresh();
+        viewModel.ProgressPercent.Should().BeApproximately(40, 0.01);
+
+        await viewModel.CommitSeekAsync(50, CancellationToken.None);
+        viewModel.ProgressPercent.Should().BeApproximately(50, 0.01);
+        viewModel.ElapsedText.Should().Be("0:15");
+    }
+
+    [Fact]
+    public async Task LibraryPlaybackUpdatesCardInPlace()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var playback = new FakeSoundPlaybackEngine();
+        var viewModel = CreateLibraryViewModel(sounds, files: new FakeSoundFileAvailabilityReader(DefaultExists: true), playback: playback);
+        await viewModel.LoadAsync(CancellationToken.None);
+        var card = viewModel.Sounds.Single();
+
+        await viewModel.ActivateSoundCommand.ExecuteAsync(sound.Id);
+        playback.AdvanceTo(TimeSpan.FromSeconds(1), sound.Duration);
+        viewModel.RefreshPlaybackState();
+
+        viewModel.Sounds.Single().Should().BeSameAs(card);
+        card.IsPlaying.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task PlaybackBarUpdatesMixersRepeatAndStops()
     {
         var playback = new FakeSoundPlaybackEngine();
         var viewModel = CreatePlaybackBarViewModel(new FakeSoundLibraryRepository(), playback);
@@ -260,7 +323,7 @@ public sealed class ComponentPreviewContractTests
         viewModel.MonitorPercent = 42;
         viewModel.MicrophonePercent = 74;
         viewModel.ToggleRepeatCommand.Execute(null);
-        await viewModel.StopAllCommand.ExecuteAsync(null);
+        await viewModel.StopCommand.ExecuteAsync(null);
 
         playback.LastVolume.Should().BeApproximately(0.67, 0.001);
         viewModel.MonitorPercentText.Should().Be("42%");
@@ -808,7 +871,7 @@ public sealed class ComponentPreviewContractTests
 
         public double LastVolume { get; private set; }
 
-        public Task PlayAsync(string filePath, double volume, CancellationToken cancellationToken)
+        public Task<SoundPlaybackStartResult> PlayAsync(string filePath, double volume, CancellationToken cancellationToken)
         {
             if (PlayException is not null)
             {
@@ -818,7 +881,7 @@ public sealed class ComponentPreviewContractTests
             PlayedPaths.Add(filePath);
             Operations.Add($"play:{filePath}");
             snapshot = new SoundPlaybackSnapshot(filePath, TimeSpan.Zero, TimeSpan.Zero, IsPlaying: true, IsPaused: false);
-            return Task.CompletedTask;
+            return Task.FromResult(new SoundPlaybackStartResult(Guid.NewGuid(), filePath, snapshot.Duration, true, false, snapshot));
         }
 
         public Task StopAllAsync(CancellationToken cancellationToken)

@@ -28,6 +28,9 @@ public sealed partial class LibraryViewModel : ObservableObject
     private readonly ISoundPlaybackEngine playback;
     private readonly PlaySoundUseCase? playSound;
     private readonly SoundDetailsViewModel? details;
+    private readonly PlaybackCoordinator? playbackCoordinator;
+    private readonly TransientNotificationService? notifications;
+    private readonly SoundLibraryInteractionCoordinator? libraryInteractions;
     private readonly Dictionary<Guid, HotkeyBindingDto> hotkeyBySoundId = [];
     private readonly Dictionary<Guid, SoundLibraryItemDto> soundById = [];
     private bool isBusy;
@@ -59,7 +62,10 @@ public sealed partial class LibraryViewModel : ObservableObject
         SetHotkeyBindingEnabledUseCase setHotkeyBindingEnabled,
         ISoundPlaybackEngine playback,
         PlaySoundUseCase? playSound = null,
-        SoundDetailsViewModel? details = null)
+        SoundDetailsViewModel? details = null,
+        PlaybackCoordinator? playbackCoordinator = null,
+        TransientNotificationService? notifications = null,
+        SoundLibraryInteractionCoordinator? libraryInteractions = null)
     {
         this.queryLibrary = queryLibrary;
         this.importSounds = importSounds;
@@ -75,6 +81,9 @@ public sealed partial class LibraryViewModel : ObservableObject
         this.playback = playback;
         this.playSound = playSound;
         this.details = details;
+        this.playbackCoordinator = playbackCoordinator;
+        this.notifications = notifications;
+        this.libraryInteractions = libraryInteractions;
 
         Categories = [];
         Sounds = [];
@@ -93,6 +102,15 @@ public sealed partial class LibraryViewModel : ObservableObject
         if (details is not null)
         {
             details.SoundChanged += OnDetailsSoundChanged;
+        }
+        if (playbackCoordinator is not null)
+        {
+            playbackCoordinator.SnapshotChanged += OnPlaybackSnapshotChanged;
+            playbackCoordinator.PlaybackConfirmed += OnPlaybackConfirmed;
+        }
+        if (libraryInteractions is not null)
+        {
+            libraryInteractions.LibraryChanged += OnLibraryChanged;
         }
     }
 
@@ -402,10 +420,20 @@ public sealed partial class LibraryViewModel : ObservableObject
         }
 
         await setSoundFavorite.ExecuteAsync(new SetSoundFavoriteRequest(soundId, !sound.IsFavorite, DateTimeOffset.UtcNow), cancellationToken);
-        ImportToast = new ToastPreviewModel(
-            ToastNotificationKind.Success,
-            !sound.IsFavorite ? "Added to favorites" : "Removed from favorites",
-            sound.Title);
+        if (notifications is not null)
+        {
+            notifications.Show(
+                ToastNotificationKind.Success,
+                !sound.IsFavorite ? "Adicionado aos favoritos" : "Removido dos favoritos",
+                sound.Title);
+        }
+        else
+        {
+            ImportToast = new ToastPreviewModel(
+                ToastNotificationKind.Success,
+                !sound.IsFavorite ? "Added to favorites" : "Removed from favorites",
+                sound.Title);
+        }
         await RefreshAsync(cancellationToken);
     }
 
@@ -425,7 +453,14 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     public async Task StopPlaybackAsync(CancellationToken cancellationToken)
     {
-        await playback.StopAllAsync(cancellationToken);
+        if (playbackCoordinator is not null)
+        {
+            await playbackCoordinator.StopAsync(cancellationToken);
+        }
+        else
+        {
+            await playback.StopAllAsync(cancellationToken);
+        }
         playbackSoundId = null;
         ApplyPlaybackSnapshot(SoundPlaybackSnapshot.Idle);
     }
@@ -539,7 +574,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         for (var index = 0; index < Sounds.Count; index++)
         {
             var item = Sounds[index];
-            Sounds[index] = item with { IsSelected = item.Id == soundId };
+            item.IsSelected = item.Id == soundId;
         }
 
         PopulateHotkeyEditor(soundId);
@@ -627,34 +662,17 @@ public sealed partial class LibraryViewModel : ObservableObject
         for (var index = 0; index < Sounds.Count; index++)
         {
             var item = Sounds[index];
-            soundById.TryGetValue(item.Id, out var sound);
             var isActive = item.Id == activeSoundId;
-            var duration = isActive && snapshot.Duration > TimeSpan.Zero
-                ? snapshot.Duration
-                : sound?.Duration ?? TimeSpan.Zero;
-            var durationText = isActive
-                ? $"{FormatDuration(snapshot.Position)} / {FormatDuration(duration)}"
-                : FormatDuration(duration);
-
-            Sounds[index] = item with
-            {
-                DurationText = durationText,
-                IsPlaying = isActive && snapshot.IsPlaying,
-                IsPaused = isActive && snapshot.IsPaused,
-                StatusText = item.IsMissingFile
-                    ? "File missing"
-                    : isActive && snapshot.IsPlaying
-                        ? "Playing"
-                        : isActive && snapshot.IsPaused
-                            ? "Paused"
-                            : "Stopped"
-            };
+            item.IsPlaying = isActive && snapshot.IsPlaying;
+            item.IsPaused = isActive && snapshot.IsPaused;
+            item.StatusText = item.IsMissingFile ? "File missing" : string.Empty;
         }
     }
 
     private void ShowPlaybackError(string soundName, string message)
     {
         PlaybackToast = new ToastPreviewModel(ToastNotificationKind.Error, $"Could not play {soundName}", message);
+        notifications?.Show(ToastNotificationKind.Error, $"Não foi possível reproduzir {soundName}", message);
     }
 
     private void ReplaceSounds(IReadOnlyList<SoundLibraryItemDto> sounds)
@@ -664,6 +682,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         foreach (var sound in sounds)
         {
             soundById[sound.Id] = sound;
+            playbackCoordinator?.TrackSound(sound.Id, sound.FilePath);
             Sounds.Add(new SoundCardPreviewModel(
                 sound.Name,
                 BuildSoundSubtitle(sound),
@@ -676,19 +695,52 @@ public sealed partial class LibraryViewModel : ObservableObject
                 IsEnabled: true,
                 Id: sound.Id,
                 IsMissingFile: sound.IsMissingFile,
-                StatusText: sound.IsMissingFile ? "File missing" : "Stopped",
-                SelectCommand: ActivateSoundCommand,
-                FavoriteCommand: new AsyncRelayCommand(_ => ToggleFavoriteAsync(sound.Id, CancellationToken.None)),
+                StatusText: sound.IsMissingFile ? "File missing" : string.Empty,
+                SelectCommand: playbackCoordinator?.PlaySoundCommand ?? ActivateSoundCommand,
+                FavoriteCommand: (System.Windows.Input.ICommand?)libraryInteractions?.ToggleFavoriteCommand
+                    ?? new AsyncRelayCommand(_ => ToggleFavoriteAsync(sound.Id, CancellationToken.None)),
                 FormatText: sound.Extension.TrimStart('.').ToUpperInvariant(),
                 UsageText: $"{sound.PlayCount} {(sound.PlayCount == 1 ? "uso" : "usos")}",
                 WaveformBars: ToWaveform(sound.WaveformPeaks),
                 DetailsCommand: details?.OpenCommand,
-                EditCommand: details?.OpenEditCommand));
+                EditCommand: details?.OpenEditCommand,
+                DeleteCommand: libraryInteractions?.DeleteSoundCommand));
+        }
+
+        if (SelectedSoundId is Guid selectedSoundId && !soundById.ContainsKey(selectedSoundId))
+        {
+            SelectedSoundId = null;
+            OnPropertyChanged(nameof(SelectedSoundId));
+            PopulateHotkeyEditor(Guid.Empty);
         }
 
         ApplyPlaybackSnapshot(playback.GetSnapshot());
 
         NotifyStatePropertiesChanged();
+    }
+
+    private void OnPlaybackSnapshotChanged(object? sender, PlaybackSnapshotChange e)
+    {
+        playbackSoundId = e.SoundId;
+        ApplyPlaybackSnapshot(e.Snapshot);
+    }
+
+    private void OnPlaybackConfirmed(object? sender, Guid soundId)
+    {
+        if (!soundById.TryGetValue(soundId, out var sound))
+        {
+            return;
+        }
+
+        var updated = sound with { PlayCount = sound.PlayCount + 1 };
+        soundById[soundId] = updated;
+        for (var index = 0; index < Sounds.Count; index++)
+        {
+            if (Sounds[index].Id == soundId)
+            {
+                Sounds[index].UsageText = $"{updated.PlayCount} {(updated.PlayCount == 1 ? "uso" : "usos")}";
+            }
+        }
     }
 
     private void ReplaceImportFeedback(IReadOnlyList<ImportSoundItemResult> items)
@@ -907,6 +959,18 @@ public sealed partial class LibraryViewModel : ObservableObject
     private async void OnDetailsSoundChanged(object? sender, EventArgs e)
     {
         await RefreshAsync(CancellationToken.None);
+    }
+
+    private async void OnLibraryChanged(object? sender, SoundLibraryChange e)
+    {
+        try
+        {
+            await RefreshAsync(CancellationToken.None);
+        }
+        catch (Exception)
+        {
+            notifications?.Show(ToastNotificationKind.Error, "Biblioteca não atualizada", "Tente novamente.");
+        }
     }
 
     private static WaveformBarViewModel[] ToWaveform(byte[] peaks) => peaks.Length == 32

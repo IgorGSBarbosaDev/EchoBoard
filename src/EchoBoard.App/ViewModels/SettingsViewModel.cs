@@ -25,7 +25,16 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly StartMicrophoneCaptureUseCase startMicrophoneCapture;
     private readonly StopMicrophoneCaptureUseCase stopMicrophoneCapture;
     private readonly GetMicrophoneCaptureSnapshotUseCase getMicrophoneCaptureSnapshot;
+    private readonly ListAudioOutputDevicesUseCase? listAudioOutputDevices;
+    private readonly LoadAudioRoutingSettingsUseCase? loadAudioRoutingSettings;
+    private readonly SaveAudioRoutingSettingsUseCase? saveAudioRoutingSettings;
+    private readonly GetAudioRoutingSnapshotUseCase? getAudioRoutingSnapshot;
+    private readonly AudioRoutingSettingsCoordinator? audioSettings;
     private readonly MicrophoneLevelSmoother microphoneLevelSmoother = new();
+    private readonly object routingSaveSync = new();
+    private Task routingSaveTask = Task.CompletedTask;
+    private AudioRoutingSettingsDto routingSettings = AudioRoutingSettingsDto.Default;
+    private bool isApplyingRouting;
     private ToastPreviewModel? feedbackToast;
     private MicrophoneDeviceOptionViewModel? selectedMicrophoneDevice;
     private string microphoneStatusText = "Stopped";
@@ -35,6 +44,18 @@ public sealed class SettingsViewModel : ObservableObject
     private string microphoneLevelText = "Idle";
     private double microphoneGainPercent = 100;
     private bool isMicrophoneMuted;
+    private AudioOutputDeviceOptionViewModel? selectedMonitorDevice;
+    private AudioOutputDeviceOptionViewModel? selectedVirtualOutputDevice;
+    private double effectsVolumePercent = 100;
+    private double monitorVolumePercent = 80;
+    private double virtualOutputVolumePercent = 100;
+    private bool areEffectsMuted;
+    private bool isMonitorEnabled = true;
+    private bool isMonitorMuted;
+    private bool isVirtualOutputMuted;
+    private string routingStatusText = "Audio mixer is starting";
+    private string virtualOutputWarningText = "Install and select a virtual cable to send microphone and effects to other applications.";
+    private Visibility virtualOutputWarningVisibility = Visibility.Visible;
 
     public SettingsViewModel(
         ListHotkeyBindingsUseCase listHotkeys,
@@ -48,7 +69,12 @@ public sealed class SettingsViewModel : ObservableObject
         SetMicrophoneMuteUseCase setMicrophoneMute,
         StartMicrophoneCaptureUseCase startMicrophoneCapture,
         StopMicrophoneCaptureUseCase stopMicrophoneCapture,
-        GetMicrophoneCaptureSnapshotUseCase getMicrophoneCaptureSnapshot)
+        GetMicrophoneCaptureSnapshotUseCase getMicrophoneCaptureSnapshot,
+        ListAudioOutputDevicesUseCase? listAudioOutputDevices = null,
+        LoadAudioRoutingSettingsUseCase? loadAudioRoutingSettings = null,
+        SaveAudioRoutingSettingsUseCase? saveAudioRoutingSettings = null,
+        GetAudioRoutingSnapshotUseCase? getAudioRoutingSnapshot = null,
+        AudioRoutingSettingsCoordinator? audioSettings = null)
     {
         this.listHotkeys = listHotkeys;
         this.assignGlobalHotkey = assignGlobalHotkey;
@@ -62,6 +88,11 @@ public sealed class SettingsViewModel : ObservableObject
         this.startMicrophoneCapture = startMicrophoneCapture;
         this.stopMicrophoneCapture = stopMicrophoneCapture;
         this.getMicrophoneCaptureSnapshot = getMicrophoneCaptureSnapshot;
+        this.listAudioOutputDevices = listAudioOutputDevices;
+        this.loadAudioRoutingSettings = loadAudioRoutingSettings;
+        this.saveAudioRoutingSettings = saveAudioRoutingSettings;
+        this.getAudioRoutingSnapshot = getAudioRoutingSnapshot;
+        this.audioSettings = audioSettings;
 
         GlobalHotkeys =
         [
@@ -71,10 +102,16 @@ public sealed class SettingsViewModel : ObservableObject
         ];
 
         MicrophoneDevices = [];
+        MonitorDevices = [];
+        VirtualOutputDevices = [];
         RefreshMicrophoneDevicesCommand = new AsyncRelayCommand(RefreshMicrophoneDevicesAsync);
         StartMicrophoneCaptureCommand = new AsyncRelayCommand(StartMicrophoneCaptureAsync);
         StopMicrophoneCaptureCommand = new AsyncRelayCommand(StopMicrophoneCaptureAsync);
         ToggleMicrophoneMuteCommand = new AsyncRelayCommand(ToggleMicrophoneMuteAsync);
+        if (audioSettings is not null)
+        {
+            audioSettings.PropertyChanged += OnAudioSettingsPropertyChanged;
+        }
     }
 
     public string Title => "Settings";
@@ -85,6 +122,10 @@ public sealed class SettingsViewModel : ObservableObject
 
     public ObservableCollection<MicrophoneDeviceOptionViewModel> MicrophoneDevices { get; }
 
+    public ObservableCollection<AudioOutputDeviceOptionViewModel> MonitorDevices { get; }
+
+    public ObservableCollection<AudioOutputDeviceOptionViewModel> VirtualOutputDevices { get; }
+
     public MicrophoneDeviceOptionViewModel? SelectedMicrophoneDevice
     {
         get => selectedMicrophoneDevice;
@@ -92,7 +133,14 @@ public sealed class SettingsViewModel : ObservableObject
         {
             if (SetProperty(ref selectedMicrophoneDevice, value) && value is not null)
             {
-                _ = SelectMicrophoneDeviceAsync(value.Id, CancellationToken.None);
+                if (audioSettings is not null)
+                {
+                    audioSettings.SetInputDevice(value.Id, value.Name);
+                }
+                else
+                {
+                    _ = SelectMicrophoneDeviceAsync(value.Id, CancellationToken.None);
+                }
             }
         }
     }
@@ -129,9 +177,15 @@ public sealed class SettingsViewModel : ObservableObject
 
     public double MicrophoneGainPercent
     {
-        get => microphoneGainPercent;
+        get => audioSettings?.MicrophonePercent ?? microphoneGainPercent;
         set
         {
+            if (audioSettings is not null)
+            {
+                audioSettings.MicrophonePercent = value;
+                return;
+            }
+
             if (SetProperty(ref microphoneGainPercent, value))
             {
                 _ = SetMicrophoneGainAsync(value / 100.0, CancellationToken.None);
@@ -141,11 +195,216 @@ public sealed class SettingsViewModel : ObservableObject
 
     public bool IsMicrophoneMuted
     {
-        get => isMicrophoneMuted;
-        private set => SetProperty(ref isMicrophoneMuted, value);
+        get => audioSettings?.IsMicrophoneMuted ?? isMicrophoneMuted;
+        private set
+        {
+            if (audioSettings is not null)
+            {
+                audioSettings.IsMicrophoneMuted = value;
+            }
+            else
+            {
+                SetProperty(ref isMicrophoneMuted, value);
+            }
+        }
     }
 
     public string MicrophoneMuteButtonText => IsMicrophoneMuted ? "Unmute" : "Mute";
+
+    public AudioOutputDeviceOptionViewModel? SelectedMonitorDevice
+    {
+        get => selectedMonitorDevice;
+        set
+        {
+            if (SetProperty(ref selectedMonitorDevice, value) && !isApplyingRouting)
+            {
+                if (audioSettings is not null)
+                {
+                    audioSettings.SetMonitorDevice(value?.Id, value?.Name);
+                }
+                else
+                {
+                    _ = PersistRoutingAsync(CancellationToken.None);
+                }
+            }
+        }
+    }
+
+    public AudioOutputDeviceOptionViewModel? SelectedVirtualOutputDevice
+    {
+        get => selectedVirtualOutputDevice;
+        set
+        {
+            if (!isApplyingRouting &&
+                value?.Id is not null &&
+                SelectedMicrophoneDevice?.EndpointFamily is { } inputFamily &&
+                string.Equals(inputFamily, value.EndpointFamily, StringComparison.Ordinal))
+            {
+                FeedbackToast = new ToastPreviewModel(
+                    ToastNotificationKind.Warning,
+                    "Virtual output not selected",
+                    "Choose an output from a different device family to prevent audio feedback.");
+                OnPropertyChanged();
+                return;
+            }
+
+            if (SetProperty(ref selectedVirtualOutputDevice, value) && !isApplyingRouting)
+            {
+                if (audioSettings is not null)
+                {
+                    audioSettings.SetVirtualOutputDevice(value?.Id, value?.Name);
+                }
+                else
+                {
+                    _ = PersistRoutingAsync(CancellationToken.None);
+                }
+            }
+        }
+    }
+
+    public double EffectsVolumePercent
+    {
+        get => audioSettings?.EffectsPercent ?? effectsVolumePercent;
+        set
+        {
+            if (audioSettings is not null)
+            {
+                audioSettings.EffectsPercent = value;
+                return;
+            }
+
+            if (SetProperty(ref effectsVolumePercent, Math.Clamp(value, 0, 100)) && !isApplyingRouting)
+            {
+                _ = PersistRoutingAsync(CancellationToken.None);
+            }
+        }
+    }
+
+    public double MonitorVolumePercent
+    {
+        get => audioSettings?.MonitorPercent ?? monitorVolumePercent;
+        set
+        {
+            if (audioSettings is not null)
+            {
+                audioSettings.MonitorPercent = value;
+                return;
+            }
+
+            if (SetProperty(ref monitorVolumePercent, Math.Clamp(value, 0, 100)) && !isApplyingRouting)
+            {
+                _ = PersistRoutingAsync(CancellationToken.None);
+            }
+        }
+    }
+
+    public double VirtualOutputVolumePercent
+    {
+        get => audioSettings?.VirtualOutputPercent ?? virtualOutputVolumePercent;
+        set
+        {
+            if (audioSettings is not null)
+            {
+                audioSettings.VirtualOutputPercent = value;
+                return;
+            }
+
+            if (SetProperty(ref virtualOutputVolumePercent, Math.Clamp(value, 0, 100)) && !isApplyingRouting)
+            {
+                _ = PersistRoutingAsync(CancellationToken.None);
+            }
+        }
+    }
+
+    public bool AreEffectsMuted
+    {
+        get => audioSettings?.AreEffectsMuted ?? areEffectsMuted;
+        set
+        {
+            if (audioSettings is not null)
+            {
+                audioSettings.AreEffectsMuted = value;
+                return;
+            }
+
+            if (SetProperty(ref areEffectsMuted, value) && !isApplyingRouting)
+            {
+                _ = PersistRoutingAsync(CancellationToken.None);
+            }
+        }
+    }
+
+    public bool IsMonitorEnabled
+    {
+        get => audioSettings?.IsMonitorEnabled ?? isMonitorEnabled;
+        set
+        {
+            if (audioSettings is not null)
+            {
+                audioSettings.IsMonitorEnabled = value;
+                return;
+            }
+
+            if (SetProperty(ref isMonitorEnabled, value) && !isApplyingRouting)
+            {
+                _ = PersistRoutingAsync(CancellationToken.None);
+            }
+        }
+    }
+
+    public bool IsMonitorMuted
+    {
+        get => audioSettings?.IsMonitorMuted ?? isMonitorMuted;
+        set
+        {
+            if (audioSettings is not null)
+            {
+                audioSettings.IsMonitorMuted = value;
+                return;
+            }
+
+            if (SetProperty(ref isMonitorMuted, value) && !isApplyingRouting)
+            {
+                _ = PersistRoutingAsync(CancellationToken.None);
+            }
+        }
+    }
+
+    public bool IsVirtualOutputMuted
+    {
+        get => audioSettings?.IsVirtualOutputMuted ?? isVirtualOutputMuted;
+        set
+        {
+            if (audioSettings is not null)
+            {
+                audioSettings.IsVirtualOutputMuted = value;
+                return;
+            }
+
+            if (SetProperty(ref isVirtualOutputMuted, value) && !isApplyingRouting)
+            {
+                _ = PersistRoutingAsync(CancellationToken.None);
+            }
+        }
+    }
+
+    public string RoutingStatusText
+    {
+        get => routingStatusText;
+        private set => SetProperty(ref routingStatusText, value);
+    }
+
+    public string VirtualOutputWarningText
+    {
+        get => virtualOutputWarningText;
+        private set => SetProperty(ref virtualOutputWarningText, value);
+    }
+
+    public Visibility VirtualOutputWarningVisibility
+    {
+        get => virtualOutputWarningVisibility;
+        private set => SetProperty(ref virtualOutputWarningVisibility, value);
+    }
 
     public IAsyncRelayCommand RefreshMicrophoneDevicesCommand { get; }
 
@@ -179,8 +438,22 @@ public sealed class SettingsViewModel : ObservableObject
         }
 
         await RefreshMicrophoneDevicesAsync(cancellationToken);
-        await loadMicrophoneSettings.ExecuteAsync(cancellationToken);
+        await RefreshOutputDevicesAsync(cancellationToken);
+        if (audioSettings is not null)
+        {
+            await audioSettings.LoadAsync(cancellationToken);
+            ApplyRoutingSettings(audioSettings.Current);
+        }
+        else if (loadAudioRoutingSettings is not null)
+        {
+            ApplyRoutingSettings(await loadAudioRoutingSettings.ExecuteAsync(cancellationToken));
+        }
+        else
+        {
+            await loadMicrophoneSettings.ExecuteAsync(cancellationToken);
+        }
         ApplyMicrophoneSnapshot(getMicrophoneCaptureSnapshot.Execute());
+        ApplyRoutingSnapshot();
     }
 
     public async Task RefreshMicrophoneDevicesAsync(CancellationToken cancellationToken)
@@ -189,7 +462,12 @@ public sealed class SettingsViewModel : ObservableObject
         MicrophoneDevices.Clear();
         foreach (var device in devices)
         {
-            MicrophoneDevices.Add(new MicrophoneDeviceOptionViewModel(device.Id, device.Name, device.IsDefault, device.IsAvailable));
+            MicrophoneDevices.Add(new MicrophoneDeviceOptionViewModel(
+                device.Id,
+                device.Name,
+                device.IsDefault,
+                device.IsAvailable,
+                device.EndpointFamily));
         }
     }
 
@@ -197,9 +475,16 @@ public sealed class SettingsViewModel : ObservableObject
     {
         try
         {
-            var snapshot = await selectMicrophoneDevice.ExecuteAsync(deviceId, cancellationToken);
-            ApplyMicrophoneSnapshot(snapshot);
-            FeedbackToast = new ToastPreviewModel(ToastNotificationKind.Success, "Microphone selected", snapshot.SelectedDeviceName ?? "Selected input device.");
+            if (saveAudioRoutingSettings is not null)
+            {
+                await PersistRoutingAsync(cancellationToken);
+                ApplyMicrophoneSnapshot(getMicrophoneCaptureSnapshot.Execute());
+            }
+            else
+            {
+                var snapshot = await selectMicrophoneDevice.ExecuteAsync(deviceId, cancellationToken);
+                ApplyMicrophoneSnapshot(snapshot);
+            }
         }
         catch (Exception exception)
         {
@@ -224,15 +509,14 @@ public sealed class SettingsViewModel : ObservableObject
     public void RefreshMicrophoneSnapshot(TimeSpan? elapsed = null)
     {
         ApplyMicrophoneSnapshot(getMicrophoneCaptureSnapshot.Execute(), elapsed ?? DefaultMeterInterval);
+        ApplyRoutingSnapshot();
     }
 
     public async Task DeactivateAsync(CancellationToken cancellationToken)
     {
-        var snapshot = await stopMicrophoneCapture.ExecuteAsync(cancellationToken);
-        ApplyMicrophoneSnapshot(snapshot);
+        await Task.CompletedTask;
         microphoneLevelSmoother.Reset();
-        MicrophoneLevel = 0;
-        MicrophoneLevelText = "Idle";
+        ApplyMicrophoneSnapshot(getMicrophoneCaptureSnapshot.Execute());
     }
 
     private GlobalHotkeySettingViewModel CreateRow(GlobalHotkeyCommand command, string title, string description)
@@ -248,14 +532,36 @@ public sealed class SettingsViewModel : ObservableObject
 
     private async Task SetMicrophoneGainAsync(double gain, CancellationToken cancellationToken)
     {
+        if (audioSettings is not null)
+        {
+            audioSettings.MicrophonePercent = gain * 100;
+            return;
+        }
+
         var snapshot = await setMicrophoneGain.ExecuteAsync(gain, cancellationToken);
         ApplyMicrophoneSnapshot(snapshot);
+        if (saveAudioRoutingSettings is not null && !isApplyingRouting)
+        {
+            await PersistRoutingAsync(cancellationToken);
+        }
     }
 
     private async Task ToggleMicrophoneMuteAsync(CancellationToken cancellationToken)
     {
+        if (audioSettings is not null)
+        {
+            audioSettings.IsMicrophoneMuted = !audioSettings.IsMicrophoneMuted;
+            OnPropertyChanged(nameof(IsMicrophoneMuted));
+            OnPropertyChanged(nameof(MicrophoneMuteButtonText));
+            return;
+        }
+
         var snapshot = await setMicrophoneMute.ExecuteAsync(!IsMicrophoneMuted, cancellationToken);
         ApplyMicrophoneSnapshot(snapshot);
+        if (saveAudioRoutingSettings is not null)
+        {
+            await PersistRoutingAsync(cancellationToken);
+        }
         FeedbackToast = new ToastPreviewModel(
             snapshot.IsMuted ? ToastNotificationKind.Warning : ToastNotificationKind.Success,
             snapshot.IsMuted ? "Microphone muted" : "Microphone unmuted",
@@ -277,10 +583,16 @@ public sealed class SettingsViewModel : ObservableObject
             MicrophoneLevel = microphoneLevelSmoother.Update(targetLevel, elapsed);
         }
         MicrophoneLevelText = snapshot.IsMuted ? "Muted" : snapshot.State == MicrophoneCaptureState.Active ? $"{MicrophoneLevel:P0}" : "Idle";
-        isMicrophoneMuted = snapshot.IsMuted;
+        if (audioSettings is null)
+        {
+            isMicrophoneMuted = snapshot.IsMuted;
+        }
         OnPropertyChanged(nameof(IsMicrophoneMuted));
         OnPropertyChanged(nameof(MicrophoneMuteButtonText));
-        microphoneGainPercent = Math.Clamp(snapshot.Gain * 100.0, 0, 100);
+        if (audioSettings is null)
+        {
+            microphoneGainPercent = Math.Clamp(snapshot.Gain * 100.0, 0, 100);
+        }
         OnPropertyChanged(nameof(MicrophoneGainPercent));
 
         var selected = MicrophoneDevices.SingleOrDefault(device => device.Id == snapshot.SelectedDeviceId);
@@ -312,6 +624,195 @@ public sealed class SettingsViewModel : ObservableObject
             MicrophoneCaptureState.Failed => new ToastPreviewModel(ToastNotificationKind.Error, "Microphone failed", snapshot.ErrorMessage ?? snapshot.StatusMessage),
             _ => new ToastPreviewModel(ToastNotificationKind.Info, "Microphone", snapshot.StatusMessage)
         };
+    }
+
+    private async Task RefreshOutputDevicesAsync(CancellationToken cancellationToken)
+    {
+        if (listAudioOutputDevices is null)
+        {
+            return;
+        }
+
+        var devices = await listAudioOutputDevices.ExecuteAsync(cancellationToken);
+        MonitorDevices.Clear();
+        VirtualOutputDevices.Clear();
+        VirtualOutputDevices.Add(AudioOutputDeviceOptionViewModel.None);
+        foreach (var device in devices)
+        {
+            MonitorDevices.Add(AudioOutputDeviceOptionViewModel.From(device));
+        }
+
+        foreach (var device in devices
+                     .OrderByDescending(device => device.IsVirtualOutputCandidate)
+                     .ThenByDescending(device => device.IsDefault)
+                     .ThenBy(device => device.Name))
+        {
+            VirtualOutputDevices.Add(AudioOutputDeviceOptionViewModel.From(device));
+        }
+    }
+
+    private void ApplyRoutingSettings(AudioRoutingSettingsDto value)
+    {
+        isApplyingRouting = true;
+        try
+        {
+            routingSettings = value;
+            selectedMicrophoneDevice = MicrophoneDevices.SingleOrDefault(device => device.Id == value.InputDeviceId);
+            selectedMonitorDevice = FindOrAddUnavailableOutput(
+                MonitorDevices,
+                value.MonitorDeviceId,
+                value.MonitorDeviceName,
+                allowNone: false);
+            selectedVirtualOutputDevice = FindOrAddUnavailableOutput(
+                VirtualOutputDevices,
+                value.VirtualOutputDeviceId,
+                value.VirtualOutputDeviceName,
+                allowNone: true);
+            microphoneGainPercent = value.MicrophoneVolume * 100;
+            effectsVolumePercent = value.EffectsVolume * 100;
+            monitorVolumePercent = value.MonitorVolume * 100;
+            virtualOutputVolumePercent = value.VirtualOutputVolume * 100;
+            isMicrophoneMuted = value.IsMicrophoneMuted;
+            areEffectsMuted = value.AreEffectsMuted;
+            isMonitorEnabled = value.IsMonitorEnabled;
+            isMonitorMuted = value.IsMonitorMuted;
+            isVirtualOutputMuted = value.IsVirtualOutputMuted;
+            foreach (var property in new[]
+                     {
+                         nameof(SelectedMicrophoneDevice), nameof(SelectedMonitorDevice), nameof(SelectedVirtualOutputDevice),
+                         nameof(MicrophoneGainPercent), nameof(EffectsVolumePercent), nameof(MonitorVolumePercent),
+                         nameof(VirtualOutputVolumePercent), nameof(IsMicrophoneMuted), nameof(AreEffectsMuted),
+                         nameof(IsMonitorEnabled), nameof(IsMonitorMuted), nameof(IsVirtualOutputMuted), nameof(MicrophoneMuteButtonText)
+                     })
+            {
+                OnPropertyChanged(property);
+            }
+        }
+        finally
+        {
+            isApplyingRouting = false;
+        }
+    }
+
+    private Task PersistRoutingAsync(CancellationToken cancellationToken)
+    {
+        if (saveAudioRoutingSettings is null || isApplyingRouting)
+        {
+            return Task.CompletedTask;
+        }
+
+        var value = routingSettings with
+        {
+            InputDeviceId = SelectedMicrophoneDevice?.Id,
+            InputDeviceName = SelectedMicrophoneDevice?.Name,
+            MonitorDeviceId = SelectedMonitorDevice?.Id,
+            MonitorDeviceName = SelectedMonitorDevice?.Name,
+            VirtualOutputDeviceId = SelectedVirtualOutputDevice?.Id,
+            VirtualOutputDeviceName = SelectedVirtualOutputDevice?.Name,
+            MicrophoneVolume = MicrophoneGainPercent / 100.0,
+            EffectsVolume = EffectsVolumePercent / 100.0,
+            MonitorVolume = MonitorVolumePercent / 100.0,
+            VirtualOutputVolume = VirtualOutputVolumePercent / 100.0,
+            IsMicrophoneMuted = IsMicrophoneMuted,
+            AreEffectsMuted = AreEffectsMuted,
+            IsMonitorEnabled = IsMonitorEnabled,
+            IsMonitorMuted = IsMonitorMuted,
+            IsVirtualOutputMuted = IsVirtualOutputMuted
+        };
+        routingSettings = value;
+        lock (routingSaveSync)
+        {
+            routingSaveTask = SaveRoutingAfterAsync(routingSaveTask, value, cancellationToken);
+            return routingSaveTask;
+        }
+    }
+
+    private async Task SaveRoutingAfterAsync(
+        Task previous,
+        AudioRoutingSettingsDto value,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await previous;
+        }
+        catch (Exception)
+        {
+            // A newer complete settings snapshot is still allowed to repair the route.
+        }
+
+        try
+        {
+            var snapshot = await saveAudioRoutingSettings!.ExecuteAsync(value, cancellationToken);
+            RoutingStatusText = snapshot.StatusMessage;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            RoutingStatusText = "Audio route could not be updated.";
+            FeedbackToast = new ToastPreviewModel(ToastNotificationKind.Error, "Routing not updated", exception.Message);
+        }
+    }
+
+    private void ApplyRoutingSnapshot()
+    {
+        if (getAudioRoutingSnapshot is not null)
+        {
+            var snapshot = getAudioRoutingSnapshot.Execute();
+            RoutingStatusText = snapshot.StatusMessage;
+            VirtualOutputWarningVisibility = snapshot.VirtualOutputState == AudioRouteState.Active
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+            VirtualOutputWarningText = snapshot.VirtualOutputState switch
+            {
+                AudioRouteState.Unconfigured =>
+                    "Install and select VB-CABLE, VoiceMeeter, or another virtual cable to transmit microphone and effects.",
+                AudioRouteState.Unavailable =>
+                    "The saved virtual output is disconnected. EchoBoard will reconnect it automatically.",
+                AudioRouteState.Failed =>
+                    snapshot.VirtualOutputErrorMessage ?? "The virtual output could not be started. Local playback remains available.",
+                _ => snapshot.StatusMessage
+            };
+        }
+    }
+
+    private static AudioOutputDeviceOptionViewModel? FindOrAddUnavailableOutput(
+        ObservableCollection<AudioOutputDeviceOptionViewModel> devices,
+        string? id,
+        string? name,
+        bool allowNone)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return allowNone ? AudioOutputDeviceOptionViewModel.None : null;
+        }
+
+        var existing = devices.SingleOrDefault(device => string.Equals(device.Id, id, StringComparison.Ordinal));
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var unavailable = new AudioOutputDeviceOptionViewModel(
+            id,
+            string.IsNullOrWhiteSpace(name) ? "Previously selected device" : name,
+            IsDefault: false,
+            IsAvailable: false,
+            IsVirtualOutputCandidate: false,
+            EndpointFamily: null,
+            IsPersistedUnavailable: true);
+        devices.Insert(allowNone ? 1 : 0, unavailable);
+        return unavailable;
+    }
+
+    private void OnAudioSettingsPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (audioSettings is not null)
+        {
+            ApplyRoutingSettings(audioSettings.Current);
+        }
     }
 
     private async Task SaveGlobalHotkeyAsync(GlobalHotkeySettingViewModel? row, CancellationToken cancellationToken)
@@ -374,9 +875,43 @@ public sealed class SettingsViewModel : ObservableObject
     }
 }
 
-public sealed record MicrophoneDeviceOptionViewModel(string Id, string Name, bool IsDefault, bool IsAvailable)
+public sealed record MicrophoneDeviceOptionViewModel(
+    string Id,
+    string Name,
+    bool IsDefault,
+    bool IsAvailable,
+    string? EndpointFamily = null)
 {
     public string DisplayName => IsDefault ? $"{Name} (Default)" : Name;
+}
+
+public sealed record AudioOutputDeviceOptionViewModel(
+    string? Id,
+    string Name,
+    bool IsDefault,
+    bool IsAvailable,
+    bool IsVirtualOutputCandidate = false,
+    string? EndpointFamily = null,
+    bool IsPersistedUnavailable = false)
+{
+    public static AudioOutputDeviceOptionViewModel None { get; } = new(null, "No virtual output", false, true);
+
+    public string DisplayName => IsPersistedUnavailable
+        ? $"{Name} (Unavailable)"
+        : IsVirtualOutputCandidate
+            ? $"{Name} (Virtual cable)"
+            : IsDefault ? $"{Name} (Default)" : Name;
+
+    public static AudioOutputDeviceOptionViewModel From(AudioOutputDeviceDto device)
+    {
+        return new AudioOutputDeviceOptionViewModel(
+            device.Id,
+            device.Name,
+            device.IsDefault,
+            device.IsAvailable,
+            device.IsVirtualOutputCandidate,
+            device.EndpointFamily);
+    }
 }
 
 public sealed class GlobalHotkeySettingViewModel : ObservableObject

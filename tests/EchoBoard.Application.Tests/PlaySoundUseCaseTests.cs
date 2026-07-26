@@ -54,6 +54,32 @@ public sealed class PlaySoundUseCaseTests
         history.Entries.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task ExecuteAsyncRepairsLegacyDurationAfterConfirmedDecode()
+    {
+        var sound = Sound.Create(
+            "Legacy",
+            "C:\\Audio\\legacy.mp3",
+            ".mp3",
+            TimeSpan.FromMilliseconds(24),
+            18_797,
+            null,
+            0,
+            Now);
+        var sounds = new FakeSoundRepository(sound);
+        var history = new FakeRecentlyPlayedRepository();
+        var playback = new FakePlaybackEngine { StartDuration = TimeSpan.FromSeconds(8.8265) };
+        var useCase = new PlaySoundUseCase(sounds, new FakeFileReader(), history, playback);
+
+        await useCase.ExecuteAsync(
+            new PlaySoundRequest(sound.Id, Now.AddSeconds(1)),
+            TestContext.Current.CancellationToken);
+
+        sound.Duration.Should().BeCloseTo(TimeSpan.FromSeconds(8.8265), TimeSpan.FromMilliseconds(1));
+        sounds.UpdateCount.Should().Be(1);
+        history.Entries.Should().ContainSingle();
+    }
+
     private static PlaySoundUseCase CreateUseCase(Sound sound, FakeRecentlyPlayedRepository history, FakePlaybackEngine playback) =>
         new(new FakeSoundRepository(sound), new FakeFileReader(), history, playback);
 
@@ -62,11 +88,16 @@ public sealed class PlaySoundUseCaseTests
 
     private sealed class FakeSoundRepository(Sound sound) : ISoundLibraryRepository
     {
+        public int UpdateCount { get; private set; }
         public Task<IReadOnlyList<Sound>> ListSoundsAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Sound>>([sound]);
         public Task<Sound?> GetSoundAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<Sound?>(id == sound.Id ? sound : null);
         public Task<bool> SoundFilePathExistsAsync(string filePath, Guid? excludingSoundId, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task AddSoundAsync(Sound item, CancellationToken cancellationToken) => Task.CompletedTask;
-        public Task UpdateSoundAsync(Sound item, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task UpdateSoundAsync(Sound item, CancellationToken cancellationToken)
+        {
+            UpdateCount++;
+            return Task.CompletedTask;
+        }
         public Task DeleteSoundAsync(Guid id, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
@@ -88,13 +119,27 @@ public sealed class PlaySoundUseCaseTests
         public List<string> Operations { get; } = [];
         public SoundPlaybackOptions? LastOptions { get; private set; }
         public Exception? PlayException { get; init; }
-        public Task PlayAsync(string filePath, double volume, CancellationToken cancellationToken) => PlayAsync(filePath, volume, SoundPlaybackOptions.Default, cancellationToken);
-        public Task PlayAsync(string filePath, double volume, SoundPlaybackOptions options, CancellationToken cancellationToken)
+        public TimeSpan StartDuration { get; init; } = TimeSpan.FromSeconds(1);
+        public Task<SoundPlaybackStartResult> PlayAsync(string filePath, double volume, CancellationToken cancellationToken) => PlayAsync(filePath, volume, SoundPlaybackOptions.Default, cancellationToken);
+        public Task<SoundPlaybackStartResult> PlayAsync(string filePath, double volume, SoundPlaybackOptions options, CancellationToken cancellationToken)
         {
             if (PlayException is not null) throw PlayException;
             Operations.Add("play");
             LastOptions = options;
-            return Task.CompletedTask;
+            var snapshot = new SoundPlaybackSnapshot(
+                filePath,
+                TimeSpan.Zero,
+                StartDuration,
+                IsPlaying: true,
+                IsPaused: false);
+            return Task.FromResult(
+                new SoundPlaybackStartResult(
+                    Guid.NewGuid(),
+                    filePath,
+                    snapshot.Duration,
+                    IsMonitorActive: true,
+                    IsVirtualOutputActive: false,
+                    snapshot));
         }
         public Task StopAllAsync(CancellationToken cancellationToken) { Operations.Add("stop-all"); return Task.CompletedTask; }
         public Task StopSoundAsync(string filePath, CancellationToken cancellationToken) { Operations.Add("stop-sound"); return Task.CompletedTask; }

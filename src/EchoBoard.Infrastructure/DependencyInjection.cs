@@ -25,7 +25,6 @@ public static class DependencyInjection
         services.AddScoped<IHotkeyBindingRepository, EfHotkeyBindingRepository>();
         services.AddScoped<IAppSettingRepository, EfAppSettingRepository>();
         services.AddScoped<IRecentlyPlayedRepository, EfRecentlyPlayedRepository>();
-        services.AddScoped<IAudioFileMetadataReader, AudioFileMetadataReader>();
         services.AddScoped<ISoundFileAvailabilityReader, SoundFileAvailabilityReader>();
         services.AddScoped<IDatabaseInitializer, EfDatabaseInitializer>();
         services.AddSingleton<WindowsGlobalHotkeyRegistrar>();

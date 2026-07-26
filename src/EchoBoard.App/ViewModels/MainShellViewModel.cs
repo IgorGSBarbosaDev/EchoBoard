@@ -17,6 +17,8 @@ public sealed partial class MainShellViewModel : ObservableObject
     private readonly SaveAppearanceSettingsUseCase saveAppearanceSettings;
     private readonly IAppearanceResourceManager appearanceResourceManager;
     private readonly GetMicrophoneCaptureSnapshotUseCase getMicrophoneSnapshot;
+    private readonly GetAudioRoutingSnapshotUseCase? getAudioRoutingSnapshot;
+    private readonly PlaybackCoordinator? playbackCoordinator;
     private readonly Dictionary<ShellRoute, ObservableObject> pages;
     private ShellNavigationItemViewModel selectedNavigationItem;
     private ObservableObject currentPage;
@@ -25,6 +27,7 @@ public sealed partial class MainShellViewModel : ObservableObject
     private string selectedAccentPalette = AppearancePalettes.Blue;
     private bool isNavigationPaneOpen = true;
     private string microphoneStatusLabel = "Mic not configured";
+    private string virtualOutputStatusLabel = "Virtual output not configured";
 
     public MainShellViewModel(
         INavigationService navigationService,
@@ -39,15 +42,21 @@ public sealed partial class MainShellViewModel : ObservableObject
         GetMicrophoneCaptureSnapshotUseCase getMicrophoneSnapshot,
         LoadAppearanceSettingsUseCase loadAppearanceSettings,
         SaveAppearanceSettingsUseCase saveAppearanceSettings,
-        IAppearanceResourceManager appearanceResourceManager)
+        IAppearanceResourceManager appearanceResourceManager,
+        PlaybackCoordinator? playbackCoordinator = null,
+        TransientNotificationService? notifications = null,
+        GetAudioRoutingSnapshotUseCase? getAudioRoutingSnapshot = null)
     {
         this.navigationService = navigationService;
         this.loadAppearanceSettings = loadAppearanceSettings;
         this.saveAppearanceSettings = saveAppearanceSettings;
         this.appearanceResourceManager = appearanceResourceManager;
         this.getMicrophoneSnapshot = getMicrophoneSnapshot;
+        this.playbackCoordinator = playbackCoordinator;
+        this.getAudioRoutingSnapshot = getAudioRoutingSnapshot;
         PlaybackBar = playbackBarViewModel;
         SoundDetails = soundDetailsViewModel;
+        Notifications = notifications ?? new TransientNotificationService();
         pages = new Dictionary<ShellRoute, ObservableObject>
         {
             [ShellRoute.Dashboard] = dashboardViewModel,
@@ -91,11 +100,17 @@ public sealed partial class MainShellViewModel : ObservableObject
         private set => SetProperty(ref microphoneStatusLabel, value);
     }
 
-    public string VirtualOutputStatusLabel => "Not implemented";
+    public string VirtualOutputStatusLabel
+    {
+        get => virtualOutputStatusLabel;
+        private set => SetProperty(ref virtualOutputStatusLabel, value);
+    }
 
     public PlaybackBarViewModel PlaybackBar { get; }
 
     public SoundDetailsViewModel SoundDetails { get; }
+
+    public TransientNotificationService Notifications { get; }
 
     public ObservableCollection<ShellNavigationItemViewModel> NavigationItems { get; }
 
@@ -184,6 +199,30 @@ public sealed partial class MainShellViewModel : ObservableObject
         MicrophoneStatusLabel = snapshot.SelectedDeviceId is null
             ? "Mic not configured"
             : snapshot.State == MicrophoneCaptureState.Active ? "Mic active" : "Mic ready";
+        if (getAudioRoutingSnapshot is not null)
+        {
+            var routing = getAudioRoutingSnapshot.Execute();
+            VirtualOutputStatusLabel = routing.VirtualOutputState switch
+            {
+                AudioRouteState.Active => "Virtual output active",
+                AudioRouteState.Unavailable => "Virtual output unavailable",
+                AudioRouteState.Failed => "Virtual output failed",
+                _ => "Virtual output not configured"
+            };
+        }
+    }
+
+    public void RefreshPlaybackState()
+    {
+        if (playbackCoordinator is not null)
+        {
+            playbackCoordinator.Refresh();
+        }
+        else
+        {
+            PlaybackBar.Refresh();
+        }
+        RefreshAudioStatus();
     }
 
     private void Navigate(object? parameter)

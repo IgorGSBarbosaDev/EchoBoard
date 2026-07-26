@@ -1,13 +1,63 @@
 using EchoBoard.Application.Library;
-using EchoBoard.Infrastructure.Files;
+using EchoBoard.Audio.Decoding;
+using Concentus;
+using Concentus.Enums;
+using Concentus.Oggfile;
 using FluentAssertions;
 using NAudio.Wave;
 using Xunit;
 
-namespace EchoBoard.Infrastructure.Tests;
+namespace EchoBoard.Audio.Tests;
 
 public sealed class AudioFileMetadataReaderTests
 {
+    [Fact]
+    public async Task ReadAsyncDetectsOggOpusWhenFileHasMp3Extension()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"echoboard-opus-{Guid.NewGuid():N}.mp3");
+        try
+        {
+            await using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                var encoder = OpusCodecFactory.CreateEncoder(48000, 1, OpusApplication.OPUS_APPLICATION_AUDIO, TextWriter.Null);
+                var writer = new OpusOggWriteStream(encoder, stream, new OpusTags(), 48000, 1, leaveOpen: true);
+                var samples = Enumerable.Range(0, 4800)
+                    .Select(index => (float)(Math.Sin(index * 2 * Math.PI * 440 / 48000) * 0.25))
+                    .ToArray();
+                writer.WriteSamples(samples, 0, samples.Length);
+                writer.Finish();
+            }
+
+            var metadata = await new AudioFileMetadataReader().ReadAsync(path, TestContext.Current.CancellationToken);
+
+            metadata.Extension.Should().Be(".mp3");
+            metadata.Duration.Should().BeCloseTo(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(30));
+            metadata.WaveformPeaks.Should().HaveCount(32);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task ReadAsyncRejectsCorruptedSupportedFile()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"echoboard-corrupt-{Guid.NewGuid():N}.ogg");
+        try
+        {
+            await File.WriteAllBytesAsync(path, "not audio"u8.ToArray(), TestContext.Current.CancellationToken);
+
+            var act = () => new AudioFileMetadataReader().ReadAsync(path, TestContext.Current.CancellationToken);
+
+            await act.Should().ThrowAsync<AudioFileMetadataException>();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

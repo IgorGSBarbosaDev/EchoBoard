@@ -3,8 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:EchoBoard.App.Controls"
-    Loaded="OnLoaded"
-    Unloaded="OnUnloaded">
+    Loaded="OnLoaded">
     <ScrollViewer>
         <StackPanel
             AllowDrop="True"
@@ -151,13 +150,6 @@
                             DismissCommand="{Binding DismissImportFeedbackCommand}"
                             Visibility="{Binding ImportToastVisibility}" />
 
-                        <controls:ToastNotification
-                            Kind="{Binding PlaybackToast.Kind}"
-                            Title="{Binding PlaybackToast.Title}"
-                            Description="{Binding PlaybackToast.Description}"
-                            DismissCommand="{Binding DismissPlaybackFeedbackCommand}"
-                            Visibility="{Binding PlaybackToastVisibility}" />
-
                         <Border
                             Style="{StaticResource EchoBoardCardStyle}"
                             Visibility="{Binding ImportFeedbackVisibility}">
@@ -224,7 +216,8 @@
                                         UsageText="{Binding UsageText}"
                                         WaveformBars="{Binding WaveformBars}"
                                         DetailsCommand="{Binding DetailsCommand}"
-                                        EditCommand="{Binding EditCommand}" />
+                                        EditCommand="{Binding EditCommand}"
+                                        DeleteCommand="{Binding DeleteCommand}" />
                                 </DataTemplate>
                             </GridView.ItemTemplate>
                         </GridView>

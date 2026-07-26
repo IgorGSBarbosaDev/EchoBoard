@@ -10,19 +10,16 @@ namespace EchoBoard.App.Views;
 public sealed partial class LibraryPage : Page
 {
     private bool hasLoaded;
-    private readonly DispatcherTimer playbackTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
 
     public LibraryPage()
     {
         InitializeComponent();
-        playbackTimer.Tick += OnPlaybackTimerTick;
     }
 
     private LibraryViewModel? ViewModel => DataContext as LibraryViewModel;
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        playbackTimer.Start();
         if (hasLoaded || ViewModel is null)
         {
             return;
@@ -30,20 +27,6 @@ public sealed partial class LibraryPage : Page
 
         hasLoaded = true;
         await ViewModel.LoadAsync(CancellationToken.None);
-    }
-
-    private async void OnUnloaded(object sender, RoutedEventArgs e)
-    {
-        playbackTimer.Stop();
-        if (ViewModel is not null)
-        {
-            await ViewModel.StopPlaybackAsync(CancellationToken.None);
-        }
-    }
-
-    private void OnPlaybackTimerTick(object? sender, object e)
-    {
-        ViewModel?.RefreshPlaybackState();
     }
 
     private async void OnImportClicked(object sender, RoutedEventArgs e)

@@ -5,9 +5,8 @@ namespace EchoBoard.Audio.Microphone;
 public sealed class MicrophonePcmRingBuffer : IMicrophonePcmSource
 {
     private readonly float[] buffer;
-    private int readIndex;
-    private int writeIndex;
-    private int availableSamples;
+    private long readSequence;
+    private long writeSequence;
 
     public MicrophonePcmRingBuffer(AudioStreamFormatDto format, int capacitySamples)
     {
@@ -23,7 +22,9 @@ public sealed class MicrophonePcmRingBuffer : IMicrophonePcmSource
 
     public bool TryRead(Span<float> destination, out int samplesWritten)
     {
-        samplesWritten = Math.Min(destination.Length, availableSamples);
+        var read = Volatile.Read(ref readSequence);
+        var write = Volatile.Read(ref writeSequence);
+        samplesWritten = (int)Math.Min(destination.Length, Math.Max(0, write - read));
         if (samplesWritten == 0)
         {
             return false;
@@ -31,42 +32,51 @@ public sealed class MicrophonePcmRingBuffer : IMicrophonePcmSource
 
         for (var i = 0; i < samplesWritten; i++)
         {
-            destination[i] = buffer[readIndex];
-            readIndex = (readIndex + 1) % buffer.Length;
+            destination[i] = buffer[(read + i) % buffer.Length];
         }
 
-        availableSamples -= samplesWritten;
+        AdvanceReadToAtLeast(read + samplesWritten);
         return true;
     }
 
     public double WriteProcessed(ReadOnlySpan<float> samples, double gain, bool isMuted)
     {
         var level = 0.0;
-        for (var i = 0; i < samples.Length; i++)
+        var write = Volatile.Read(ref writeSequence);
+        for (var i = 0; i < samples.Length; i++, write++)
         {
             var sample = isMuted ? 0f : (float)Math.Clamp(samples[i] * gain, -1.0, 1.0);
             level = Math.Max(level, Math.Abs(sample));
 
-            buffer[writeIndex] = sample;
-            writeIndex = (writeIndex + 1) % buffer.Length;
-            if (availableSamples == buffer.Length)
-            {
-                readIndex = (readIndex + 1) % buffer.Length;
-            }
-            else
-            {
-                availableSamples++;
-            }
+            buffer[write % buffer.Length] = sample;
         }
 
+        Volatile.Write(ref writeSequence, write);
+        AdvanceReadToAtLeast(Math.Max(0, write - buffer.Length));
         return Math.Clamp(level, 0.0, 1.0);
     }
 
     public void Clear()
     {
-        readIndex = 0;
-        writeIndex = 0;
-        availableSamples = 0;
+        Volatile.Write(ref readSequence, 0);
+        Volatile.Write(ref writeSequence, 0);
         Array.Clear(buffer);
+    }
+
+    private void AdvanceReadToAtLeast(long target)
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref readSequence);
+            if (current >= target)
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref readSequence, target, current) == current)
+            {
+                return;
+            }
+        }
     }
 }

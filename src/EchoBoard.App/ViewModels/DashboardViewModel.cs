@@ -22,6 +22,11 @@ public sealed class DashboardViewModel : ObservableObject
     private readonly GetMicrophoneCaptureSnapshotUseCase getMicrophoneSnapshot;
     private readonly PlaySoundUseCase playSound;
     private readonly SoundDetailsViewModel details;
+    private readonly PlaybackCoordinator? playbackCoordinator;
+    private readonly TransientNotificationService? notifications;
+    private readonly GetAudioRoutingSnapshotUseCase? getAudioRoutingSnapshot;
+    private readonly SoundLibraryInteractionCoordinator? libraryInteractions;
+    private readonly Dictionary<Guid, SoundLibraryItemDto> soundById = [];
     private string libraryValue = "0 sons";
     private string libraryNote = "Nenhuma categoria organizada";
     private string hotkeyValue = "0 ativas";
@@ -31,6 +36,8 @@ public sealed class DashboardViewModel : ObservableObject
     private string feedbackMessage = string.Empty;
     private double microphoneLevel;
     private string microphoneLevelText = "Inativo";
+    private string routingValue = "Inicializando";
+    private string routingNote = "Preparando motor de áudio";
 
     public DashboardViewModel(
         QuerySoundLibraryUseCase queryLibrary,
@@ -41,7 +48,11 @@ public sealed class DashboardViewModel : ObservableObject
         GetMicrophoneCaptureSnapshotUseCase getMicrophoneSnapshot,
         PlaySoundUseCase playSound,
         SoundDetailsViewModel details,
-        INavigationService navigation)
+        INavigationService navigation,
+        PlaybackCoordinator? playbackCoordinator = null,
+        TransientNotificationService? notifications = null,
+        GetAudioRoutingSnapshotUseCase? getAudioRoutingSnapshot = null,
+        SoundLibraryInteractionCoordinator? libraryInteractions = null)
     {
         this.queryLibrary = queryLibrary;
         this.importSounds = importSounds;
@@ -51,12 +62,25 @@ public sealed class DashboardViewModel : ObservableObject
         this.getMicrophoneSnapshot = getMicrophoneSnapshot;
         this.playSound = playSound;
         this.details = details;
+        this.playbackCoordinator = playbackCoordinator;
+        this.notifications = notifications;
+        this.getAudioRoutingSnapshot = getAudioRoutingSnapshot;
+        this.libraryInteractions = libraryInteractions;
 
         QuickSounds = [];
         SetupSteps = [];
         OpenSettingsCommand = new RelayCommand(() => navigation.NavigateTo(ShellRoute.Settings));
         OpenLibraryCommand = new RelayCommand(() => navigation.NavigateTo(ShellRoute.Library));
         details.SoundChanged += OnSoundChanged;
+        if (playbackCoordinator is not null)
+        {
+            playbackCoordinator.SnapshotChanged += OnPlaybackSnapshotChanged;
+            playbackCoordinator.PlaybackConfirmed += OnPlaybackConfirmed;
+        }
+        if (libraryInteractions is not null)
+        {
+            libraryInteractions.LibraryChanged += OnLibraryChanged;
+        }
     }
 
     public string LibraryValue { get => libraryValue; private set => SetProperty(ref libraryValue, value); }
@@ -65,8 +89,8 @@ public sealed class DashboardViewModel : ObservableObject
     public string HotkeyNote { get => hotkeyNote; private set => SetProperty(ref hotkeyNote, value); }
     public string MicrophoneValue { get => microphoneValue; private set => SetProperty(ref microphoneValue, value); }
     public string MicrophoneNote { get => microphoneNote; private set => SetProperty(ref microphoneNote, value); }
-    public string RoutingValue => "Pendente";
-    public string RoutingNote => "Saída virtual ainda não implementada";
+    public string RoutingValue { get => routingValue; private set => SetProperty(ref routingValue, value); }
+    public string RoutingNote { get => routingNote; private set => SetProperty(ref routingNote, value); }
 
     public ObservableCollection<SoundCardPreviewModel> QuickSounds { get; }
     public ObservableCollection<DashboardSetupStepViewModel> SetupSteps { get; }
@@ -145,6 +169,7 @@ public sealed class DashboardViewModel : ObservableObject
         HotkeyNote = conflicts == 0 ? "Nenhum conflito detectado" : $"{conflicts} em conflito";
 
         ApplyMicrophone(microphone);
+        ApplyRouting();
         ReplaceQuickSounds(library.Sounds, hotkeys);
         ReplaceSetupSteps(library.TotalSoundCount, activeHotkeys, microphone);
     }
@@ -152,6 +177,7 @@ public sealed class DashboardViewModel : ObservableObject
     public void RefreshLiveState()
     {
         ApplyMicrophone(getMicrophoneSnapshot.Execute());
+        ApplyRouting();
     }
 
     public async Task ImportFilePathsAsync(IReadOnlyList<string> filePaths, CancellationToken cancellationToken)
@@ -169,6 +195,13 @@ public sealed class DashboardViewModel : ObservableObject
 
     private void ReplaceQuickSounds(IReadOnlyList<SoundLibraryItemDto> sounds, IReadOnlyList<HotkeyBindingDto> hotkeys)
     {
+        soundById.Clear();
+        foreach (var sound in sounds)
+        {
+            soundById[sound.Id] = sound;
+            playbackCoordinator?.TrackSound(sound.Id, sound.FilePath);
+        }
+
         var hotkeyBySoundId = hotkeys
             .Where(binding => binding.SoundId is not null)
             .ToDictionary(binding => binding.SoundId!.Value);
@@ -199,14 +232,17 @@ public sealed class DashboardViewModel : ObservableObject
             IsFavorite: sound.IsFavorite,
             Id: sound.Id,
             IsMissingFile: sound.IsMissingFile,
-            StatusText: sound.IsMissingFile ? "Arquivo ausente" : "Pronto",
-            SelectCommand: new AsyncRelayCommand(_ => PlayAsync(sound.Id, CancellationToken.None)),
-            FavoriteCommand: new AsyncRelayCommand(_ => ToggleFavoriteAsync(sound.Id, sound.IsFavorite, CancellationToken.None)),
+            StatusText: sound.IsMissingFile ? "Arquivo ausente" : string.Empty,
+            SelectCommand: (System.Windows.Input.ICommand?)playbackCoordinator?.PlaySoundCommand
+                ?? new AsyncRelayCommand(_ => PlayAsync(sound.Id, CancellationToken.None)),
+            FavoriteCommand: (System.Windows.Input.ICommand?)libraryInteractions?.ToggleFavoriteCommand
+                ?? new AsyncRelayCommand(_ => ToggleFavoriteAsync(sound.Id, sound.IsFavorite, CancellationToken.None)),
             FormatText: sound.Extension.TrimStart('.').ToUpperInvariant(),
             UsageText: $"{sound.PlayCount} {(sound.PlayCount == 1 ? "uso" : "usos")}",
             WaveformBars: ToWaveform(sound.WaveformPeaks),
             DetailsCommand: details.OpenCommand,
-            EditCommand: details.OpenEditCommand);
+            EditCommand: details.OpenEditCommand,
+            DeleteCommand: libraryInteractions?.DeleteSoundCommand);
     }
 
     private async Task PlayAsync(Guid soundId, CancellationToken cancellationToken)
@@ -226,7 +262,54 @@ public sealed class DashboardViewModel : ObservableObject
     private async Task ToggleFavoriteAsync(Guid soundId, bool isFavorite, CancellationToken cancellationToken)
     {
         await setSoundFavorite.ExecuteAsync(new SetSoundFavoriteRequest(soundId, !isFavorite, DateTimeOffset.UtcNow), cancellationToken);
+        notifications?.Show(
+            ToastNotificationKind.Success,
+            !isFavorite ? "Adicionado aos favoritos" : "Removido dos favoritos",
+            string.Empty);
         await LoadAsync(cancellationToken);
+    }
+
+    private void OnPlaybackSnapshotChanged(object? sender, PlaybackSnapshotChange e)
+    {
+        for (var index = 0; index < QuickSounds.Count; index++)
+        {
+            var card = QuickSounds[index];
+            soundById.TryGetValue(card.Id, out var sound);
+            var active = card.Id == e.SoundId && e.Snapshot.State != SoundPlaybackState.Stopped;
+            card.IsPlaying = active && e.Snapshot.State == SoundPlaybackState.Playing;
+            card.IsPaused = active && e.Snapshot.State == SoundPlaybackState.Paused;
+            card.StatusText = card.IsMissingFile ? "Arquivo ausente" : string.Empty;
+        }
+    }
+
+    private void OnPlaybackConfirmed(object? sender, Guid soundId)
+    {
+        if (!soundById.TryGetValue(soundId, out var sound))
+        {
+            return;
+        }
+
+        var updated = sound with { PlayCount = sound.PlayCount + 1 };
+        soundById[soundId] = updated;
+        for (var index = 0; index < QuickSounds.Count; index++)
+        {
+            if (QuickSounds[index].Id == soundId)
+            {
+                QuickSounds[index].UsageText = $"{updated.PlayCount} {(updated.PlayCount == 1 ? "uso" : "usos")}";
+            }
+        }
+    }
+
+    private async void OnLibraryChanged(object? sender, SoundLibraryChange e)
+    {
+        try
+        {
+            await LoadAsync(CancellationToken.None);
+        }
+        catch (Exception)
+        {
+            notifications?.Show(ToastNotificationKind.Error, "Biblioteca não atualizada", "Tente novamente.");
+        }
     }
 
     private void ReplaceSetupSteps(int soundCount, int activeHotkeys, MicrophoneCaptureSnapshot microphone)
@@ -235,7 +318,12 @@ public sealed class DashboardViewModel : ObservableObject
         SetupSteps.Add(new("Importar sons", soundCount > 0 ? $"{soundCount} disponíveis" : "Adicione arquivos locais", soundCount > 0, false));
         SetupSteps.Add(new("Selecionar microfone", microphone.SelectedDeviceId is null ? "Nenhum dispositivo selecionado" : microphone.SelectedDeviceName ?? "Selecionado", microphone.SelectedDeviceId is not null, false));
         SetupSteps.Add(new("Definir hotkeys", activeHotkeys > 0 ? $"{activeHotkeys} registradas" : "Nenhum atalho ativo", activeHotkeys > 0, false));
-        SetupSteps.Add(new("Selecionar saída virtual", "Recurso ainda não implementado", false, true));
+        var routing = getAudioRoutingSnapshot?.Execute();
+        SetupSteps.Add(new(
+            "Selecionar saída virtual",
+            routing?.VirtualOutputDeviceName ?? "Cabo virtual externo não selecionado",
+            routing?.VirtualOutputState == AudioRouteState.Active,
+            routing?.VirtualOutputState == AudioRouteState.Unavailable));
     }
 
     private void ApplyMicrophone(MicrophoneCaptureSnapshot snapshot)
@@ -246,6 +334,22 @@ public sealed class DashboardViewModel : ObservableObject
         MicrophoneNote = snapshot.SelectedDeviceName ?? "Selecione uma entrada de áudio";
         MicrophoneLevel = snapshot.State == MicrophoneCaptureState.Active && !snapshot.IsMuted ? snapshot.Level : 0;
         MicrophoneLevelText = snapshot.IsMuted ? "Mudo" : snapshot.State == MicrophoneCaptureState.Active ? $"{snapshot.Level:P0}" : "Inativo";
+    }
+
+    private void ApplyRouting()
+    {
+        if (getAudioRoutingSnapshot is null)
+        {
+            return;
+        }
+
+        var snapshot = getAudioRoutingSnapshot.Execute();
+        RoutingValue = snapshot.EngineState == AudioRouteState.Active ? "Ativo" : "Degradado";
+        RoutingNote = snapshot.VirtualOutputState == AudioRouteState.Active
+            ? snapshot.VirtualOutputDeviceName ?? "Saída virtual ativa"
+            : snapshot.MonitorState == AudioRouteState.Active
+                ? "Monitor local ativo; saída virtual não configurada"
+                : snapshot.StatusMessage;
     }
 
     private async void OnSoundChanged(object? sender, EventArgs e)

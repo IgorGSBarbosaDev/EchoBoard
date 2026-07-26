@@ -40,6 +40,11 @@ public static class DependencyInjection
         services.AddTransient<StartMicrophoneCaptureUseCase>();
         services.AddTransient<StopMicrophoneCaptureUseCase>();
         services.AddTransient<GetMicrophoneCaptureSnapshotUseCase>();
+        services.AddTransient<ListAudioOutputDevicesUseCase>();
+        services.AddTransient<LoadAudioRoutingSettingsUseCase>();
+        services.AddTransient<InitializeAudioRoutingUseCase>();
+        services.AddTransient<SaveAudioRoutingSettingsUseCase>();
+        services.AddTransient<GetAudioRoutingSnapshotUseCase>();
         services.AddTransient<PlaySoundUseCase>();
         services.AddTransient<LoadAppearanceSettingsUseCase>();
         services.AddTransient<SaveAppearanceSettingsUseCase>();

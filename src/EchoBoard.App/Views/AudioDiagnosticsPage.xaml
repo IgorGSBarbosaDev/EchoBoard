@@ -33,6 +33,24 @@
                         Icon="{Binding MicrophoneDevice.Icon}"
                         Status="{Binding MicrophoneDevice.Status}" />
 
+                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <controls:DeviceStatusBadge
+                            Label="{Binding MonitorDevice.Label}"
+                            DeviceName="{Binding MonitorDevice.DeviceName}"
+                            Icon="{Binding MonitorDevice.Icon}"
+                            Status="{Binding MonitorDevice.Status}" />
+                        <controls:DeviceStatusBadge
+                            Grid.Column="1"
+                            Label="{Binding VirtualOutputDevice.Label}"
+                            DeviceName="{Binding VirtualOutputDevice.DeviceName}"
+                            Icon="{Binding VirtualOutputDevice.Icon}"
+                            Status="{Binding VirtualOutputDevice.Status}" />
+                    </Grid>
+
                     <controls:AudioLevelMeter
                         Width="240"
                         Label="{Binding MicrophoneMeter.Label}"
@@ -41,7 +59,10 @@
                         ValueText="{Binding MicrophoneMeter.ValueText}" />
 
                     <StackPanel Spacing="{StaticResource EchoBoardSpace4}">
+                        <TextBlock Text="{Binding MixerStateText}" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
                         <TextBlock Text="{Binding FormatText}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                        <TextBlock Text="{Binding MonitorRouteText}" Style="{StaticResource EchoBoardCaptionTextStyle}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding VirtualOutputRouteText}" Style="{StaticResource EchoBoardCaptionTextStyle}" TextWrapping="Wrap" />
                         <TextBlock Text="{Binding LastErrorText}" Style="{StaticResource EchoBoardBodyTextStyle}" />
                     </StackPanel>
                 </StackPanel>

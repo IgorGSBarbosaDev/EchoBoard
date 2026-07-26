@@ -2,7 +2,7 @@
 
 EchoBoard is a local-first Windows desktop soundboard and audio-routing app. The product requirements live in [docs/PRD.md](docs/PRD.md).
 
-This repository currently contains the development foundation only: solution structure, project boundaries, an empty WinUI shell, logging, settings, SQLite readiness, tests, and CI. Product features such as audio playback, microphone capture, mixing, hotkeys, sound import, Discord/OBS integration, and final UI are intentionally not implemented yet.
+The current application includes the local sound library, content-aware decoding, global hotkeys, centralized playback, continuous microphone capture, a 48 kHz float mixer, local effects monitoring, and routing to an external virtual audio endpoint.
 
 ## Prerequisites
 
@@ -42,7 +42,13 @@ dotnet test EchoBoard.sln --configuration Release --no-build
 dotnet run --project src/EchoBoard.App/EchoBoard.App.csproj
 ```
 
-The app currently opens an empty shell window. Runtime logs are written under the user's local application data folder, not to the repository.
+Runtime logs and the SQLite library are written under the user's local application data folder, not to the repository.
+
+## Virtual routing
+
+EchoBoard does not install or implement an audio driver. To send microphone + effects to Discord or OBS, install an external cable such as VB-CABLE or VoiceMeeter, then select its render endpoint under **Settings → Mixer and routing → Virtual output**. The local monitor remains usable when no virtual cable is installed.
+
+See [docs/audio-routing.md](docs/audio-routing.md) for the signal flow and validation checklist.
 
 ## Repository Layout
 
@@ -61,6 +67,7 @@ tests/
 docs/
   PRD.md
   architecture.md
+  audio-routing.md
 ```
 
 See [docs/architecture.md](docs/architecture.md) for project responsibilities and dependency rules.

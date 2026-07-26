@@ -41,7 +41,7 @@
 
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                    <Button Command="{Binding PlayCommand}" Style="{StaticResource EchoBoardPrimaryButtonStyle}" HorizontalAlignment="Stretch">
+                    <Button Command="{Binding PlayCommand}" CommandParameter="{Binding SelectedSoundId}" Style="{StaticResource EchoBoardPrimaryButtonStyle}" HorizontalAlignment="Stretch">
                         <StackPanel Orientation="Horizontal" Spacing="7"><SymbolIcon Symbol="Play" /><TextBlock Text="Reproduzir" /></StackPanel>
                     </Button>
                     <Button Grid.Column="1" Command="{Binding BeginEditCommand}" Style="{StaticResource EchoBoardSecondaryButtonStyle}" HorizontalAlignment="Stretch" Visibility="{Binding ReadOnlyVisibility}">

@@ -1,4 +1,5 @@
 using EchoBoard.Domain.Entities;
+using EchoBoard.Application.Hotkeys;
 
 namespace EchoBoard.Application.Library;
 
@@ -223,10 +224,17 @@ public sealed class AssignSoundCategoryUseCase
 public sealed class DeleteSoundUseCase
 {
     private readonly ISoundLibraryRepository sounds;
+    private readonly IHotkeyBindingRepository? hotkeys;
+    private readonly IHotkeyRuntimeService? hotkeyRuntime;
 
-    public DeleteSoundUseCase(ISoundLibraryRepository sounds)
+    public DeleteSoundUseCase(
+        ISoundLibraryRepository sounds,
+        IHotkeyBindingRepository? hotkeys = null,
+        IHotkeyRuntimeService? hotkeyRuntime = null)
     {
         this.sounds = sounds;
+        this.hotkeys = hotkeys;
+        this.hotkeyRuntime = hotkeyRuntime;
     }
 
     public async Task ExecuteAsync(Guid id, CancellationToken cancellationToken)
@@ -236,6 +244,23 @@ public sealed class DeleteSoundUseCase
             throw new SoundNotFoundException(id);
         }
 
-        await sounds.DeleteSoundAsync(id, cancellationToken);
+        var binding = hotkeys is null ? null : await hotkeys.GetForSoundAsync(id, cancellationToken);
+        if (binding is not null && hotkeyRuntime is not null)
+        {
+            await hotkeyRuntime.UnregisterBindingAsync(binding.Id, cancellationToken);
+        }
+
+        try
+        {
+            await sounds.DeleteSoundAsync(id, cancellationToken);
+        }
+        catch
+        {
+            if (binding is { IsEnabled: true } && hotkeyRuntime is not null)
+            {
+                await hotkeyRuntime.RegisterBindingAsync(binding, CancellationToken.None);
+            }
+            throw;
+        }
     }
 }
