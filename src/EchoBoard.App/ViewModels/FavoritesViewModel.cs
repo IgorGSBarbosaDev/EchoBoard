@@ -16,7 +16,11 @@ public sealed partial class FavoritesViewModel : ObservableObject
     private readonly ListHotkeyBindingsUseCase? listHotkeys;
     private readonly PlaySoundUseCase? playSound;
     private readonly SoundDetailsViewModel? details;
+    private readonly PlaybackCoordinator? playbackCoordinator;
+    private readonly TransientNotificationService? notifications;
+    private readonly SoundLibraryInteractionCoordinator? libraryInteractions;
     private readonly Dictionary<Guid, HotkeyBindingDto> hotkeyBySoundId = [];
+    private readonly Dictionary<Guid, SoundLibraryItemDto> soundById = [];
     private bool isBusy;
     private string searchText = string.Empty;
     private string? loadError;
@@ -27,19 +31,34 @@ public sealed partial class FavoritesViewModel : ObservableObject
         SetSoundFavoriteUseCase setSoundFavorite,
         ListHotkeyBindingsUseCase? listHotkeys = null,
         PlaySoundUseCase? playSound = null,
-        SoundDetailsViewModel? details = null)
+        SoundDetailsViewModel? details = null,
+        PlaybackCoordinator? playbackCoordinator = null,
+        TransientNotificationService? notifications = null,
+        SoundLibraryInteractionCoordinator? libraryInteractions = null)
     {
         this.queryLibrary = queryLibrary;
         this.setSoundFavorite = setSoundFavorite;
         this.listHotkeys = listHotkeys;
         this.playSound = playSound;
         this.details = details;
+        this.playbackCoordinator = playbackCoordinator;
+        this.notifications = notifications;
+        this.libraryInteractions = libraryInteractions;
 
         Sounds = [];
         ClearFiltersCommand = new AsyncRelayCommand(ct => ClearFiltersAsync(ct));
         if (details is not null)
         {
             details.SoundChanged += OnDetailsSoundChanged;
+        }
+        if (playbackCoordinator is not null)
+        {
+            playbackCoordinator.SnapshotChanged += OnPlaybackSnapshotChanged;
+            playbackCoordinator.PlaybackConfirmed += OnPlaybackConfirmed;
+        }
+        if (libraryInteractions is not null)
+        {
+            libraryInteractions.LibraryChanged += OnLibraryChanged;
         }
     }
 
@@ -154,7 +173,7 @@ public sealed partial class FavoritesViewModel : ObservableObject
         }
 
         await setSoundFavorite.ExecuteAsync(new SetSoundFavoriteRequest(soundId, false, DateTimeOffset.UtcNow), cancellationToken);
-        FeedbackToast = new ToastPreviewModel(ToastNotificationKind.Success, "Removed from favorites", sound.Title);
+        notifications?.Show(ToastNotificationKind.Success, "Removido dos favoritos", sound.Title);
         await RefreshAsync(cancellationToken);
     }
 
@@ -191,9 +210,12 @@ public sealed partial class FavoritesViewModel : ObservableObject
 
     private void ReplaceSounds(IReadOnlyList<SoundLibraryItemDto> sounds)
     {
+        soundById.Clear();
         Sounds.Clear();
         foreach (var sound in sounds)
         {
+            soundById[sound.Id] = sound;
+            playbackCoordinator?.TrackSound(sound.Id, sound.FilePath);
             Sounds.Add(new SoundCardPreviewModel(
                 sound.Name,
                 BuildSoundSubtitle(sound),
@@ -205,13 +227,16 @@ public sealed partial class FavoritesViewModel : ObservableObject
                 Id: sound.Id,
                 IsMissingFile: sound.IsMissingFile,
                 StatusText: sound.IsMissingFile ? "File missing" : string.Empty,
-                SelectCommand: playSound is null ? null : new AsyncRelayCommand(_ => PlayAsync(sound.Id, CancellationToken.None)),
-                FavoriteCommand: new AsyncRelayCommand(_ => ToggleFavoriteAsync(sound.Id, CancellationToken.None)),
+                SelectCommand: (System.Windows.Input.ICommand?)playbackCoordinator?.PlaySoundCommand
+                    ?? (playSound is null ? null : new AsyncRelayCommand(_ => PlayAsync(sound.Id, CancellationToken.None))),
+                FavoriteCommand: (System.Windows.Input.ICommand?)libraryInteractions?.ToggleFavoriteCommand
+                    ?? new AsyncRelayCommand(_ => ToggleFavoriteAsync(sound.Id, CancellationToken.None)),
                 FormatText: sound.Extension.TrimStart('.').ToUpperInvariant(),
                 UsageText: $"{sound.PlayCount} {(sound.PlayCount == 1 ? "uso" : "usos")}",
                 WaveformBars: ToWaveform(sound.WaveformPeaks),
                 DetailsCommand: details?.OpenCommand,
-                EditCommand: details?.OpenEditCommand));
+                EditCommand: details?.OpenEditCommand,
+                DeleteCommand: libraryInteractions?.DeleteSoundCommand));
         }
 
         NotifyStatePropertiesChanged();
@@ -261,12 +286,41 @@ public sealed partial class FavoritesViewModel : ObservableObject
         try
         {
             await playSound.ExecuteAsync(new PlaySoundRequest(soundId, DateTimeOffset.UtcNow), cancellationToken);
-            FeedbackToast = new ToastPreviewModel(ToastNotificationKind.Success, "Playback started", "The selected sound is playing.");
             await RefreshAsync(cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or InvalidOperationException or ArgumentException)
         {
-            FeedbackToast = new ToastPreviewModel(ToastNotificationKind.Error, "Playback failed", exception.Message);
+            notifications?.Show(ToastNotificationKind.Error, "Não foi possível reproduzir", exception.Message);
+        }
+    }
+
+    private void OnPlaybackSnapshotChanged(object? sender, PlaybackSnapshotChange e)
+    {
+        for (var index = 0; index < Sounds.Count; index++)
+        {
+            var card = Sounds[index];
+            var active = card.Id == e.SoundId && e.Snapshot.State != SoundPlaybackState.Stopped;
+            card.IsPlaying = active && e.Snapshot.State == SoundPlaybackState.Playing;
+            card.IsPaused = active && e.Snapshot.State == SoundPlaybackState.Paused;
+            card.StatusText = card.IsMissingFile ? "File missing" : string.Empty;
+        }
+    }
+
+    private void OnPlaybackConfirmed(object? sender, Guid soundId)
+    {
+        if (!soundById.TryGetValue(soundId, out var sound))
+        {
+            return;
+        }
+
+        var updated = sound with { PlayCount = sound.PlayCount + 1 };
+        soundById[soundId] = updated;
+        for (var index = 0; index < Sounds.Count; index++)
+        {
+            if (Sounds[index].Id == soundId)
+            {
+                Sounds[index].UsageText = $"{updated.PlayCount} {(updated.PlayCount == 1 ? "uso" : "usos")}";
+            }
         }
     }
 
@@ -288,6 +342,18 @@ public sealed partial class FavoritesViewModel : ObservableObject
     private async void OnDetailsSoundChanged(object? sender, EventArgs e)
     {
         await RefreshAsync(CancellationToken.None);
+    }
+
+    private async void OnLibraryChanged(object? sender, SoundLibraryChange e)
+    {
+        try
+        {
+            await RefreshAsync(CancellationToken.None);
+        }
+        catch (Exception)
+        {
+            notifications?.Show(ToastNotificationKind.Error, "Favoritos não atualizados", "Tente novamente.");
+        }
     }
 
     private static WaveformBarViewModel[] ToWaveform(byte[] peaks) => peaks.Length == 32

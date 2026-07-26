@@ -24,6 +24,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         {
             await host.StartAsync().ConfigureAwait(true);
             await AppHost.InitializeDatabaseAsync(host.Services, CancellationToken.None).ConfigureAwait(true);
+            await AppHost.InitializeAudioEngineAsync(host.Services, CancellationToken.None).ConfigureAwait(true);
             mainWindow = host.Services.GetRequiredService<MainWindow>();
             mainWindow.Closed += OnMainWindowClosed;
             await AppHost.RestoreHotkeysAsync(host.Services, CancellationToken.None).ConfigureAwait(true);
@@ -49,6 +50,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         }
 
         await host.StopAsync().ConfigureAwait(true);
-        host.Dispose();
+        if (host is IAsyncDisposable asyncHost)
+        {
+            await asyncHost.DisposeAsync().ConfigureAwait(true);
+        }
+        else
+        {
+            host.Dispose();
+        }
     }
 }

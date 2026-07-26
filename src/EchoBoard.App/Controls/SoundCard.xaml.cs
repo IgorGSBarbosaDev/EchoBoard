@@ -1,4 +1,5 @@
 using System.Windows.Input;
+using EchoBoard.App.Dialogs;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -7,6 +8,7 @@ namespace EchoBoard.App.Controls;
 
 public sealed partial class SoundCard : UserControl
 {
+    private bool isPointerInside;
     public static readonly DependencyProperty TitleProperty = DependencyProperty.Register(
         nameof(Title),
         typeof(string),
@@ -123,6 +125,9 @@ public sealed partial class SoundCard : UserControl
 
     public static readonly DependencyProperty EditCommandProperty = DependencyProperty.Register(
         nameof(EditCommand), typeof(ICommand), typeof(SoundCard), new PropertyMetadata(null, OnDisplayPropertyChanged));
+
+    public static readonly DependencyProperty DeleteCommandProperty = DependencyProperty.Register(
+        nameof(DeleteCommand), typeof(ICommand), typeof(SoundCard), new PropertyMetadata(null, OnDisplayPropertyChanged));
 
     public SoundCard()
     {
@@ -245,6 +250,8 @@ public sealed partial class SoundCard : UserControl
 
     public ICommand? EditCommand { get => (ICommand?)GetValue(EditCommandProperty); set => SetValue(EditCommandProperty, value); }
 
+    public ICommand? DeleteCommand { get => (ICommand?)GetValue(DeleteCommandProperty); set => SetValue(DeleteCommandProperty, value); }
+
     public Brush CardBackground => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsSelected || IsPlaying || IsPaused ? "EchoBoardCardActiveBrush" : "EchoBoardCardBrush"];
 
     public Brush CardBorderBrush => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsPlaying ? "EchoBoardSuccessBrush" : IsPaused ? "EchoBoardWarningBrush" : IsSelected ? "EchoBoardActionBrush" : "EchoBoardBorderBrush"];
@@ -261,7 +268,13 @@ public sealed partial class SoundCard : UserControl
 
     public Symbol FavoriteSymbol => Symbol.Favorite;
 
-    public string FavoriteLabel => IsFavorite ? "Remove from favorites" : "Add to favorites";
+    public string FavoriteGlyph => IsFavorite ? "\uE735" : "\uE734";
+
+    public string FavoriteLabel => IsFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos";
+
+    public string PlayPauseGlyph => IsPlaying ? "\uE769" : "\uE768";
+
+    public string PlayPauseLabel => IsPlaying ? "Pausar" : IsPaused ? "Continuar" : "Reproduzir";
 
     public Visibility PlayingVisibility => IsPlaying ? Visibility.Visible : Visibility.Collapsed;
 
@@ -275,7 +288,9 @@ public sealed partial class SoundCard : UserControl
 
     public Visibility WaveformUnavailableVisibility => WaveformBars is { Count: > 0 } ? Visibility.Collapsed : Visibility.Visible;
 
-    public Visibility OptionsVisibility => DetailsCommand is null && EditCommand is null ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility OptionsVisibility => DetailsCommand is null && EditCommand is null && FavoriteCommand is null && DeleteCommand is null
+        ? Visibility.Collapsed
+        : Visibility.Visible;
 
     public string AccessibleLabel => $"{Title} {CategoryLabel} {DurationText} {StatusText}".Trim();
 
@@ -283,6 +298,45 @@ public sealed partial class SoundCard : UserControl
 
     private static void OnDisplayPropertyChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs args)
     {
-        ((SoundCard)dependencyObject).Bindings.Update();
+        var card = (SoundCard)dependencyObject;
+        card.Bindings.Update();
+        card.ApplyHoverState();
+    }
+
+    private void OnCardPointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        isPointerInside = true;
+        ApplyHoverState();
+    }
+
+    private void OnCardPointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        isPointerInside = false;
+        _ = DispatcherQueue.TryEnqueue(ApplyHoverState);
+    }
+
+    private void ApplyHoverState()
+    {
+        if (CardSurface is null)
+        {
+            return;
+        }
+
+        CardSurface.Background = isPointerInside && !IsPlaying && !IsPaused
+            ? (Brush)Microsoft.UI.Xaml.Application.Current.Resources["EchoBoardSurfaceHoverBrush"]
+            : CardBackground;
+    }
+
+    private async void OnDeleteClicked(object sender, RoutedEventArgs e)
+    {
+        if (DeleteCommand is null || !DeleteCommand.CanExecute(CommandParameter))
+        {
+            return;
+        }
+
+        if (await SoundDeletionConfirmation.ShowAsync(XamlRoot))
+        {
+            DeleteCommand.Execute(CommandParameter);
+        }
     }
 }

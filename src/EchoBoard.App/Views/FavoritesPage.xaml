@@ -36,12 +36,6 @@
                             Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
                     </Grid>
 
-                    <controls:ToastNotification
-                        Kind="{Binding FeedbackToast.Kind}"
-                        Title="{Binding FeedbackToast.Title}"
-                        Description="{Binding FeedbackToast.Description}"
-                        Visibility="{Binding FeedbackToastVisibility}" />
-
                     <controls:EmptyState
                         Icon="Favorite"
                         Title="{Binding EmptyStateTitle}"
@@ -84,7 +78,8 @@
                                     UsageText="{Binding UsageText}"
                                     WaveformBars="{Binding WaveformBars}"
                                     DetailsCommand="{Binding DetailsCommand}"
-                                    EditCommand="{Binding EditCommand}" />
+                                    EditCommand="{Binding EditCommand}"
+                                    DeleteCommand="{Binding DeleteCommand}" />
                             </DataTemplate>
                         </GridView.ItemTemplate>
                     </GridView>

@@ -5,7 +5,9 @@
     xmlns:controls="using:EchoBoard.App.Controls"
     Loaded="OnLoaded"
     Unloaded="OnUnloaded">
-    <Grid x:Name="DashboardRoot">
+    <Grid
+        x:Name="DashboardRoot"
+        HorizontalAlignment="Stretch">
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
                 <VisualState x:Name="Wide">
@@ -60,8 +62,11 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="14">
+        <ScrollViewer
+            HorizontalContentAlignment="Stretch"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel HorizontalAlignment="Stretch" Spacing="14">
                 <Grid ColumnSpacing="16" RowSpacing="12">
                     <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
@@ -100,9 +105,9 @@
                         <Border Style="{StaticResource EchoBoardPanelStyle}">
                             <StackPanel Spacing="12">
                                 <Grid><StackPanel Spacing="2"><TextBlock Text="Acesso rápido" Style="{StaticResource EchoBoardSectionTitleTextStyle}" /><TextBlock Text="Favoritos e sons usados com frequência." Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel><Button HorizontalAlignment="Right" Command="{Binding OpenLibraryCommand}" Content="Abrir biblioteca →" Style="{StaticResource EchoBoardSecondaryButtonStyle}" /></Grid>
-                                <GridView ItemsSource="{Binding QuickSounds}" SelectionMode="None" IsItemClickEnabled="False" Visibility="{Binding QuickSoundsVisibility}" HorizontalContentAlignment="Stretch">
-                                    <GridView.ItemsPanel><ItemsPanelTemplate><ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" /></ItemsPanelTemplate></GridView.ItemsPanel>
-                                    <GridView.ItemTemplate><DataTemplate><controls:SoundCard Width="220" Margin="0,0,10,10" Title="{Binding Title}" DurationText="{Binding DurationText}" HotkeyText="{Binding HotkeyText}" CategoryLabel="{Binding CategoryLabel}" IsFavorite="{Binding IsFavorite}" IsMissingFile="{Binding IsMissingFile}" StatusText="{Binding StatusText}" Command="{Binding SelectCommand}" CommandParameter="{Binding Id}" FavoriteCommand="{Binding FavoriteCommand}" FavoriteCommandParameter="{Binding Id}" FormatText="{Binding FormatText}" UsageText="{Binding UsageText}" WaveformBars="{Binding WaveformBars}" DetailsCommand="{Binding DetailsCommand}" EditCommand="{Binding EditCommand}" /></DataTemplate></GridView.ItemTemplate>
+                    <GridView ItemsSource="{Binding QuickSounds}" SelectionMode="None" IsItemClickEnabled="False" Visibility="{Binding QuickSoundsVisibility}" HorizontalContentAlignment="Stretch">
+                        <GridView.ItemsPanel><ItemsPanelTemplate><ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="4" ItemWidth="240" /></ItemsPanelTemplate></GridView.ItemsPanel>
+                        <GridView.ItemTemplate><DataTemplate><controls:SoundCard Margin="0,0,10,10" Title="{Binding Title}" DurationText="{Binding DurationText}" HotkeyText="{Binding HotkeyText}" CategoryLabel="{Binding CategoryLabel}" IsPlaying="{Binding IsPlaying}" IsPaused="{Binding IsPaused}" IsFavorite="{Binding IsFavorite}" IsMissingFile="{Binding IsMissingFile}" StatusText="{Binding StatusText}" Command="{Binding SelectCommand}" CommandParameter="{Binding Id}" FavoriteCommand="{Binding FavoriteCommand}" FavoriteCommandParameter="{Binding Id}" FormatText="{Binding FormatText}" UsageText="{Binding UsageText}" WaveformBars="{Binding WaveformBars}" DetailsCommand="{Binding DetailsCommand}" EditCommand="{Binding EditCommand}" DeleteCommand="{Binding DeleteCommand}" /></DataTemplate></GridView.ItemTemplate>
                                 </GridView>
                                 <StackPanel HorizontalAlignment="Center" Spacing="5" Visibility="{Binding QuickEmptyVisibility}"><SymbolIcon Symbol="Audio" Foreground="{ThemeResource EchoBoardActionBrush}" /><TextBlock Text="Nenhum som disponível" FontWeight="SemiBold" /><TextBlock Text="Importe sons para preencher o acesso rápido." Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel>
                             </StackPanel>

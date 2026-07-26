@@ -1,5 +1,6 @@
 using System.Globalization;
 using EchoBoard.Application;
+using EchoBoard.Application.Audio;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Interfaces;
 using EchoBoard.App.Hotkeys;
@@ -48,6 +49,10 @@ public static class AppHost
                 services.AddSingleton<IShellWindowCommandPort, ShellWindowCommandPort>();
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IAppearanceResourceManager, AppearanceResourceManager>();
+                services.AddSingleton<TransientNotificationService>();
+                services.AddSingleton<PlaybackCoordinator>();
+                services.AddSingleton<AudioRoutingSettingsCoordinator>();
+                services.AddSingleton<SoundLibraryInteractionCoordinator>();
                 services.AddTransient<DashboardViewModel>();
                 services.AddScoped<SoundDetailsViewModel>();
                 services.AddTransient<LibraryViewModel>();
@@ -91,5 +96,13 @@ public static class AppHost
         await using var scope = services.CreateAsyncScope();
         var restoreHotkeys = scope.ServiceProvider.GetRequiredService<RestoreHotkeyBindingsUseCase>();
         await restoreHotkeys.ExecuteAsync(cancellationToken);
+    }
+
+    public static async Task InitializeAudioEngineAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        await using var scope = services.CreateAsyncScope();
+        var initializeAudio = scope.ServiceProvider.GetRequiredService<InitializeAudioRoutingUseCase>();
+        await initializeAudio.ExecuteAsync(cancellationToken);
     }
 }
