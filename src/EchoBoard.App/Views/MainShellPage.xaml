@@ -283,16 +283,18 @@
             </NavigationView>
 
             <Grid x:Name="SoundDetailsOverlay" Visibility="Collapsed" Canvas.ZIndex="20">
-                <Button
+                <Border
                     x:Name="SoundDetailsBackdrop"
-                    Click="OnSoundDetailsBackdropClicked"
-                    Background="#88000000"
-                    BorderThickness="0"
+                    Canvas.ZIndex="0"
+                    Background="{ThemeResource EchoBoardOverlayBrush}"
                     HorizontalAlignment="Stretch"
+                    IsHitTestVisible="True"
+                    PointerPressed="OnSoundDetailsBackdropPressed"
                     VerticalAlignment="Stretch"
-                    Opacity="0" />
+                    />
                 <controls:SoundDetailsDrawer
                     x:Name="SoundDetailsDrawer"
+                    Canvas.ZIndex="1"
                     MaxWidth="360"
                     HorizontalAlignment="Right"
                     DataContext="{Binding SoundDetails}">
