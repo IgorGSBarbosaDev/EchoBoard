@@ -82,22 +82,13 @@ public sealed partial class MainShellPage : Page
         Storyboard.SetTarget(translation, SoundDetailsTransform);
         Storyboard.SetTargetProperty(translation, nameof(CompositeTransform.TranslateX));
 
-        var opacity = new DoubleAnimation
-        {
-            To = open ? 1 : 0,
-            Duration = TimeSpan.FromMilliseconds(180)
-        };
-        Storyboard.SetTarget(opacity, SoundDetailsBackdrop);
-        Storyboard.SetTargetProperty(opacity, nameof(UIElement.Opacity));
         storyboard.Children.Add(translation);
-        storyboard.Children.Add(opacity);
 
         if (open)
         {
             drawerFocusReturnTarget = FocusManager.GetFocusedElement(XamlRoot) as Control;
             SoundDetailsOverlay.Visibility = Visibility.Visible;
             SoundDetailsTransform.TranslateX = 360;
-            SoundDetailsBackdrop.Opacity = 0;
             storyboard.Completed += (_, _) => SoundDetailsDrawer.FocusInitial();
         }
         else
@@ -112,9 +103,10 @@ public sealed partial class MainShellPage : Page
         storyboard.Begin();
     }
 
-    private void OnSoundDetailsBackdropClicked(object sender, RoutedEventArgs e)
+    private void OnSoundDetailsBackdropPressed(object sender, PointerRoutedEventArgs e)
     {
         ViewModel.SoundDetails.Close();
+        e.Handled = true;
     }
 
     private void OnShellKeyDown(object sender, KeyRoutedEventArgs e)
