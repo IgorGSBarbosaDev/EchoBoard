@@ -19,6 +19,7 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
     private readonly IAudioRenderSessionFactory renderSessions;
     private readonly AudioMixerBus monitorMixer;
     private readonly AudioMixerBus virtualMixer;
+    private readonly AudioPeakMeter effectsPeakMeter = new();
     private IAudioRenderSession? monitorOutput;
     private IAudioRenderSession? virtualOutput;
     private MicrophoneSampleProvider? microphoneProvider;
@@ -103,6 +104,7 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
                 options.IsLoopEnabled,
                 () => Math.Clamp(settings.EffectsVolume, 0.0, 1.0),
                 () => settings.AreEffectsMuted,
+                effectsPeakMeter.Report,
                 RemoveCompletedSession);
 
             if (monitorActive)
@@ -281,7 +283,16 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
         reconnectTimer?.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
     }
 
-    public AudioRoutingSnapshot GetRoutingSnapshot() => routingSnapshot;
+    public AudioRoutingSnapshot GetRoutingSnapshot()
+    {
+        if (routingSnapshot.EngineState == AudioRouteState.Stopped)
+        {
+            return routingSnapshot;
+        }
+
+        UpdateRoutingSnapshot();
+        return routingSnapshot;
+    }
 
     public void Dispose()
     {
@@ -568,7 +579,10 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
             monitorError,
             virtualOutputError,
             monitorOutput?.Format,
-            virtualOutput?.Format);
+            virtualOutput?.Format,
+            effectsPeakMeter.Consume(),
+            monitorMixer.ConsumePeakLevel(),
+            virtualMixer.ConsumePeakLevel());
     }
 
     private void HandleMonitorStopped(object? sender, AudioRenderSessionStoppedEventArgs args)
@@ -718,6 +732,7 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
         private readonly bool loop;
         private readonly Func<double> effectsVolume;
         private readonly Func<bool> effectsMuted;
+        private readonly Action<float> reportEffectsPeak;
         private readonly Action<Guid> completed;
         private readonly List<SessionSampleProvider> providers = [];
         private bool stopped;
@@ -731,6 +746,7 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
             bool loop,
             Func<double> effectsVolume,
             Func<bool> effectsMuted,
+            Action<float> reportEffectsPeak,
             Action<Guid> completed)
         {
             this.id = id;
@@ -739,6 +755,7 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
             this.loop = loop;
             this.effectsVolume = effectsVolume;
             this.effectsMuted = effectsMuted;
+            this.reportEffectsPeak = reportEffectsPeak;
             this.completed = completed;
         }
 
@@ -763,6 +780,7 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
                 () => IsPaused,
                 () => stopped,
                 () => effectsMuted() ? 0.0 : soundVolume * effectsVolume(),
+                reportEffectsPeak,
                 OnProviderCompleted);
             providers.Add(provider);
             mixer.AddInput(provider);
@@ -824,6 +842,7 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
         private readonly Func<bool> paused;
         private readonly Func<bool> stopped;
         private readonly Func<double> volume;
+        private readonly Action<float> reportPeak;
         private readonly Action completed;
         private long position;
         private int completionRaised;
@@ -834,6 +853,7 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
             Func<bool> paused,
             Func<bool> stopped,
             Func<double> volume,
+            Action<float> reportPeak,
             Action completed)
         {
             this.samples = samples;
@@ -841,6 +861,7 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
             this.paused = paused;
             this.stopped = stopped;
             this.volume = volume;
+            this.reportPeak = reportPeak;
             this.completed = completed;
         }
 
@@ -891,6 +912,13 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
                 written += available;
             }
 
+            var peak = 0f;
+            for (var index = offset; index < offset + written; index++)
+            {
+                peak = Math.Max(peak, Math.Abs(buffer[index]));
+            }
+
+            reportPeak(peak);
             return written;
         }
 

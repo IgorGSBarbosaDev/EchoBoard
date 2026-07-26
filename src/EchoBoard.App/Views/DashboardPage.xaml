@@ -121,9 +121,9 @@
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition x:Name="FlowColumn1" Width="Auto" /><ColumnDefinition x:Name="FlowColumn2" Width="*" /><ColumnDefinition x:Name="FlowColumn3" Width="Auto" /><ColumnDefinition x:Name="FlowColumn4" Width="*" /></Grid.ColumnDefinitions>
                                     <Border Style="{StaticResource EchoBoardCardStyle}"><StackPanel Spacing="7"><SymbolIcon HorizontalAlignment="Left" Symbol="Microphone" Foreground="{ThemeResource EchoBoardActionBrush}" /><TextBlock Text="{Binding MicrophoneNote}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" /><TextBlock Text="Entrada física" Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel></Border>
                                     <SymbolIcon x:Name="FlowArrow1" Grid.Column="1" VerticalAlignment="Center" Symbol="Forward" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" />
-                                    <Border x:Name="MixerFlowCard" Grid.Column="2" Style="{StaticResource EchoBoardCardStyle}"><StackPanel Spacing="7"><SymbolIcon HorizontalAlignment="Left" Symbol="Audio" Foreground="{ThemeResource EchoBoardActionBrush}" /><TextBlock Text="Mixer EchoBoard" FontWeight="SemiBold" /><TextBlock Text="Ainda não implementado" Foreground="{ThemeResource EchoBoardWarningBrush}" FontSize="10" /></StackPanel></Border>
+                                    <Border x:Name="MixerFlowCard" Grid.Column="2" Style="{StaticResource EchoBoardCardStyle}"><StackPanel Spacing="7"><SymbolIcon HorizontalAlignment="Left" Symbol="Audio" Foreground="{ThemeResource EchoBoardActionBrush}" /><TextBlock Text="Mixer EchoBoard" FontWeight="SemiBold" /><TextBlock Text="Voz + efeitos" Foreground="{ThemeResource EchoBoardSuccessBrush}" FontSize="10" /></StackPanel></Border>
                                     <SymbolIcon x:Name="FlowArrow2" Grid.Column="3" VerticalAlignment="Center" Symbol="Forward" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" />
-                                    <Border x:Name="OutputFlowCard" Grid.Column="4" Style="{StaticResource EchoBoardCardStyle}"><StackPanel Spacing="7"><SymbolIcon HorizontalAlignment="Left" Symbol="Audio" Foreground="{ThemeResource EchoBoardWarningBrush}" /><TextBlock Text="Saída virtual" FontWeight="SemiBold" /><TextBlock Text="Não implementada" Foreground="{ThemeResource EchoBoardWarningBrush}" FontSize="10" /></StackPanel></Border>
+                                    <Border x:Name="OutputFlowCard" Grid.Column="4" Style="{StaticResource EchoBoardCardStyle}"><StackPanel Spacing="7"><SymbolIcon HorizontalAlignment="Left" Symbol="Audio" Foreground="{ThemeResource EchoBoardWarningBrush}" /><TextBlock Text="Saída virtual" FontWeight="SemiBold" /><TextBlock Text="VB-CABLE / externo" Foreground="{ThemeResource EchoBoardWarningBrush}" FontSize="10" /></StackPanel></Border>
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -141,8 +141,8 @@
                             <StackPanel Spacing="12">
                                 <StackPanel Spacing="2"><TextBlock Text="Níveis ao vivo" Style="{StaticResource EchoBoardSectionTitleTextStyle}" /><TextBlock Text="Dados reais quando a telemetria está disponível." Style="{StaticResource EchoBoardCaptionTextStyle}" /></StackPanel>
                                 <controls:AudioLevelMeter Label="Microfone" Level="{Binding MicrophoneLevel}" ValueText="{Binding MicrophoneLevelText}" Variant="Microphone" />
-                                <controls:AudioLevelMeter Label="Efeitos" Level="0" ValueText="{Binding EffectsLevelText}" Variant="Effects" />
-                                <controls:AudioLevelMeter Label="Saída virtual" Level="0" ValueText="{Binding VirtualOutputLevelText}" Variant="VirtualOutput" />
+                                <controls:AudioLevelMeter Label="Efeitos" Level="{Binding EffectsLevel}" ValueText="{Binding EffectsLevelText}" Variant="Effects" />
+                                <controls:AudioLevelMeter Label="Saída virtual" Level="{Binding VirtualOutputLevel}" ValueText="{Binding VirtualOutputLevelText}" Variant="VirtualOutput" />
                             </StackPanel>
                         </Border>
                     </StackPanel>

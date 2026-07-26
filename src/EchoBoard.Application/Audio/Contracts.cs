@@ -266,7 +266,10 @@ public sealed record AudioRoutingSnapshot(
     string? MonitorErrorMessage = null,
     string? VirtualOutputErrorMessage = null,
     AudioStreamFormatDto? MonitorFormat = null,
-    AudioStreamFormatDto? VirtualOutputFormat = null)
+    AudioStreamFormatDto? VirtualOutputFormat = null,
+    double EffectsLevel = 0,
+    double MonitorLevel = 0,
+    double VirtualOutputLevel = 0)
 {
     public static AudioRoutingSnapshot Stopped { get; } = new(
         AudioRouteState.Stopped,

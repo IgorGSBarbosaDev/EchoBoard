@@ -13,6 +13,9 @@ public sealed class AudioDiagnosticsViewModel : ObservableObject
     private DevicePreviewModel monitorDevice = new("Monitor", "Windows default output", Symbol.Audio, DeviceStatusKind.Unavailable);
     private DevicePreviewModel virtualOutputDevice = new("Virtual output", "Not configured", Symbol.Audio, DeviceStatusKind.Unavailable);
     private AudioMeterPreviewModel microphoneMeter = new("Mic", 0, AudioLevelMeterVariant.Microphone, "Idle");
+    private AudioMeterPreviewModel effectsMeter = new("Effects", 0, AudioLevelMeterVariant.Effects, "Idle");
+    private AudioMeterPreviewModel monitorMeter = new("Monitor", 0, AudioLevelMeterVariant.Monitor, "Idle");
+    private AudioMeterPreviewModel virtualOutputMeter = new("Virtual output", 0, AudioLevelMeterVariant.VirtualOutput, "Idle");
     private string formatText = "No active microphone format";
     private string lastErrorText = "No microphone errors";
     private string mixerStateText = "Mixer stopped";
@@ -46,6 +49,24 @@ public sealed class AudioDiagnosticsViewModel : ObservableObject
     {
         get => microphoneMeter;
         private set => SetProperty(ref microphoneMeter, value);
+    }
+
+    public AudioMeterPreviewModel EffectsMeter
+    {
+        get => effectsMeter;
+        private set => SetProperty(ref effectsMeter, value);
+    }
+
+    public AudioMeterPreviewModel MonitorMeter
+    {
+        get => monitorMeter;
+        private set => SetProperty(ref monitorMeter, value);
+    }
+
+    public AudioMeterPreviewModel VirtualOutputMeter
+    {
+        get => virtualOutputMeter;
+        private set => SetProperty(ref virtualOutputMeter, value);
     }
 
     public DevicePreviewModel MonitorDevice
@@ -92,7 +113,8 @@ public sealed class AudioDiagnosticsViewModel : ObservableObject
 
     public IReadOnlyList<DevicePreviewModel> PreviewDevices => [MicrophoneDevice, MonitorDevice, VirtualOutputDevice];
 
-    public IReadOnlyList<AudioMeterPreviewModel> PreviewMeters => [MicrophoneMeter];
+    public IReadOnlyList<AudioMeterPreviewModel> PreviewMeters =>
+        [MicrophoneMeter, EffectsMeter, MonitorMeter, VirtualOutputMeter];
 
     public void Refresh()
     {
@@ -158,7 +180,20 @@ public sealed class AudioDiagnosticsViewModel : ObservableObject
                         ?? snapshot.MonitorErrorMessage
                         ?? snapshot.StatusMessage;
         FormatText = snapshot.Format.DisplayText;
+        EffectsMeter = ToMeter("Effects", snapshot.EffectsLevel, AudioLevelMeterVariant.Effects);
+        MonitorMeter = ToMeter("Monitor", snapshot.MonitorLevel, AudioLevelMeterVariant.Monitor);
+        VirtualOutputMeter = ToMeter("Virtual output", snapshot.VirtualOutputLevel, AudioLevelMeterVariant.VirtualOutput);
         OnPropertyChanged(nameof(PreviewDevices));
+        OnPropertyChanged(nameof(PreviewMeters));
+    }
+
+    private static AudioMeterPreviewModel ToMeter(
+        string label,
+        double level,
+        AudioLevelMeterVariant variant)
+    {
+        var normalized = Math.Clamp(level, 0, 1);
+        return new AudioMeterPreviewModel(label, normalized, variant, normalized > 0 ? $"{normalized:P0}" : "Idle");
     }
 
     private static DeviceStatusKind ToDeviceStatus(AudioRouteState state)

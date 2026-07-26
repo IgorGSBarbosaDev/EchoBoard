@@ -36,6 +36,10 @@ public sealed class DashboardViewModel : ObservableObject
     private string feedbackMessage = string.Empty;
     private double microphoneLevel;
     private string microphoneLevelText = "Inativo";
+    private double effectsLevel;
+    private double virtualOutputLevel;
+    private string effectsLevelText = "Indisponível";
+    private string virtualOutputLevelText = "Indisponível";
     private string routingValue = "Inicializando";
     private string routingNote = "Preparando motor de áudio";
 
@@ -112,8 +116,29 @@ public sealed class DashboardViewModel : ObservableObject
         private set => SetProperty(ref microphoneLevelText, value);
     }
 
-    public string EffectsLevelText => "Sem telemetria";
-    public string VirtualOutputLevelText => "Indisponível";
+    public double EffectsLevel
+    {
+        get => effectsLevel;
+        private set => SetProperty(ref effectsLevel, Math.Clamp(value, 0, 1));
+    }
+
+    public double VirtualOutputLevel
+    {
+        get => virtualOutputLevel;
+        private set => SetProperty(ref virtualOutputLevel, Math.Clamp(value, 0, 1));
+    }
+
+    public string EffectsLevelText
+    {
+        get => effectsLevelText;
+        private set => SetProperty(ref effectsLevelText, value);
+    }
+
+    public string VirtualOutputLevelText
+    {
+        get => virtualOutputLevelText;
+        private set => SetProperty(ref virtualOutputLevelText, value);
+    }
 
     public string FeedbackMessage
     {
@@ -344,6 +369,12 @@ public sealed class DashboardViewModel : ObservableObject
         }
 
         var snapshot = getAudioRoutingSnapshot.Execute();
+        EffectsLevel = snapshot.EffectsLevel;
+        EffectsLevelText = snapshot.EffectsLevel > 0 ? $"{snapshot.EffectsLevel:P0}" : "Inativo";
+        VirtualOutputLevel = snapshot.VirtualOutputLevel;
+        VirtualOutputLevelText = snapshot.VirtualOutputState == AudioRouteState.Active
+            ? snapshot.VirtualOutputLevel > 0 ? $"{snapshot.VirtualOutputLevel:P0}" : "Silenciosa"
+            : "Indisponível";
         RoutingValue = snapshot.EngineState == AudioRouteState.Active ? "Ativo" : "Degradado";
         RoutingNote = snapshot.VirtualOutputState == AudioRouteState.Active
             ? snapshot.VirtualOutputDeviceName ?? "Saída virtual ativa"

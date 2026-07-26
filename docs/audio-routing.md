@@ -13,6 +13,8 @@ The virtual bus contains microphone + effects. The local monitor contains effect
 
 Settings and the global player use one observable routing profile. Changing a volume or mute in either surface updates the mixer immediately and persists the same complete profile. Monitor mute silences the monitor bus without disabling or recreating its endpoint; **Local monitor** remains the separate route enable switch.
 
+The shared routing snapshot also exposes real peak meters for effects, the local monitor, and the virtual output. Effects are measured after the per-sound and global effects gain; monitor and virtual output meters are measured after their independent route gains. A disconnected route reports zero until its renderer is active again.
+
 Each WASAPI route adapts the internal mix to the endpoint mix format while keeping the application mixer at 48 kHz stereo float. A monitor failure does not recreate or stop the virtual route, and a virtual-route failure does not interrupt local playback or microphone capture. Saved endpoints remain identified by their Windows MMDevice ID while disconnected and are retried automatically.
 
 ## Configure
@@ -21,7 +23,7 @@ Each WASAPI route adapts the internal mix to the endpoint mix format while keepi
 2. Select the physical microphone. On first configuration, EchoBoard prefers NVIDIA Broadcast when it is available, otherwise the previous/default microphone.
 3. Select the Windows output used as the local monitor.
 4. Install an external cable such as VB-CABLE or VoiceMeeter if Discord/OBS routing is required.
-5. Select the cable's render endpoint as **Virtual output**. Known cable endpoints are placed first and marked **Virtual cable**.
+5. Select the cable's render endpoint as **Virtual output**. Known cable endpoints are placed first and marked **Virtual cable**; additional virtual cable/router families are also recognized when their Windows endpoint names identify them.
 6. In Discord or OBS, select the corresponding cable capture endpoint as the microphone/input:
    - VB-CABLE: EchoBoard uses `CABLE Input`; Discord/OBS uses `CABLE Output`.
    - VoiceMeeter: EchoBoard uses the desired VoiceMeeter input bus; Discord/OBS uses the matching output bus.

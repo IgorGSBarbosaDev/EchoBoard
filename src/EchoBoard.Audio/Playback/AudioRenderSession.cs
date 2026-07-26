@@ -244,6 +244,12 @@ internal static class AudioEndpointClassifier
             return "voicemeeter-vaio";
         }
 
+        if (name.Contains("Virtual Audio Cable", StringComparison.OrdinalIgnoreCase) &&
+            !name.Contains("VB-Audio", StringComparison.OrdinalIgnoreCase))
+        {
+            return "virtual-audio-cable";
+        }
+
         if (name.Contains("CABLE", StringComparison.OrdinalIgnoreCase) ||
             name.Contains("VB-Audio", StringComparison.OrdinalIgnoreCase))
         {
@@ -262,6 +268,29 @@ internal static class AudioEndpointClassifier
         if (name.Contains("Virtual Audio", StringComparison.OrdinalIgnoreCase))
         {
             return "virtual-audio-cable";
+        }
+
+        if (name.Contains("Synchronous Audio Router", StringComparison.OrdinalIgnoreCase))
+        {
+            return "synchronous-audio-router";
+        }
+
+        if (name.Contains("JACK Router", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("JACK Audio", StringComparison.OrdinalIgnoreCase))
+        {
+            return "jack-router";
+        }
+
+        if (name.Contains("Virtual Cable", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("VAC ", StringComparison.OrdinalIgnoreCase))
+        {
+            return "virtual-audio-cable";
+        }
+
+        if (name.Contains("Wave Link", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("Elgato Virtual", StringComparison.OrdinalIgnoreCase))
+        {
+            return "elgato-wave-link";
         }
 
         return null;
