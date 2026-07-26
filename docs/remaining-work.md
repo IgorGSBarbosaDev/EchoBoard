@@ -32,7 +32,6 @@ Atualizado após o merge de `bugfix/audio-playback-mixer` na `main`.
 
 - Exibir medidores reais dos barramentos de efeitos e saída virtual; atualmente o medidor físico do microfone é o único nível contínuo exposto na interface.
 - Expandir a classificação de famílias de dispositivos para cabos virtuais de outros fabricantes além dos padrões conhecidos.
-- Adicionar onboarding guiado para instalação/configuração do cabo virtual, sem instalar driver automaticamente.
 - Validar em hardware adicional os formatos MP3, WAV, Ogg/Vorbis, FLAC, M4A e AAC; a suíte automatizada cobre decodificação e o smoke físico atual usou Ogg/Opus.
 - Avaliar telemetria local de falhas de rota somente em logs, mantendo o produto sem backend ou coleta externa.
 
