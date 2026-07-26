@@ -1,7 +1,10 @@
 using System.Xml.Linq;
 using EchoBoard.Audio;
+using EchoBoard.Application.Audio;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace EchoBoard.Audio.Tests;
@@ -28,6 +31,20 @@ public sealed class ArchitectureTests
         var result = services.AddAudio();
 
         result.Should().BeSameAs(services);
+    }
+
+    [Fact]
+    public async Task PlaybackAndRoutingResolveTheSameMixerInstance()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddAudio();
+        await using var provider = services.BuildServiceProvider();
+
+        var playback = provider.GetRequiredService<ISoundPlaybackEngine>();
+        var routing = provider.GetRequiredService<IAudioRoutingEngine>();
+
+        playback.Should().BeSameAs(routing);
     }
 }
 

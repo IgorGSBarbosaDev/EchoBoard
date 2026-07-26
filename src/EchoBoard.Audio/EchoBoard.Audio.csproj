@@ -10,7 +10,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Concentus.Oggfile" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="NAudio" />
     <PackageReference Include="NAudio.Vorbis" />
   </ItemGroup>

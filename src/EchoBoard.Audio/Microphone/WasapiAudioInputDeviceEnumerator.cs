@@ -7,6 +7,7 @@ public sealed class WasapiAudioInputDeviceEnumerator : IAudioInputDeviceEnumerat
 {
     public Task<IReadOnlyList<AudioInputDeviceDto>> ListAsync(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         using var enumerator = new MMDeviceEnumerator();
         string? defaultId = null;
         try
@@ -18,14 +19,18 @@ public sealed class WasapiAudioInputDeviceEnumerator : IAudioInputDeviceEnumerat
             defaultId = null;
         }
 
-        var devices = enumerator
-            .EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active)
-            .Select(device => new AudioInputDeviceDto(
+        var devices = new List<AudioInputDeviceDto>();
+        foreach (var device in enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
+        {
+            using (device)
+            {
+                devices.Add(new AudioInputDeviceDto(
                 device.ID,
                 device.FriendlyName,
                 string.Equals(device.ID, defaultId, StringComparison.Ordinal),
-                IsAvailable: true))
-            .ToArray();
+                    IsAvailable: true));
+            }
+        }
 
         return Task.FromResult<IReadOnlyList<AudioInputDeviceDto>>(devices);
     }
