@@ -51,6 +51,32 @@ public sealed class WasapiSoundPlaybackEngineRoutingTests
     }
 
     [Fact]
+    public async Task RoutingSnapshotReportsRealEffectsAndOutputLevels()
+    {
+        var filePath = CreateWaveFile(0.25f, sampleFrames: 4096);
+        try
+        {
+            var renders = new FakeRenderSessionFactory();
+            using var engine = CreateEngine(new FakeMicrophoneCaptureController(0.2f), renders);
+            await engine.InitializeAsync(Settings(), TestContext.Current.CancellationToken);
+            await engine.PlayAsync(filePath, 1, TestContext.Current.CancellationToken);
+
+            renders.Latest("virtual output").Read(64);
+            renders.Latest("monitor").Read(64);
+
+            var snapshot = engine.GetRoutingSnapshot();
+
+            snapshot.EffectsLevel.Should().BeApproximately(0.25, 0.002);
+            snapshot.MonitorLevel.Should().BeApproximately(0.2, 0.002);
+            snapshot.VirtualOutputLevel.Should().BeApproximately(0.45, 0.002);
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
+    }
+
+    [Fact]
     public async Task MutedMicrophoneAllowsEffectOnlyOnVirtualRoute()
     {
         var filePath = CreateWaveFile(0.25f, sampleFrames: 4096);
@@ -224,6 +250,10 @@ public sealed class WasapiSoundPlaybackEngineRoutingTests
     [Theory]
     [InlineData("CABLE Input (VB-Audio Virtual Cable)", true, "vb-cable")]
     [InlineData("VoiceMeeter AUX Input", true, "voicemeeter-aux")]
+    [InlineData("Virtual Audio Cable (VAC) Input", true, "virtual-audio-cable")]
+    [InlineData("Synchronous Audio Router", true, "synchronous-audio-router")]
+    [InlineData("JACK Router", true, "jack-router")]
+    [InlineData("Elgato Wave Link System", true, "elgato-wave-link")]
     [InlineData("Speakers (NVIDIA Broadcast)", false, "nvidia-broadcast")]
     [InlineData("Alto-falantes (Realtek(R) Audio)", false, null)]
     public void EndpointClassifierIdentifiesVirtualCandidates(

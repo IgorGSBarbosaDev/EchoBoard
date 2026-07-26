@@ -389,7 +389,11 @@ public sealed class ComponentPreviewContractTests
 
         viewModel.PreviewDevices.Select(device => device.Status).Should().Contain(DeviceStatusKind.Unavailable);
 
-        viewModel.PreviewMeters.Select(meter => meter.Variant).Should().Equal(AudioLevelMeterVariant.Microphone);
+        viewModel.PreviewMeters.Select(meter => meter.Variant).Should().Equal(
+            AudioLevelMeterVariant.Microphone,
+            AudioLevelMeterVariant.Effects,
+            AudioLevelMeterVariant.Monitor,
+            AudioLevelMeterVariant.VirtualOutput);
 
         viewModel.PreviewMeters.Should().OnlyContain(meter => meter.Level >= 0 && meter.Level <= 1);
     }
