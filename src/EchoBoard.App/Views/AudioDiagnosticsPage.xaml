@@ -61,6 +61,8 @@
                     <StackPanel Spacing="{StaticResource EchoBoardSpace4}">
                         <TextBlock Text="{Binding MixerStateText}" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
                         <TextBlock Text="{Binding FormatText}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                        <TextBlock Text="{Binding MonitorRouteText}" Style="{StaticResource EchoBoardCaptionTextStyle}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding VirtualOutputRouteText}" Style="{StaticResource EchoBoardCaptionTextStyle}" TextWrapping="Wrap" />
                         <TextBlock Text="{Binding LastErrorText}" Style="{StaticResource EchoBoardBodyTextStyle}" />
                     </StackPanel>
                 </StackPanel>

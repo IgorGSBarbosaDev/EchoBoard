@@ -16,6 +16,8 @@ public sealed class AudioDiagnosticsViewModel : ObservableObject
     private string formatText = "No active microphone format";
     private string lastErrorText = "No microphone errors";
     private string mixerStateText = "Mixer stopped";
+    private string monitorRouteText = "Monitor stopped";
+    private string virtualOutputRouteText = "Virtual output not configured";
 
     public AudioDiagnosticsViewModel(
         GetMicrophoneCaptureSnapshotUseCase getMicrophoneCaptureSnapshot,
@@ -76,6 +78,18 @@ public sealed class AudioDiagnosticsViewModel : ObservableObject
         private set => SetProperty(ref lastErrorText, value);
     }
 
+    public string MonitorRouteText
+    {
+        get => monitorRouteText;
+        private set => SetProperty(ref monitorRouteText, value);
+    }
+
+    public string VirtualOutputRouteText
+    {
+        get => virtualOutputRouteText;
+        private set => SetProperty(ref virtualOutputRouteText, value);
+    }
+
     public IReadOnlyList<DevicePreviewModel> PreviewDevices => [MicrophoneDevice, MonitorDevice, VirtualOutputDevice];
 
     public IReadOnlyList<AudioMeterPreviewModel> PreviewMeters => [MicrophoneMeter];
@@ -128,7 +142,21 @@ public sealed class AudioDiagnosticsViewModel : ObservableObject
             Symbol.Audio,
             ToDeviceStatus(snapshot.VirtualOutputState));
         MixerStateText = $"{snapshot.EngineState} · {snapshot.Format.DisplayText}";
-        LastErrorText = snapshot.ErrorMessage ?? snapshot.StatusMessage;
+        MonitorRouteText = snapshot.MonitorState == AudioRouteState.Active
+            ? $"Monitor format: {snapshot.MonitorFormat?.DisplayText ?? snapshot.Format.DisplayText}"
+            : snapshot.MonitorErrorMessage ?? $"Monitor: {snapshot.MonitorState}";
+        VirtualOutputRouteText = snapshot.VirtualOutputState switch
+        {
+            AudioRouteState.Active =>
+                $"Virtual format: {snapshot.VirtualOutputFormat?.DisplayText ?? snapshot.Format.DisplayText}",
+            AudioRouteState.Unconfigured =>
+                "Install and select a virtual cable; local playback remains available.",
+            _ => snapshot.VirtualOutputErrorMessage ?? $"Virtual output: {snapshot.VirtualOutputState}"
+        };
+        LastErrorText = snapshot.ErrorMessage
+                        ?? snapshot.VirtualOutputErrorMessage
+                        ?? snapshot.MonitorErrorMessage
+                        ?? snapshot.StatusMessage;
         FormatText = snapshot.Format.DisplayText;
         OnPropertyChanged(nameof(PreviewDevices));
     }

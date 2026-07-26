@@ -54,6 +54,8 @@ public sealed class SettingsViewModel : ObservableObject
     private bool isMonitorMuted;
     private bool isVirtualOutputMuted;
     private string routingStatusText = "Audio mixer is starting";
+    private string virtualOutputWarningText = "Install and select a virtual cable to send microphone and effects to other applications.";
+    private Visibility virtualOutputWarningVisibility = Visibility.Visible;
 
     public SettingsViewModel(
         ListHotkeyBindingsUseCase listHotkeys,
@@ -233,6 +235,19 @@ public sealed class SettingsViewModel : ObservableObject
         get => selectedVirtualOutputDevice;
         set
         {
+            if (!isApplyingRouting &&
+                value?.Id is not null &&
+                SelectedMicrophoneDevice?.EndpointFamily is { } inputFamily &&
+                string.Equals(inputFamily, value.EndpointFamily, StringComparison.Ordinal))
+            {
+                FeedbackToast = new ToastPreviewModel(
+                    ToastNotificationKind.Warning,
+                    "Virtual output not selected",
+                    "Choose an output from a different device family to prevent audio feedback.");
+                OnPropertyChanged();
+                return;
+            }
+
             if (SetProperty(ref selectedVirtualOutputDevice, value) && !isApplyingRouting)
             {
                 if (audioSettings is not null)
@@ -379,6 +394,18 @@ public sealed class SettingsViewModel : ObservableObject
         private set => SetProperty(ref routingStatusText, value);
     }
 
+    public string VirtualOutputWarningText
+    {
+        get => virtualOutputWarningText;
+        private set => SetProperty(ref virtualOutputWarningText, value);
+    }
+
+    public Visibility VirtualOutputWarningVisibility
+    {
+        get => virtualOutputWarningVisibility;
+        private set => SetProperty(ref virtualOutputWarningVisibility, value);
+    }
+
     public IAsyncRelayCommand RefreshMicrophoneDevicesCommand { get; }
 
     public IAsyncRelayCommand StartMicrophoneCaptureCommand { get; }
@@ -435,7 +462,12 @@ public sealed class SettingsViewModel : ObservableObject
         MicrophoneDevices.Clear();
         foreach (var device in devices)
         {
-            MicrophoneDevices.Add(new MicrophoneDeviceOptionViewModel(device.Id, device.Name, device.IsDefault, device.IsAvailable));
+            MicrophoneDevices.Add(new MicrophoneDeviceOptionViewModel(
+                device.Id,
+                device.Name,
+                device.IsDefault,
+                device.IsAvailable,
+                device.EndpointFamily));
         }
     }
 
@@ -477,6 +509,7 @@ public sealed class SettingsViewModel : ObservableObject
     public void RefreshMicrophoneSnapshot(TimeSpan? elapsed = null)
     {
         ApplyMicrophoneSnapshot(getMicrophoneCaptureSnapshot.Execute(), elapsed ?? DefaultMeterInterval);
+        ApplyRoutingSnapshot();
     }
 
     public async Task DeactivateAsync(CancellationToken cancellationToken)
@@ -606,9 +639,15 @@ public sealed class SettingsViewModel : ObservableObject
         VirtualOutputDevices.Add(AudioOutputDeviceOptionViewModel.None);
         foreach (var device in devices)
         {
-            var option = new AudioOutputDeviceOptionViewModel(device.Id, device.Name, device.IsDefault, device.IsAvailable);
-            MonitorDevices.Add(option);
-            VirtualOutputDevices.Add(option);
+            MonitorDevices.Add(AudioOutputDeviceOptionViewModel.From(device));
+        }
+
+        foreach (var device in devices
+                     .OrderByDescending(device => device.IsVirtualOutputCandidate)
+                     .ThenByDescending(device => device.IsDefault)
+                     .ThenBy(device => device.Name))
+        {
+            VirtualOutputDevices.Add(AudioOutputDeviceOptionViewModel.From(device));
         }
     }
 
@@ -619,9 +658,16 @@ public sealed class SettingsViewModel : ObservableObject
         {
             routingSettings = value;
             selectedMicrophoneDevice = MicrophoneDevices.SingleOrDefault(device => device.Id == value.InputDeviceId);
-            selectedMonitorDevice = MonitorDevices.SingleOrDefault(device => device.Id == value.MonitorDeviceId);
-            selectedVirtualOutputDevice = VirtualOutputDevices.SingleOrDefault(device => device.Id == value.VirtualOutputDeviceId)
-                                          ?? AudioOutputDeviceOptionViewModel.None;
+            selectedMonitorDevice = FindOrAddUnavailableOutput(
+                MonitorDevices,
+                value.MonitorDeviceId,
+                value.MonitorDeviceName,
+                allowNone: false);
+            selectedVirtualOutputDevice = FindOrAddUnavailableOutput(
+                VirtualOutputDevices,
+                value.VirtualOutputDeviceId,
+                value.VirtualOutputDeviceName,
+                allowNone: true);
             microphoneGainPercent = value.MicrophoneVolume * 100;
             effectsVolumePercent = value.EffectsVolume * 100;
             monitorVolumePercent = value.MonitorVolume * 100;
@@ -714,8 +760,51 @@ public sealed class SettingsViewModel : ObservableObject
     {
         if (getAudioRoutingSnapshot is not null)
         {
-            RoutingStatusText = getAudioRoutingSnapshot.Execute().StatusMessage;
+            var snapshot = getAudioRoutingSnapshot.Execute();
+            RoutingStatusText = snapshot.StatusMessage;
+            VirtualOutputWarningVisibility = snapshot.VirtualOutputState == AudioRouteState.Active
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+            VirtualOutputWarningText = snapshot.VirtualOutputState switch
+            {
+                AudioRouteState.Unconfigured =>
+                    "Install and select VB-CABLE, VoiceMeeter, or another virtual cable to transmit microphone and effects.",
+                AudioRouteState.Unavailable =>
+                    "The saved virtual output is disconnected. EchoBoard will reconnect it automatically.",
+                AudioRouteState.Failed =>
+                    snapshot.VirtualOutputErrorMessage ?? "The virtual output could not be started. Local playback remains available.",
+                _ => snapshot.StatusMessage
+            };
         }
+    }
+
+    private static AudioOutputDeviceOptionViewModel? FindOrAddUnavailableOutput(
+        ObservableCollection<AudioOutputDeviceOptionViewModel> devices,
+        string? id,
+        string? name,
+        bool allowNone)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return allowNone ? AudioOutputDeviceOptionViewModel.None : null;
+        }
+
+        var existing = devices.SingleOrDefault(device => string.Equals(device.Id, id, StringComparison.Ordinal));
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var unavailable = new AudioOutputDeviceOptionViewModel(
+            id,
+            string.IsNullOrWhiteSpace(name) ? "Previously selected device" : name,
+            IsDefault: false,
+            IsAvailable: false,
+            IsVirtualOutputCandidate: false,
+            EndpointFamily: null,
+            IsPersistedUnavailable: true);
+        devices.Insert(allowNone ? 1 : 0, unavailable);
+        return unavailable;
     }
 
     private void OnAudioSettingsPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -786,16 +875,43 @@ public sealed class SettingsViewModel : ObservableObject
     }
 }
 
-public sealed record MicrophoneDeviceOptionViewModel(string Id, string Name, bool IsDefault, bool IsAvailable)
+public sealed record MicrophoneDeviceOptionViewModel(
+    string Id,
+    string Name,
+    bool IsDefault,
+    bool IsAvailable,
+    string? EndpointFamily = null)
 {
     public string DisplayName => IsDefault ? $"{Name} (Default)" : Name;
 }
 
-public sealed record AudioOutputDeviceOptionViewModel(string? Id, string Name, bool IsDefault, bool IsAvailable)
+public sealed record AudioOutputDeviceOptionViewModel(
+    string? Id,
+    string Name,
+    bool IsDefault,
+    bool IsAvailable,
+    bool IsVirtualOutputCandidate = false,
+    string? EndpointFamily = null,
+    bool IsPersistedUnavailable = false)
 {
     public static AudioOutputDeviceOptionViewModel None { get; } = new(null, "No virtual output", false, true);
 
-    public string DisplayName => IsDefault ? $"{Name} (Default)" : Name;
+    public string DisplayName => IsPersistedUnavailable
+        ? $"{Name} (Unavailable)"
+        : IsVirtualOutputCandidate
+            ? $"{Name} (Virtual cable)"
+            : IsDefault ? $"{Name} (Default)" : Name;
+
+    public static AudioOutputDeviceOptionViewModel From(AudioOutputDeviceDto device)
+    {
+        return new AudioOutputDeviceOptionViewModel(
+            device.Id,
+            device.Name,
+            device.IsDefault,
+            device.IsAvailable,
+            device.IsVirtualOutputCandidate,
+            device.EndpointFamily);
+    }
 }
 
 public sealed class GlobalHotkeySettingViewModel : ObservableObject

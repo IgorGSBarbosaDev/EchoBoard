@@ -106,6 +106,21 @@
                             PlaceholderText="Select VB-CABLE or VoiceMeeter" />
                     </Grid>
 
+                    <Border
+                        MaxWidth="720"
+                        Padding="10,8"
+                        HorizontalAlignment="Left"
+                        Background="{ThemeResource EchoBoardCardActiveBrush}"
+                        BorderBrush="{ThemeResource EchoBoardWarningBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Visibility="{Binding VirtualOutputWarningVisibility}">
+                        <TextBlock
+                            Text="{Binding VirtualOutputWarningText}"
+                            Style="{StaticResource EchoBoardCaptionTextStyle}"
+                            TextWrapping="Wrap" />
+                    </Border>
+
                     <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
