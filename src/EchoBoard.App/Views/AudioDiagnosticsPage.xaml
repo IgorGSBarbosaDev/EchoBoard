@@ -51,12 +51,40 @@
                             Status="{Binding VirtualOutputDevice.Status}" />
                     </Grid>
 
-                    <controls:AudioLevelMeter
-                        Width="240"
-                        Label="{Binding MicrophoneMeter.Label}"
-                        Level="{Binding MicrophoneMeter.Level}"
-                        Variant="{Binding MicrophoneMeter.Variant}"
-                        ValueText="{Binding MicrophoneMeter.ValueText}" />
+                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}" RowSpacing="{StaticResource EchoBoardSpace12}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <controls:AudioLevelMeter
+                            Label="{Binding MicrophoneMeter.Label}"
+                            Level="{Binding MicrophoneMeter.Level}"
+                            Variant="{Binding MicrophoneMeter.Variant}"
+                            ValueText="{Binding MicrophoneMeter.ValueText}" />
+                        <controls:AudioLevelMeter
+                            Grid.Column="1"
+                            Label="{Binding EffectsMeter.Label}"
+                            Level="{Binding EffectsMeter.Level}"
+                            Variant="{Binding EffectsMeter.Variant}"
+                            ValueText="{Binding EffectsMeter.ValueText}" />
+                        <controls:AudioLevelMeter
+                            Grid.Row="1"
+                            Label="{Binding MonitorMeter.Label}"
+                            Level="{Binding MonitorMeter.Level}"
+                            Variant="{Binding MonitorMeter.Variant}"
+                            ValueText="{Binding MonitorMeter.ValueText}" />
+                        <controls:AudioLevelMeter
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Label="{Binding VirtualOutputMeter.Label}"
+                            Level="{Binding VirtualOutputMeter.Level}"
+                            Variant="{Binding VirtualOutputMeter.Variant}"
+                            ValueText="{Binding VirtualOutputMeter.ValueText}" />
+                    </Grid>
 
                     <StackPanel Spacing="{StaticResource EchoBoardSpace4}">
                         <TextBlock Text="{Binding MixerStateText}" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
