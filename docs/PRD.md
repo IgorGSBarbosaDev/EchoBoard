@@ -555,6 +555,11 @@ AudioDeviceProfile
 - EffectsVolume
 - MonitorVolume
 - VirtualOutputVolume
+- IsMicrophoneMuted
+- AreEffectsMuted
+- IsMonitorMuted
+- IsVirtualOutputMuted
+- IsMonitorEnabled
 - IsDefault
 
 AppSetting
@@ -675,23 +680,23 @@ A tela de diagnóstico deve mostrar:
 
 ### 16.2 Critérios de aceite do MVP
 
-- [ ] Importa MP3, WAV, OGG, FLAC, M4A e AAC válidos.
-- [ ] Rejeita arquivo inválido sem travar a interface.
+- [x] Importa MP3, WAV, OGG, FLAC, M4A e AAC válidos.
+- [x] Rejeita arquivo inválido sem travar a interface.
 - [ ] Mantém biblioteca, categorias, favoritos e hotkeys após reiniciar.
-- [ ] Reproduz áudio localmente.
+- [x] Reproduz áudio localmente.
 - [ ] Executa hotkeys globais de teclado fora do app.
-- [ ] Captura microfone físico.
-- [ ] Mostra medidor de sinal do microfone.
-- [ ] Mistura voz e efeitos.
-- [ ] Envia áudio mixado à saída virtual.
+- [x] Captura microfone físico.
+- [x] Mostra medidor de sinal do microfone.
+- [x] Mistura voz e efeitos.
+- [x] Envia áudio mixado à saída virtual selecionada.
 - [ ] Discord recebe o áudio pela entrada virtual.
 - [ ] OBS recebe o áudio pela entrada virtual.
-- [ ] Monitoramento local pode ser ligado/desligado.
+- [x] Monitoramento local pode ser ligado/desligado.
 - [ ] Alterna tema claro/escuro.
 - [ ] Funciona na bandeja do sistema.
-- [ ] Não trava com reprodução repetida de sons.
-- [ ] Detecta ausência de dispositivo configurado e informa ação recomendada.
-- [ ] README permite que outra pessoa configure o projeto do zero.
+- [x] Não trava com reprodução repetida de sons.
+- [x] Detecta ausência de dispositivo configurado e informa ação recomendada.
+- [x] README permite que outra pessoa configure o projeto do zero.
 
 ---
 
@@ -703,7 +708,7 @@ A tela de diagnóstico deve mostrar:
 | Latência elevada | Alto | WASAPI, formato interno comum, buffers controlados e testes reais. |
 | Discord filtrar os efeitos | Médio | Documentar ajuste de supressão de ruído/cancelamento de eco no guia. |
 | Dispositivo virtual ausente | Alto | Detectar ausência e guiar instalação/configuração. |
-| Dispositivo desconectado | Médio | Escutar alterações e solicitar nova seleção. |
+| Dispositivo desconectado | Médio | Isolar rotas e reconectar automaticamente pelo ID persistido. |
 | Clipping/distorção | Médio | Limiter e controles de ganho independentes. |
 | Uso alto de CPU | Médio | Limitar updates visuais, pré-carregar sons curtos e usar streaming para longos. |
 | Hotkey em conflito | Médio | Validar antes de registrar e informar conflito. |
@@ -741,9 +746,11 @@ A tela de diagnóstico deve mostrar:
 
 ### Fase 4 — Entrada, mixagem e saída virtual
 
-- Descoberta de dispositivos.
-- Captura de microfone.
-- Mixer, limiter, monitor local e saída virtual.
+- [x] Descoberta e persistência de dispositivos.
+- [x] Captura contínua de microfone.
+- [x] Mixer float 48 kHz, limiter, monitor local somente de efeitos e saída virtual de voz + efeitos.
+- [x] Operação degradada e reconexão independente quando uma rota fica indisponível.
+- [ ] Validação física com Discord e OBS; depende de cabo virtual externo instalado e selecionado.
 
 ### Fase 5 — Uso diário e release
 

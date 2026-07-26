@@ -573,7 +573,11 @@ public sealed class ShellNavigationContractTests
 
     private sealed class FakeSoundPlaybackEngine : ISoundPlaybackEngine
     {
-        public Task PlayAsync(string filePath, double volume, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<SoundPlaybackStartResult> PlayAsync(string filePath, double volume, CancellationToken cancellationToken)
+        {
+            var snapshot = new SoundPlaybackSnapshot(filePath, TimeSpan.Zero, TimeSpan.FromSeconds(1), true, false);
+            return Task.FromResult(new SoundPlaybackStartResult(Guid.NewGuid(), filePath, snapshot.Duration, true, false, snapshot));
+        }
         public Task StopAllAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         public Task TogglePauseAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         public Task SeekAsync(TimeSpan position, CancellationToken cancellationToken) => Task.CompletedTask;
