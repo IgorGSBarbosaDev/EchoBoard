@@ -11,6 +11,111 @@ namespace EchoBoard.App.Tests;
 public sealed class HardwarePlaybackSmokeTests
 {
     [Fact]
+    public async Task PhysicalMixerStartsDecodedFileOnAnAvailableRoute()
+    {
+        var filePath = Environment.GetEnvironmentVariable("ECHOBOARD_SMOKE_AUDIO_FILE");
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            return;
+        }
+
+        var host = AppHost.Create();
+        try
+        {
+            await host.StartAsync(TestContext.Current.CancellationToken);
+            await AppHost.InitializeDatabaseAsync(host.Services, TestContext.Current.CancellationToken);
+            await AppHost.InitializeAudioEngineAsync(host.Services, TestContext.Current.CancellationToken);
+            var engine = host.Services.GetRequiredService<ISoundPlaybackEngine>();
+            var routing = host.Services.GetRequiredService<IAudioRoutingEngine>();
+
+            var started = await engine.PlayAsync(
+                filePath,
+                0.5,
+                TestContext.Current.CancellationToken);
+            await Task.Delay(350, TestContext.Current.CancellationToken);
+
+            engine.GetSnapshot().Position.Should().BeGreaterThan(TimeSpan.Zero);
+            (started.IsMonitorActive || started.IsVirtualOutputActive).Should().BeTrue();
+            var routingSnapshot = routing.GetRoutingSnapshot();
+            routingSnapshot.EngineState.Should().Be(AudioRouteState.Active);
+            routingSnapshot.MicrophoneState.Should().Be(AudioRouteState.Active);
+            routingSnapshot.InputDeviceName.Should().NotBeNullOrWhiteSpace();
+            await engine.StopAllAsync(TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            await host.StopAsync(CancellationToken.None);
+            if (host is IAsyncDisposable asyncHost)
+            {
+                await asyncHost.DisposeAsync();
+            }
+            else
+            {
+                host.Dispose();
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ConfiguredVirtualEndpointStartsAndCanBeRestored()
+    {
+        var virtualOutputId = Environment.GetEnvironmentVariable("ECHOBOARD_SMOKE_VIRTUAL_OUTPUT_ID");
+        if (string.IsNullOrWhiteSpace(virtualOutputId))
+        {
+            return;
+        }
+
+        var host = AppHost.Create();
+        AudioRoutingSettingsDto? previous = null;
+        try
+        {
+            await host.StartAsync(TestContext.Current.CancellationToken);
+            await AppHost.InitializeDatabaseAsync(host.Services, TestContext.Current.CancellationToken);
+            await using var scope = host.Services.CreateAsyncScope();
+            var outputs = await scope.ServiceProvider
+                .GetRequiredService<ListAudioOutputDevicesUseCase>()
+                .ExecuteAsync(TestContext.Current.CancellationToken);
+            var selected = outputs.Single(device =>
+                string.Equals(device.Id, virtualOutputId, StringComparison.Ordinal));
+            var load = scope.ServiceProvider.GetRequiredService<LoadAudioRoutingSettingsUseCase>();
+            var save = scope.ServiceProvider.GetRequiredService<SaveAudioRoutingSettingsUseCase>();
+            previous = await load.ExecuteAsync(TestContext.Current.CancellationToken);
+
+            var snapshot = await save.ExecuteAsync(
+                previous with
+                {
+                    VirtualOutputDeviceId = selected.Id,
+                    VirtualOutputDeviceName = selected.Name
+                },
+                TestContext.Current.CancellationToken);
+
+            snapshot.VirtualOutputState.Should().Be(AudioRouteState.Active);
+            snapshot.VirtualOutputDeviceName.Should().Be(selected.Name);
+            snapshot.VirtualOutputFormat.Should().NotBeNull();
+        }
+        finally
+        {
+            if (previous is not null)
+            {
+                await using var restoreScope = host.Services.CreateAsyncScope();
+                await restoreScope.ServiceProvider
+                    .GetRequiredService<SaveAudioRoutingSettingsUseCase>()
+                    .ExecuteAsync(previous, CancellationToken.None);
+            }
+
+            await host.StopAsync(CancellationToken.None);
+            if (host is IAsyncDisposable asyncHost)
+            {
+                await asyncHost.DisposeAsync();
+            }
+            else
+            {
+                host.Dispose();
+            }
+        }
+    }
+
+    [Fact]
     public async Task ConfiguredExternalAudioDecodesAndStartsAfterEngineRestart()
     {
         var filePath = Environment.GetEnvironmentVariable("ECHOBOARD_SMOKE_AUDIO");

@@ -750,6 +750,8 @@ A tela de diagnóstico deve mostrar:
 - [x] Captura contínua de microfone.
 - [x] Mixer float 48 kHz, limiter, monitor local somente de efeitos e saída virtual de voz + efeitos.
 - [x] Operação degradada e reconexão independente quando uma rota fica indisponível.
+- [x] Adaptação de formato por endpoint, reconexão por MMDevice ID e proteção contra feedback em pares conhecidos.
+- [x] Testes sem hardware para voz, efeitos, mix simultâneo, volumes, mute, falha isolada e reconexão.
 - [ ] Validação física com Discord e OBS; depende de cabo virtual externo instalado e selecionado.
 
 ### Fase 5 — Uso diário e release
