@@ -24,6 +24,14 @@
             <Color x:Key="EchoBoardSuccessColor">#25C58A</Color>
             <Color x:Key="EchoBoardWarningColor">#F0B429</Color>
             <Color x:Key="EchoBoardErrorColor">#F05252</Color>
+            <Color x:Key="EchoBoardStatusConnectedSurfaceColor">#142B25</Color>
+            <Color x:Key="EchoBoardStatusConnectedBorderColor">#285A4A</Color>
+            <Color x:Key="EchoBoardStatusWarningSurfaceColor">#2E281A</Color>
+            <Color x:Key="EchoBoardStatusWarningBorderColor">#6F5B2A</Color>
+            <Color x:Key="EchoBoardStatusUnavailableSurfaceColor">#2D1B22</Color>
+            <Color x:Key="EchoBoardStatusUnavailableBorderColor">#6E3B45</Color>
+            <Color x:Key="EchoBoardStatusNeutralSurfaceColor">#151C2B</Color>
+            <Color x:Key="EchoBoardStatusNeutralBorderColor">#263147</Color>
             <Color x:Key="EchoBoardOverlayColor">#CC080B12</Color>
         </ResourceDictionary>
 
@@ -49,6 +57,14 @@
             <Color x:Key="EchoBoardSuccessColor">#25C58A</Color>
             <Color x:Key="EchoBoardWarningColor">#F0B429</Color>
             <Color x:Key="EchoBoardErrorColor">#F05252</Color>
+            <Color x:Key="EchoBoardStatusConnectedSurfaceColor">#142B25</Color>
+            <Color x:Key="EchoBoardStatusConnectedBorderColor">#285A4A</Color>
+            <Color x:Key="EchoBoardStatusWarningSurfaceColor">#2E281A</Color>
+            <Color x:Key="EchoBoardStatusWarningBorderColor">#6F5B2A</Color>
+            <Color x:Key="EchoBoardStatusUnavailableSurfaceColor">#2D1B22</Color>
+            <Color x:Key="EchoBoardStatusUnavailableBorderColor">#6E3B45</Color>
+            <Color x:Key="EchoBoardStatusNeutralSurfaceColor">#151C2B</Color>
+            <Color x:Key="EchoBoardStatusNeutralBorderColor">#263147</Color>
             <Color x:Key="EchoBoardOverlayColor">#CC080B12</Color>
         </ResourceDictionary>
 
@@ -74,6 +90,14 @@
             <Color x:Key="EchoBoardSuccessColor">#168A60</Color>
             <Color x:Key="EchoBoardWarningColor">#B77900</Color>
             <Color x:Key="EchoBoardErrorColor">#C53030</Color>
+            <Color x:Key="EchoBoardStatusConnectedSurfaceColor">#ECF8F2</Color>
+            <Color x:Key="EchoBoardStatusConnectedBorderColor">#B8DDCC</Color>
+            <Color x:Key="EchoBoardStatusWarningSurfaceColor">#FFF8E8</Color>
+            <Color x:Key="EchoBoardStatusWarningBorderColor">#E5CC91</Color>
+            <Color x:Key="EchoBoardStatusUnavailableSurfaceColor">#FDF0F0</Color>
+            <Color x:Key="EchoBoardStatusUnavailableBorderColor">#E5BABA</Color>
+            <Color x:Key="EchoBoardStatusNeutralSurfaceColor">#FFFFFF</Color>
+            <Color x:Key="EchoBoardStatusNeutralBorderColor">#D8E0ED</Color>
             <Color x:Key="EchoBoardOverlayColor">#CCF5F7FB</Color>
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>

@@ -15,4 +15,5 @@
     <Thickness x:Key="EchoBoardControlPadding">14,8</Thickness>
     <Thickness x:Key="EchoBoardIconButtonPadding">8</Thickness>
     <Thickness x:Key="EchoBoardBadgePadding">10,4</Thickness>
+    <Thickness x:Key="EchoBoardDeviceStatusCardPadding">14,12</Thickness>
 </ResourceDictionary>

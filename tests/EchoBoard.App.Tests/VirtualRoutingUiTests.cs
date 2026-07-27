@@ -75,6 +75,25 @@ public sealed class VirtualRoutingUiTests
         diagnostics.Should().Contain("VirtualOutputRouteText");
     }
 
+    [Fact]
+    public void SettingsAndDiagnosticsUseResponsiveRectangularDeviceCards()
+    {
+        var root = FindRepositoryRoot();
+        var appRoot = Path.Combine(root, "src", "EchoBoard.App");
+        var card = File.ReadAllText(Path.Combine(appRoot, "Controls", "DeviceStatusBadge.xaml"));
+        var settings = File.ReadAllText(Path.Combine(appRoot, "Views", "SettingsPage.xaml"));
+        var diagnostics = File.ReadAllText(Path.Combine(appRoot, "Views", "AudioDiagnosticsPage.xaml"));
+
+        card.Should().Contain("EchoBoardDeviceStatusCardStyle");
+        card.Should().Contain("TextWrapping=\"Wrap\"");
+        card.Should().NotContain("EchoBoardRadiusPill");
+        settings.Should().Contain("RefreshMicrophoneButton");
+        settings.Should().Contain("DeviceName=\"{Binding SelectedMicrophoneName}\"");
+        diagnostics.Should().Contain("DeviceCardsGrid");
+        diagnostics.Should().Contain("MonitorDeviceCard");
+        diagnostics.Should().Contain("VirtualOutputDeviceCard");
+    }
+
     private static string FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);

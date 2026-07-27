@@ -22,6 +22,14 @@
     <SolidColorBrush x:Key="EchoBoardSuccessBrush" Color="{ThemeResource EchoBoardSuccessColor}" />
     <SolidColorBrush x:Key="EchoBoardWarningBrush" Color="{ThemeResource EchoBoardWarningColor}" />
     <SolidColorBrush x:Key="EchoBoardErrorBrush" Color="{ThemeResource EchoBoardErrorColor}" />
+    <SolidColorBrush x:Key="EchoBoardStatusConnectedSurfaceBrush" Color="{ThemeResource EchoBoardStatusConnectedSurfaceColor}" />
+    <SolidColorBrush x:Key="EchoBoardStatusConnectedBorderBrush" Color="{ThemeResource EchoBoardStatusConnectedBorderColor}" />
+    <SolidColorBrush x:Key="EchoBoardStatusWarningSurfaceBrush" Color="{ThemeResource EchoBoardStatusWarningSurfaceColor}" />
+    <SolidColorBrush x:Key="EchoBoardStatusWarningBorderBrush" Color="{ThemeResource EchoBoardStatusWarningBorderColor}" />
+    <SolidColorBrush x:Key="EchoBoardStatusUnavailableSurfaceBrush" Color="{ThemeResource EchoBoardStatusUnavailableSurfaceColor}" />
+    <SolidColorBrush x:Key="EchoBoardStatusUnavailableBorderBrush" Color="{ThemeResource EchoBoardStatusUnavailableBorderColor}" />
+    <SolidColorBrush x:Key="EchoBoardStatusNeutralSurfaceBrush" Color="{ThemeResource EchoBoardStatusNeutralSurfaceColor}" />
+    <SolidColorBrush x:Key="EchoBoardStatusNeutralBorderBrush" Color="{ThemeResource EchoBoardStatusNeutralBorderColor}" />
     <SolidColorBrush x:Key="EchoBoardOverlayBrush" Color="{ThemeResource EchoBoardOverlayColor}" />
 
     <SolidColorBrush x:Key="NavigationViewItemForeground" Color="{ThemeResource EchoBoardTextSecondaryColor}" />
