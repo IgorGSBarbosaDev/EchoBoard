@@ -204,12 +204,14 @@
     </Style>
 
     <Style x:Key="EchoBoardStatusBadgeStyle" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource EchoBoardCardActiveBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource EchoBoardActionBrush}" />
+        <Setter Property="Background" Value="{ThemeResource EchoBoardStatusNeutralSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource EchoBoardStatusNeutralBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource EchoBoardRadiusPill}" />
-        <Setter Property="Padding" Value="{StaticResource EchoBoardBadgePadding}" />
+        <Setter Property="CornerRadius" Value="{StaticResource EchoBoardRadiusMedium}" />
+        <Setter Property="Padding" Value="{StaticResource EchoBoardDeviceStatusCardPadding}" />
     </Style>
+
+    <Style x:Key="EchoBoardDeviceStatusCardStyle" TargetType="Border" BasedOn="{StaticResource EchoBoardStatusBadgeStyle}" />
 
     <Style x:Key="EchoBoardSectionTitleTextStyle" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{ThemeResource EchoBoardTextPrimaryBrush}" />

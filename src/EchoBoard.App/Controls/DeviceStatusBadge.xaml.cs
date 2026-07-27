@@ -59,8 +59,6 @@ public sealed partial class DeviceStatusBadge : UserControl
         set => SetValue(IconProperty, value);
     }
 
-    public string DisplayLabel => string.IsNullOrWhiteSpace(DeviceName) ? Label : $"{Label}: {DeviceName}";
-
     public string StatusText => Status switch
     {
         DeviceStatusKind.Connected => "Connected",
@@ -77,8 +75,24 @@ public sealed partial class DeviceStatusBadge : UserControl
     {
         DeviceStatusKind.Connected => "EchoBoardSuccessBrush",
         DeviceStatusKind.Warning => "EchoBoardWarningBrush",
-        DeviceStatusKind.Disconnected or DeviceStatusKind.Unavailable => "EchoBoardErrorBrush",
+        DeviceStatusKind.Unavailable => "EchoBoardErrorBrush",
         _ => "EchoBoardTextSecondaryBrush"
+    }];
+
+    public Brush StatusSurfaceBrush => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[Status switch
+    {
+        DeviceStatusKind.Connected => "EchoBoardStatusConnectedSurfaceBrush",
+        DeviceStatusKind.Warning => "EchoBoardStatusWarningSurfaceBrush",
+        DeviceStatusKind.Unavailable => "EchoBoardStatusUnavailableSurfaceBrush",
+        _ => "EchoBoardStatusNeutralSurfaceBrush"
+    }];
+
+    public Brush StatusBorderBrush => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[Status switch
+    {
+        DeviceStatusKind.Connected => "EchoBoardStatusConnectedBorderBrush",
+        DeviceStatusKind.Warning => "EchoBoardStatusWarningBorderBrush",
+        DeviceStatusKind.Unavailable => "EchoBoardStatusUnavailableBorderBrush",
+        _ => "EchoBoardStatusNeutralBorderBrush"
     }];
 
     private static void OnDisplayPropertyChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs args)

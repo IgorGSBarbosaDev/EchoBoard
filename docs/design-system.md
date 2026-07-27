@@ -32,7 +32,7 @@ Keep text concise and sized to its container. Do not use oversized hero text ins
 
 ## Spacing And Radius
 
-Use the `EchoBoardSpace*` scale for layout gaps and the shared padding resources for pages, panels, controls, icon buttons, and badges. Cards and panels use an 8px maximum radius by default; smaller controls use 6px or 4px. Pill radius is reserved for compact badges.
+Use the `EchoBoardSpace*` scale for layout gaps and the shared padding resources for pages, panels, controls, icon buttons, badges, and device status cards. Cards and panels use an 8px maximum radius by default; smaller controls use 6px or 4px. Pill radius is reserved for compact badges, never for device status cards.
 
 ## Reusable Styles
 
@@ -49,6 +49,7 @@ Current reusable styles:
 - `EchoBoardCardStyle`
 - `EchoBoardPanelStyle`
 - `EchoBoardStatusBadgeStyle`
+- `EchoBoardDeviceStatusCardStyle`
 - `EchoBoardSectionTitleTextStyle`
 - `EchoBoardBodyTextStyle`
 - `EchoBoardCaptionTextStyle`
