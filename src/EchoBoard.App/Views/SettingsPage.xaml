@@ -4,8 +4,46 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:EchoBoard.App.Controls"
     Loaded="OnLoaded">
-    <ScrollViewer>
-        <StackPanel Spacing="{StaticResource EchoBoardSpace24}">
+    <Grid x:Name="SettingsRoot" HorizontalAlignment="Stretch">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="Wide">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1100" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+                <VisualState x:Name="Medium">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="720" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+                <VisualState x:Name="Compact">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="RefreshMicrophoneButton.(Grid.Row)" Value="1" />
+                        <Setter Target="RefreshMicrophoneButton.(Grid.Column)" Value="0" />
+                        <Setter Target="RefreshMicrophoneButton.Margin" Value="0,12,0,0" />
+                        <Setter Target="SelectedVirtualOutputCombo.(Grid.Row)" Value="1" />
+                        <Setter Target="SelectedVirtualOutputCombo.(Grid.Column)" Value="0" />
+                        <Setter Target="SelectedVirtualOutputCombo.Margin" Value="0,12,0,0" />
+                        <Setter Target="MonitorVolumeSlider.(Grid.Row)" Value="1" />
+                        <Setter Target="MonitorVolumeSlider.(Grid.Column)" Value="0" />
+                        <Setter Target="VirtualOutputVolumeSlider.(Grid.Row)" Value="2" />
+                        <Setter Target="VirtualOutputVolumeSlider.(Grid.Column)" Value="0" />
+                        <Setter Target="MixerToggles.Orientation" Value="Vertical" />
+                        <Setter Target="MixerToggles.Spacing" Value="8" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <ScrollViewer
+            HorizontalContentAlignment="Stretch"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel HorizontalAlignment="Stretch" Spacing="{StaticResource EchoBoardSpace24}">
             <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
                 <TextBlock
                     Text="{Binding Title}"
@@ -24,20 +62,25 @@
                         Text="Select the physical input mixed continuously with sound effects."
                         Style="{StaticResource EchoBoardCaptionTextStyle}" />
 
-                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+                    <Grid x:Name="MicrophoneSelectionGrid" ColumnSpacing="{StaticResource EchoBoardSpace16}" RowSpacing="{StaticResource EchoBoardSpace12}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="2*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <ComboBox
-                            MinWidth="320"
+                            MinWidth="0"
                             AutomationProperties.Name="Microphone device"
                             ItemsSource="{Binding MicrophoneDevices}"
                             DisplayMemberPath="DisplayName"
                             SelectedItem="{Binding SelectedMicrophoneDevice, Mode=TwoWay}"
                             PlaceholderText="Choose microphone" />
                         <Button
+                            x:Name="RefreshMicrophoneButton"
                             Grid.Column="1"
                             Content="Refresh"
                             Command="{Binding RefreshMicrophoneDevicesCommand}"
@@ -86,7 +129,11 @@
                         <TextBlock Text="{Binding RoutingStatusText}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
                     </StackPanel>
 
-                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+                    <Grid x:Name="MixerDevicesGrid" ColumnSpacing="{StaticResource EchoBoardSpace16}" RowSpacing="{StaticResource EchoBoardSpace12}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
@@ -98,6 +145,7 @@
                             SelectedItem="{Binding SelectedMonitorDevice, Mode=TwoWay}"
                             PlaceholderText="Windows default output" />
                         <ComboBox
+                            x:Name="SelectedVirtualOutputCombo"
                             Grid.Column="1"
                             Header="Virtual output"
                             ItemsSource="{Binding VirtualOutputDevices}"
@@ -121,24 +169,32 @@
                             TextWrapping="Wrap" />
                     </Border>
 
-                    <Grid ColumnSpacing="{StaticResource EchoBoardSpace16}">
+                    <Grid x:Name="MixerVolumesGrid" ColumnSpacing="{StaticResource EchoBoardSpace16}" RowSpacing="{StaticResource EchoBoardSpace12}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <controls:VolumeSlider
+                            x:Name="EffectsVolumeSlider"
                             Label="Effects"
                             Icon="Audio"
                             Value="{Binding EffectsVolumePercent, Mode=TwoWay}"
                             IsReadOnly="False" />
                         <controls:VolumeSlider
+                            x:Name="MonitorVolumeSlider"
                             Grid.Column="1"
                             Label="Monitor"
                             Icon="Audio"
                             Value="{Binding MonitorVolumePercent, Mode=TwoWay}"
                             IsReadOnly="False" />
                         <controls:VolumeSlider
+                            x:Name="VirtualOutputVolumeSlider"
                             Grid.Column="2"
                             Label="Virtual output"
                             Icon="Audio"
@@ -146,7 +202,7 @@
                             IsReadOnly="False" />
                     </Grid>
 
-                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace24}">
+                    <StackPanel x:Name="MixerToggles" Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace24}">
                         <ToggleSwitch Header="Local monitor" IsOn="{Binding IsMonitorEnabled, Mode=TwoWay}" />
                         <ToggleSwitch Header="Mute effects" IsOn="{Binding AreEffectsMuted, Mode=TwoWay}" />
                         <ToggleSwitch Header="Mute monitor" IsOn="{Binding IsMonitorMuted, Mode=TwoWay}" />
@@ -219,6 +275,7 @@
                     </ItemsControl>
                 </StackPanel>
             </Border>
-        </StackPanel>
-    </ScrollViewer>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </Page>
