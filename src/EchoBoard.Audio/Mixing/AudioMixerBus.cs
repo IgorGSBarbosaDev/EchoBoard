@@ -19,6 +19,8 @@ internal sealed class AudioMixerBus : ISampleProvider
 
     public double ConsumePeakLevel() => peakMeter.Consume();
 
+    public long PeakGeneration => peakMeter.Generation;
+
     public void AddInput(ISampleProvider input) => mixer.AddMixerInput(input);
 
     public void RemoveInput(ISampleProvider input) => mixer.RemoveMixerInput(input);
@@ -41,6 +43,9 @@ internal sealed class AudioMixerBus : ISampleProvider
 internal sealed class AudioPeakMeter
 {
     private int peakBits;
+    private long generation;
+
+    public long Generation => Volatile.Read(ref generation);
 
     public void Report(ReadOnlySpan<float> samples)
     {
@@ -56,6 +61,7 @@ internal sealed class AudioPeakMeter
     public void Report(float peak)
     {
         peak = Math.Clamp(float.IsFinite(peak) ? peak : 0f, 0f, 1f);
+        Interlocked.Increment(ref generation);
         var previousBits = Volatile.Read(ref peakBits);
         while (true)
         {

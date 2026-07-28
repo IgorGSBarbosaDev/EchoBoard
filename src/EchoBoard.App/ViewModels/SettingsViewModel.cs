@@ -469,6 +469,11 @@ public sealed class SettingsViewModel : ObservableObject
                 device.IsAvailable,
                 device.EndpointFamily));
         }
+
+        FindOrAddUnavailableMicrophone(
+            MicrophoneDevices,
+            routingSettings.InputDeviceId,
+            routingSettings.InputDeviceName);
     }
 
     public async Task SelectMicrophoneDeviceAsync(string deviceId, CancellationToken cancellationToken)
@@ -595,11 +600,14 @@ public sealed class SettingsViewModel : ObservableObject
         }
         OnPropertyChanged(nameof(MicrophoneGainPercent));
 
-        var selected = MicrophoneDevices.SingleOrDefault(device => device.Id == snapshot.SelectedDeviceId);
-        if (selectedMicrophoneDevice != selected)
+        if (snapshot.SelectedDeviceId is not null)
         {
-            selectedMicrophoneDevice = selected;
-            OnPropertyChanged(nameof(SelectedMicrophoneDevice));
+            var selected = MicrophoneDevices.SingleOrDefault(device => device.Id == snapshot.SelectedDeviceId);
+            if (selectedMicrophoneDevice != selected)
+            {
+                selectedMicrophoneDevice = selected;
+                OnPropertyChanged(nameof(SelectedMicrophoneDevice));
+            }
         }
     }
 
@@ -657,7 +665,10 @@ public sealed class SettingsViewModel : ObservableObject
         try
         {
             routingSettings = value;
-            selectedMicrophoneDevice = MicrophoneDevices.SingleOrDefault(device => device.Id == value.InputDeviceId);
+            selectedMicrophoneDevice = FindOrAddUnavailableMicrophone(
+                MicrophoneDevices,
+                value.InputDeviceId,
+                value.InputDeviceName);
             selectedMonitorDevice = FindOrAddUnavailableOutput(
                 MonitorDevices,
                 value.MonitorDeviceId,
@@ -703,8 +714,8 @@ public sealed class SettingsViewModel : ObservableObject
 
         var value = routingSettings with
         {
-            InputDeviceId = SelectedMicrophoneDevice?.Id,
-            InputDeviceName = SelectedMicrophoneDevice?.Name,
+            InputDeviceId = SelectedMicrophoneDevice?.Id ?? routingSettings.InputDeviceId,
+            InputDeviceName = SelectedMicrophoneDevice?.Name ?? routingSettings.InputDeviceName,
             MonitorDeviceId = SelectedMonitorDevice?.Id,
             MonitorDeviceName = SelectedMonitorDevice?.Name,
             VirtualOutputDeviceId = SelectedVirtualOutputDevice?.Id,
@@ -807,6 +818,33 @@ public sealed class SettingsViewModel : ObservableObject
         return unavailable;
     }
 
+    private static MicrophoneDeviceOptionViewModel? FindOrAddUnavailableMicrophone(
+        ObservableCollection<MicrophoneDeviceOptionViewModel> devices,
+        string? id,
+        string? name)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return null;
+        }
+
+        var existing = devices.SingleOrDefault(device => string.Equals(device.Id, id, StringComparison.Ordinal));
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var unavailable = new MicrophoneDeviceOptionViewModel(
+            id,
+            string.IsNullOrWhiteSpace(name) ? "Previously selected microphone" : name,
+            IsDefault: false,
+            IsAvailable: false,
+            EndpointFamily: null,
+            IsPersistedUnavailable: true);
+        devices.Insert(0, unavailable);
+        return unavailable;
+    }
+
     private void OnAudioSettingsPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (audioSettings is not null)
@@ -880,9 +918,12 @@ public sealed record MicrophoneDeviceOptionViewModel(
     string Name,
     bool IsDefault,
     bool IsAvailable,
-    string? EndpointFamily = null)
+    string? EndpointFamily = null,
+    bool IsPersistedUnavailable = false)
 {
-    public string DisplayName => IsDefault ? $"{Name} (Default)" : Name;
+    public string DisplayName => IsPersistedUnavailable
+        ? $"{Name} (Unavailable)"
+        : IsDefault ? $"{Name} (Default)" : Name;
 }
 
 public sealed record AudioOutputDeviceOptionViewModel(

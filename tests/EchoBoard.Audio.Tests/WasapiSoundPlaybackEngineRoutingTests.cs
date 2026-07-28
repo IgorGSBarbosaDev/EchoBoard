@@ -69,6 +69,11 @@ public sealed class WasapiSoundPlaybackEngineRoutingTests
             snapshot.EffectsLevel.Should().BeApproximately(0.25, 0.002);
             snapshot.MonitorLevel.Should().BeApproximately(0.2, 0.002);
             snapshot.VirtualOutputLevel.Should().BeApproximately(0.45, 0.002);
+
+            var secondSnapshot = engine.GetRoutingSnapshot();
+            secondSnapshot.EffectsLevel.Should().BeApproximately(snapshot.EffectsLevel, 0.002);
+            secondSnapshot.MonitorLevel.Should().BeApproximately(snapshot.MonitorLevel, 0.002);
+            secondSnapshot.VirtualOutputLevel.Should().BeApproximately(snapshot.VirtualOutputLevel, 0.002);
         }
         finally
         {
