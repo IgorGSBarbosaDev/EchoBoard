@@ -29,6 +29,28 @@ public sealed class MicrophoneViewModelTests
     }
 
     [Fact]
+    public async Task SettingsViewModelKeepsSavedMicrophoneWhenItIsUnavailable()
+    {
+        var settings = new FakeAppSettingRepository();
+        await settings.UpsertValueAsync(AudioRoutingSettingKeys.InputDeviceId, "missing-mic", CancellationToken.None);
+        await settings.UpsertValueAsync(AudioRoutingSettingKeys.InputDeviceName, "Desk Mic", CancellationToken.None);
+        var controller = new FakeMicrophoneCaptureController();
+        var outputs = new FakeAudioOutputDeviceEnumerator();
+        var viewModel = CreateSettingsViewModel(
+            settings,
+            controller,
+            new ListAudioOutputDevicesUseCase(outputs),
+            new LoadAudioRoutingSettingsUseCase(settings, controller, outputs));
+
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        viewModel.SelectedMicrophoneDevice.Should().NotBeNull();
+        viewModel.SelectedMicrophoneDevice!.Id.Should().Be("missing-mic");
+        viewModel.SelectedMicrophoneDevice.IsAvailable.Should().BeFalse();
+        viewModel.SelectedMicrophoneDevice.DisplayName.Should().Contain("Unavailable");
+    }
+
+    [Fact]
     public async Task SettingsViewModelStartsAndStopsMicrophoneCapture()
     {
         var controller = new FakeMicrophoneCaptureController();
@@ -140,7 +162,9 @@ public sealed class MicrophoneViewModelTests
 
     private static SettingsViewModel CreateSettingsViewModel(
         IAppSettingRepository settings,
-        IMicrophoneCaptureController controller)
+        IMicrophoneCaptureController controller,
+        ListAudioOutputDevicesUseCase? listAudioOutputDevices = null,
+        LoadAudioRoutingSettingsUseCase? loadAudioRoutingSettings = null)
     {
         var hotkeys = new FakeHotkeyBindingRepository();
         var runtime = new FakeHotkeyRuntime();
@@ -157,7 +181,9 @@ public sealed class MicrophoneViewModelTests
             new SetMicrophoneMuteUseCase(settings, controller),
             new StartMicrophoneCaptureUseCase(controller),
             new StopMicrophoneCaptureUseCase(controller),
-            new GetMicrophoneCaptureSnapshotUseCase(controller));
+            new GetMicrophoneCaptureSnapshotUseCase(controller),
+            listAudioOutputDevices,
+            loadAudioRoutingSettings);
     }
 
     private sealed class FakeAppSettingRepository : IAppSettingRepository
@@ -174,6 +200,14 @@ public sealed class MicrophoneViewModelTests
         {
             values[key] = value;
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeAudioOutputDeviceEnumerator : IAudioOutputDeviceEnumerator
+    {
+        public Task<IReadOnlyList<AudioOutputDeviceDto>> ListOutputDevicesAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<IReadOnlyList<AudioOutputDeviceDto>>([]);
         }
     }
 
