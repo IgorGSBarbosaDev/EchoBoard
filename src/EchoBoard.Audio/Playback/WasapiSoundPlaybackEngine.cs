@@ -13,6 +13,7 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
 {
     private static readonly WaveFormat MixerFormat = WaveFormat.CreateIeeeFloatWaveFormat(48000, 2);
     private readonly object sync = new();
+    private readonly object routingSnapshotSync = new();
     private readonly ConcurrentDictionary<Guid, PlaybackSession> sessions = new();
     private readonly IMicrophoneCaptureController microphone;
     private readonly ILogger<WasapiSoundPlaybackEngine> logger;
@@ -28,6 +29,9 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
     private string? monitorError;
     private string? virtualOutputError;
     private bool virtualOutputFeedbackBlocked;
+    private long lastEffectsPeakGeneration;
+    private long lastMonitorPeakGeneration;
+    private long lastVirtualOutputPeakGeneration;
     private Guid? latestSessionId;
     private Timer? reconnectTimer;
     private int reconnecting;
@@ -279,19 +283,20 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
         }
 
         await microphone.StopAsync(cancellationToken);
-        routingSnapshot = AudioRoutingSnapshot.Stopped;
+        lock (routingSnapshotSync)
+        {
+            routingSnapshot = AudioRoutingSnapshot.Stopped;
+        }
         reconnectTimer?.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
     }
 
     public AudioRoutingSnapshot GetRoutingSnapshot()
     {
-        if (routingSnapshot.EngineState == AudioRouteState.Stopped)
+        UpdateRoutingSnapshot(force: false);
+        lock (routingSnapshotSync)
         {
             return routingSnapshot;
         }
-
-        UpdateRoutingSnapshot();
-        return routingSnapshot;
     }
 
     public void Dispose()
@@ -529,60 +534,83 @@ public sealed class WasapiSoundPlaybackEngine : ISoundPlaybackEngine, IAudioRout
         }
     }
 
-    private void UpdateRoutingSnapshot()
+    private void UpdateRoutingSnapshot(bool force = true)
     {
-        var microphoneSnapshot = microphone.GetSnapshot();
-        var monitorState = monitorOutput?.IsActive == true
-            ? AudioRouteState.Active
-            : settings.IsMonitorEnabled
-                ? monitorError is null ? AudioRouteState.Unavailable : AudioRouteState.Failed
-                : AudioRouteState.Stopped;
-        var virtualState = string.IsNullOrWhiteSpace(settings.VirtualOutputDeviceId)
-            ? AudioRouteState.Unconfigured
-            : virtualOutput?.IsActive == true
-                ? AudioRouteState.Active
-                : virtualOutputFeedbackBlocked || virtualOutputError is not null
-                    ? AudioRouteState.Failed
-                    : AudioRouteState.Unavailable;
-        var engineState = monitorState == AudioRouteState.Active || virtualState == AudioRouteState.Active
-            ? AudioRouteState.Active
-            : AudioRouteState.Unavailable;
-        var status = virtualState switch
+        lock (routingSnapshotSync)
         {
-            AudioRouteState.Unconfigured => "Local playback active. Select a virtual output to transmit.",
-            AudioRouteState.Active => "Microphone and effects are routed to the selected virtual output.",
-            AudioRouteState.Failed when virtualOutputFeedbackBlocked =>
-                "Virtual output blocked to prevent an audio feedback loop.",
-            AudioRouteState.Failed => "Virtual output failed. Local playback remains available.",
-            AudioRouteState.Unavailable => "Virtual output is unavailable and will be reconnected automatically.",
-            _ when engineState == AudioRouteState.Active => "Audio engine active.",
-            _ => "No output route is active."
-        };
-        routingSnapshot = new AudioRoutingSnapshot(
-            engineState,
-            microphoneSnapshot.State switch
+            if (!force && routingSnapshot.EngineState == AudioRouteState.Stopped)
             {
-                MicrophoneCaptureState.Active => AudioRouteState.Active,
-                MicrophoneCaptureState.Starting => AudioRouteState.Starting,
-                MicrophoneCaptureState.Unavailable => AudioRouteState.Unavailable,
-                MicrophoneCaptureState.Failed => AudioRouteState.Failed,
-                _ => AudioRouteState.Stopped
-            },
-            monitorState,
-            virtualState,
-            microphoneSnapshot.SelectedDeviceName,
-            settings.MonitorDeviceName,
-            settings.VirtualOutputDeviceName,
-            status,
-            microphoneSnapshot.ErrorMessage,
-            new AudioStreamFormatDto(48000, 2, 32, "IEEE Float"),
-            monitorError,
-            virtualOutputError,
-            monitorOutput?.Format,
-            virtualOutput?.Format,
-            effectsPeakMeter.Consume(),
-            monitorMixer.ConsumePeakLevel(),
-            virtualMixer.ConsumePeakLevel());
+                return;
+            }
+
+            if (!force &&
+                effectsPeakMeter.Generation == lastEffectsPeakGeneration &&
+                monitorMixer.PeakGeneration == lastMonitorPeakGeneration &&
+                virtualMixer.PeakGeneration == lastVirtualOutputPeakGeneration)
+            {
+                return;
+            }
+
+            var microphoneSnapshot = microphone.GetSnapshot();
+            var monitorState = monitorOutput?.IsActive == true
+                ? AudioRouteState.Active
+                : settings.IsMonitorEnabled
+                    ? monitorError is null ? AudioRouteState.Unavailable : AudioRouteState.Failed
+                    : AudioRouteState.Stopped;
+            var virtualState = string.IsNullOrWhiteSpace(settings.VirtualOutputDeviceId)
+                ? AudioRouteState.Unconfigured
+                : virtualOutput?.IsActive == true
+                    ? AudioRouteState.Active
+                    : virtualOutputFeedbackBlocked || virtualOutputError is not null
+                        ? AudioRouteState.Failed
+                        : AudioRouteState.Unavailable;
+            var engineState = monitorState == AudioRouteState.Active || virtualState == AudioRouteState.Active
+                ? AudioRouteState.Active
+                : AudioRouteState.Unavailable;
+            var status = virtualState switch
+            {
+                AudioRouteState.Unconfigured => "Local playback active. Select a virtual output to transmit.",
+                AudioRouteState.Active => "Microphone and effects are routed to the selected virtual output.",
+                AudioRouteState.Failed when virtualOutputFeedbackBlocked =>
+                    "Virtual output blocked to prevent an audio feedback loop.",
+                AudioRouteState.Failed => "Virtual output failed. Local playback remains available.",
+                AudioRouteState.Unavailable => "Virtual output is unavailable and will be reconnected automatically.",
+                _ when engineState == AudioRouteState.Active => "Audio engine active.",
+                _ => "No output route is active."
+            };
+            var effectsPeak = effectsPeakMeter.Consume();
+            var monitorPeak = monitorMixer.ConsumePeakLevel();
+            var virtualOutputPeak = virtualMixer.ConsumePeakLevel();
+            lastEffectsPeakGeneration = effectsPeakMeter.Generation;
+            lastMonitorPeakGeneration = monitorMixer.PeakGeneration;
+            lastVirtualOutputPeakGeneration = virtualMixer.PeakGeneration;
+
+            routingSnapshot = new AudioRoutingSnapshot(
+                engineState,
+                microphoneSnapshot.State switch
+                {
+                    MicrophoneCaptureState.Active => AudioRouteState.Active,
+                    MicrophoneCaptureState.Starting => AudioRouteState.Starting,
+                    MicrophoneCaptureState.Unavailable => AudioRouteState.Unavailable,
+                    MicrophoneCaptureState.Failed => AudioRouteState.Failed,
+                    _ => AudioRouteState.Stopped
+                },
+                monitorState,
+                virtualState,
+                microphoneSnapshot.SelectedDeviceName,
+                settings.MonitorDeviceName,
+                settings.VirtualOutputDeviceName,
+                status,
+                microphoneSnapshot.ErrorMessage,
+                new AudioStreamFormatDto(48000, 2, 32, "IEEE Float"),
+                monitorError,
+                virtualOutputError,
+                monitorOutput?.Format,
+                virtualOutput?.Format,
+                effectsPeak,
+                monitorPeak,
+                virtualOutputPeak);
+        }
     }
 
     private void HandleMonitorStopped(object? sender, AudioRenderSessionStoppedEventArgs args)
