@@ -9,7 +9,7 @@ Imported sounds and hotkeys ───────┤
                                   └─> Monitor bus ─> headphones / speakers
 ```
 
-The virtual bus contains microphone + effects. The local monitor contains effects only, which avoids sending the physical microphone back to the user's speakers. Both buses use stereo IEEE float PCM at 48 kHz and independent renderers, volumes, mute controls, buffers, and limiting.
+The virtual bus contains microphone + effects. The local monitor contains effects only, which avoids sending the physical microphone back to the user's speakers. Both buses use stereo IEEE float PCM at 48 kHz and independent renderers, volumes, mute controls, buffers, and limiting. Microphone capture and WASAPI rendering use event-driven 20 ms targets. The microphone ring buffer is bounded to the same target duration and drops the oldest samples on overflow, so temporary scheduling or device-format differences cannot turn into an ever-growing voice delay.
 
 Settings and the global player use one observable routing profile. Changing a volume or mute in either surface updates the mixer immediately and persists the same complete profile. Monitor mute silences the monitor bus without disabling or recreating its endpoint; **Local monitor** remains the separate route enable switch.
 

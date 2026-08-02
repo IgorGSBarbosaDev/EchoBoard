@@ -7,6 +7,7 @@ public sealed class MicrophonePcmRingBuffer : IMicrophonePcmSource
     private readonly float[] buffer;
     private long readSequence;
     private long writeSequence;
+    private long droppedSamples;
 
     public MicrophonePcmRingBuffer(AudioStreamFormatDto format, int capacitySamples)
     {
@@ -19,6 +20,21 @@ public sealed class MicrophonePcmRingBuffer : IMicrophonePcmSource
     public AudioStreamFormatDto Format { get; }
 
     public int CapacitySamples => buffer.Length;
+
+    public int BufferedSamples
+    {
+        get
+        {
+            var buffered = Volatile.Read(ref writeSequence) - Volatile.Read(ref readSequence);
+            return (int)Math.Clamp(buffered, 0, buffer.Length);
+        }
+    }
+
+    public TimeSpan BufferedDuration => Format.SampleRate > 0 && Format.Channels > 0
+        ? TimeSpan.FromSeconds(BufferedSamples / (double)(Format.SampleRate * Format.Channels))
+        : TimeSpan.Zero;
+
+    public long DroppedSamples => Interlocked.Read(ref droppedSamples);
 
     public bool TryRead(Span<float> destination, out int samplesWritten)
     {
@@ -52,7 +68,13 @@ public sealed class MicrophonePcmRingBuffer : IMicrophonePcmSource
         }
 
         Volatile.Write(ref writeSequence, write);
-        AdvanceReadToAtLeast(Math.Max(0, write - buffer.Length));
+        var minimumReadableSequence = Math.Max(0, write - buffer.Length);
+        var discarded = AdvanceReadToAtLeast(minimumReadableSequence);
+        if (discarded > 0)
+        {
+            Interlocked.Add(ref droppedSamples, discarded);
+        }
+
         return Math.Clamp(level, 0.0, 1.0);
     }
 
@@ -60,22 +82,23 @@ public sealed class MicrophonePcmRingBuffer : IMicrophonePcmSource
     {
         Volatile.Write(ref readSequence, 0);
         Volatile.Write(ref writeSequence, 0);
+        Interlocked.Exchange(ref droppedSamples, 0);
         Array.Clear(buffer);
     }
 
-    private void AdvanceReadToAtLeast(long target)
+    private long AdvanceReadToAtLeast(long target)
     {
         while (true)
         {
             var current = Volatile.Read(ref readSequence);
             if (current >= target)
             {
-                return;
+                return 0;
             }
 
             if (Interlocked.CompareExchange(ref readSequence, target, current) == current)
             {
-                return;
+                return target - current;
             }
         }
     }

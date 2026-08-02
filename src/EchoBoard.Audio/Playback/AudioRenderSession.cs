@@ -1,4 +1,5 @@
 using EchoBoard.Application.Audio;
+using EchoBoard.Audio;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
@@ -48,7 +49,11 @@ internal sealed class WasapiAudioRenderSessionFactory : IAudioRenderSessionFacto
 
         var endpointFormat = device.AudioClient.MixFormat;
         var adapted = AudioRenderFormatAdapter.Adapt(source, endpointFormat);
-        var output = new WasapiOut(device, AudioClientShareMode.Shared, useEventSync: true, latency: 50);
+        var output = new WasapiOut(
+            device,
+            AudioClientShareMode.Shared,
+            useEventSync: true,
+            latency: AudioLatencyConfiguration.TargetBufferMilliseconds);
         try
         {
             output.Init(adapted);
