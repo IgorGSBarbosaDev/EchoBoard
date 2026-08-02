@@ -5,10 +5,23 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>EchoBoard.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\EchoBoard.ico</ApplicationIcon>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
-    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsPackageType Condition="'$(WindowsPackageType)' == '' and '$(GenerateAppxPackageOnBuild)' == 'true'">MSIX</WindowsPackageType>
+    <WindowsPackageType Condition="'$(WindowsPackageType)' == ''">None</WindowsPackageType>
+    <EnableMsixTooling Condition="'$(WindowsPackageType)' == 'MSIX'">true</EnableMsixTooling>
+    <PublishProfile Condition="'$(WindowsPackageType)' == 'MSIX'">Properties\PublishProfiles\win10-$(Platform).pubxml</PublishProfile>
+    <AppxPackageSigningEnabled Condition="'$(WindowsPackageType)' == 'MSIX'">false</AppxPackageSigningEnabled>
+    <AppxBundle Condition="'$(WindowsPackageType)' == 'MSIX'">Never</AppxBundle>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" Condition="'$(WindowsPackageType)' == 'MSIX'">
+      <SubType>Designer</SubType>
+    </AppxManifest>
+    <Content Update="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\EchoBoard.Application\EchoBoard.Application.csproj" />

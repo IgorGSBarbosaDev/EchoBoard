@@ -5,6 +5,8 @@ using EchoBoard.Application.Hotkeys;
 using EchoBoard.Domain.Entities;
 using EchoBoard.Domain.Enums;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace EchoBoard.App.Tests;
@@ -48,6 +50,38 @@ public sealed class MicrophoneViewModelTests
         viewModel.SelectedMicrophoneDevice!.Id.Should().Be("missing-mic");
         viewModel.SelectedMicrophoneDevice.IsAvailable.Should().BeFalse();
         viewModel.SelectedMicrophoneDevice.DisplayName.Should().Contain("Unavailable");
+    }
+
+    [Fact]
+    public async Task SettingsViewModelHandlesRoutingNotificationBeforeOutputDevicesLoad()
+    {
+        var settings = new FakeAppSettingRepository();
+        await settings.UpsertValueAsync(AudioRoutingSettingKeys.VirtualOutputDeviceId, "missing-output", CancellationToken.None);
+        await settings.UpsertValueAsync(AudioRoutingSettingKeys.VirtualOutputDeviceName, "Virtual Cable", CancellationToken.None);
+        var controller = new FakeMicrophoneCaptureController();
+        var outputs = new FakeAudioOutputDeviceEnumerator();
+        var services = new ServiceCollection()
+            .AddSingleton<IAppSettingRepository>(settings)
+            .AddSingleton<IMicrophoneCaptureController>(controller)
+            .AddSingleton<IAudioOutputDeviceEnumerator>(outputs)
+            .AddTransient<LoadAudioRoutingSettingsUseCase>()
+            .BuildServiceProvider();
+        await using var provider = services;
+        using var coordinator = new AudioRoutingSettingsCoordinator(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            new FakeAudioRoutingEngine(),
+            NullLogger<AudioRoutingSettingsCoordinator>.Instance);
+        var viewModel = CreateSettingsViewModel(
+            settings,
+            controller,
+            new ListAudioOutputDevicesUseCase(outputs),
+            new LoadAudioRoutingSettingsUseCase(settings, controller, outputs),
+            coordinator);
+
+        await coordinator.LoadAsync(CancellationToken.None);
+
+        viewModel.SelectedVirtualOutputDevice.Should().NotBeNull();
+        viewModel.SelectedVirtualOutputDevice!.Id.Should().Be("missing-output");
     }
 
     [Fact]
@@ -164,7 +198,8 @@ public sealed class MicrophoneViewModelTests
         IAppSettingRepository settings,
         IMicrophoneCaptureController controller,
         ListAudioOutputDevicesUseCase? listAudioOutputDevices = null,
-        LoadAudioRoutingSettingsUseCase? loadAudioRoutingSettings = null)
+        LoadAudioRoutingSettingsUseCase? loadAudioRoutingSettings = null,
+        AudioRoutingSettingsCoordinator? audioSettings = null)
     {
         var hotkeys = new FakeHotkeyBindingRepository();
         var runtime = new FakeHotkeyRuntime();
@@ -183,7 +218,8 @@ public sealed class MicrophoneViewModelTests
             new StopMicrophoneCaptureUseCase(controller),
             new GetMicrophoneCaptureSnapshotUseCase(controller),
             listAudioOutputDevices,
-            loadAudioRoutingSettings);
+            loadAudioRoutingSettings,
+            audioSettings: audioSettings);
     }
 
     private sealed class FakeAppSettingRepository : IAppSettingRepository
@@ -209,6 +245,17 @@ public sealed class MicrophoneViewModelTests
         {
             return Task.FromResult<IReadOnlyList<AudioOutputDeviceDto>>([]);
         }
+    }
+
+    private sealed class FakeAudioRoutingEngine : IAudioRoutingEngine
+    {
+        public Task InitializeAsync(AudioRoutingSettingsDto settings, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task ApplySettingsAsync(AudioRoutingSettingsDto settings, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public AudioRoutingSnapshot GetRoutingSnapshot() => AudioRoutingSnapshot.Stopped;
     }
 
     private sealed class FakeMicrophoneCaptureController : IMicrophoneCaptureController

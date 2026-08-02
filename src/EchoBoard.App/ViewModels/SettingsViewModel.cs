@@ -814,7 +814,8 @@ public sealed class SettingsViewModel : ObservableObject
             IsVirtualOutputCandidate: false,
             EndpointFamily: null,
             IsPersistedUnavailable: true);
-        devices.Insert(allowNone ? 1 : 0, unavailable);
+        var insertionIndex = allowNone ? Math.Min(1, devices.Count) : 0;
+        devices.Insert(insertionIndex, unavailable);
         return unavailable;
     }
 

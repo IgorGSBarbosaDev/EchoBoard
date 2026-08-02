@@ -1,6 +1,7 @@
 using EchoBoard.App.Views;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Infrastructure.Hotkeys;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
 
@@ -17,6 +18,7 @@ public sealed partial class MainWindow : Window
     {
         this.hotkeyRuntime = hotkeyRuntime;
         InitializeComponent();
+        ConfigureWindowIcon();
         CurrentInstance = this;
         Content = shellPage;
         hotkeyRegistrar.Initialize(WindowNative.GetWindowHandle(this));
@@ -24,6 +26,19 @@ public sealed partial class MainWindow : Window
     }
 
     public static MainWindow? CurrentInstance { get; private set; }
+
+    private void ConfigureWindowIcon()
+    {
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "EchoBoard.ico");
+        if (!File.Exists(iconPath))
+        {
+            return;
+        }
+
+        var hwnd = WindowNative.GetWindowHandle(this);
+        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+        AppWindow.GetFromWindowId(windowId).SetIcon(iconPath);
+    }
 
     private async void OnClosed(object sender, WindowEventArgs args)
     {
