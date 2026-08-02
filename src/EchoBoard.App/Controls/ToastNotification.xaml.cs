@@ -31,6 +31,12 @@ public sealed partial class ToastNotification : UserControl
         typeof(ToastNotification),
         new PropertyMetadata(null));
 
+    public static readonly DependencyProperty IsCompactProperty = DependencyProperty.Register(
+        nameof(IsCompact),
+        typeof(bool),
+        typeof(ToastNotification),
+        new PropertyMetadata(false, OnDisplayPropertyChanged));
+
     public ToastNotification()
     {
         InitializeComponent();
@@ -60,6 +66,12 @@ public sealed partial class ToastNotification : UserControl
         set => SetValue(DismissCommandProperty, value);
     }
 
+    public bool IsCompact
+    {
+        get => (bool)GetValue(IsCompactProperty);
+        set => SetValue(IsCompactProperty, value);
+    }
+
     public Symbol Icon => Kind switch
     {
         ToastNotificationKind.Success => Symbol.Accept,
@@ -75,6 +87,24 @@ public sealed partial class ToastNotification : UserControl
         ToastNotificationKind.Error => "EchoBoardErrorBrush",
         _ => "EchoBoardActionBrush"
     }];
+
+    public Brush NotificationBackground => IsCompact
+        ? (Brush)Microsoft.UI.Xaml.Application.Current.Resources["EchoBoardBackgroundSurfaceBrush"]
+        : (Brush)Microsoft.UI.Xaml.Application.Current.Resources["EchoBoardCardBrush"];
+
+    public Brush NotificationBorderBrush => IsCompact
+        ? (Brush)Microsoft.UI.Xaml.Application.Current.Resources["EchoBoardBorderSoftBrush"]
+        : KindBrush;
+
+    public Thickness ContentPadding => IsCompact
+        ? new Thickness(12, 6, 12, 6)
+        : (Thickness)Microsoft.UI.Xaml.Application.Current.Resources["EchoBoardPanelPadding"];
+
+    public double MinimumHeight => IsCompact ? 52 : 0;
+
+    public Visibility StandardLayoutVisibility => IsCompact ? Visibility.Collapsed : Visibility.Visible;
+
+    public Visibility CompactLayoutVisibility => IsCompact ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility DescriptionVisibility => string.IsNullOrWhiteSpace(Description) ? Visibility.Collapsed : Visibility.Visible;
 

@@ -4,11 +4,14 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:EchoBoard.App.Controls"
     Loaded="OnLoaded">
-    <ScrollViewer>
+    <ScrollViewer
+        HorizontalScrollBarVisibility="Disabled"
+        VerticalScrollBarVisibility="Auto">
         <StackPanel
             AllowDrop="True"
             DragOver="OnDragOver"
             Drop="OnDrop"
+            HorizontalAlignment="Stretch"
             Spacing="{StaticResource EchoBoardSpace24}">
             <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
                 <TextBlock
@@ -144,10 +147,11 @@
                         </Grid>
 
                         <controls:ToastNotification
+                            IsCompact="True"
                             Kind="{Binding ImportToast.Kind}"
                             Title="{Binding ImportToast.Title}"
                             Description="{Binding ImportToast.Description}"
-                            DismissCommand="{Binding DismissImportFeedbackCommand}"
+                            DismissCommand="{Binding DismissImportNotificationCommand}"
                             Visibility="{Binding ImportToastVisibility}" />
 
                         <Border
@@ -179,17 +183,18 @@
                             Description="{Binding EmptyStateMessage}"
                             Visibility="{Binding EmptyStateVisibility}" />
 
-                        <GridView
+                        <ItemsControl
                             ItemsSource="{Binding Sounds}"
-                            IsItemClickEnabled="False"
-                            SelectionMode="None"
+                            HorizontalAlignment="Stretch"
                             Visibility="{Binding SoundGridVisibility}">
-                            <GridView.ItemsPanel>
+                            <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" />
+                                    <ItemsWrapGrid
+                                        HorizontalAlignment="Stretch"
+                                        Orientation="Horizontal" />
                                 </ItemsPanelTemplate>
-                            </GridView.ItemsPanel>
-                            <GridView.ItemTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <controls:SoundCard
                                         Width="236"
@@ -219,8 +224,8 @@
                                         EditCommand="{Binding EditCommand}"
                                         DeleteCommand="{Binding DeleteCommand}" />
                                 </DataTemplate>
-                            </GridView.ItemTemplate>
-                        </GridView>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </Border>
             </Grid>
