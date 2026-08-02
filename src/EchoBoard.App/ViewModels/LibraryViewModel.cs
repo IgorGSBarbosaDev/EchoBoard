@@ -43,6 +43,7 @@ public sealed partial class LibraryViewModel : ObservableObject
     private bool hotkeyShift;
     private bool hotkeyWin;
     private bool isSelectedSoundHotkeyEnabled = true;
+    private bool isImportNotificationVisible;
     private string? loadError;
     private ToastPreviewModel? importToast;
     private ToastPreviewModel? playbackToast;
@@ -88,7 +89,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         Categories = [];
         Sounds = [];
         ImportFeedbackItems = [];
-        DismissImportFeedbackCommand = new RelayCommand(ClearImportFeedback);
+        DismissImportNotificationCommand = new RelayCommand(DismissImportNotification);
         DismissPlaybackFeedbackCommand = new RelayCommand(() => PlaybackToast = null);
         ClearFiltersCommand = new AsyncRelayCommand(ct => ClearFiltersAsync(ct));
         SelectCategoryCommand = new AsyncRelayCommand<CategoryPreviewModel>(SelectCategoryAsync);
@@ -174,7 +175,21 @@ public sealed partial class LibraryViewModel : ObservableObject
         get => importToast;
         private set
         {
-            if (SetProperty(ref importToast, value))
+            var changed = SetProperty(ref importToast, value);
+            IsImportNotificationVisible = value is not null;
+            if (changed)
+            {
+                OnPropertyChanged(nameof(ImportToastVisibility));
+            }
+        }
+    }
+
+    public bool IsImportNotificationVisible
+    {
+        get => isImportNotificationVisible;
+        private set
+        {
+            if (SetProperty(ref isImportNotificationVisible, value))
             {
                 OnPropertyChanged(nameof(ImportToastVisibility));
             }
@@ -279,13 +294,13 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     public Visibility ImportFeedbackVisibility => ImportFeedbackItems.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    public Visibility ImportToastVisibility => ImportToast is null ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility ImportToastVisibility => IsImportNotificationVisible && ImportToast is not null ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility PlaybackToastVisibility => PlaybackToast is null ? Visibility.Collapsed : Visibility.Visible;
 
     public Visibility SoundHotkeyEditorVisibility => SelectedSoundId is null ? Visibility.Collapsed : Visibility.Visible;
 
-    public IRelayCommand DismissImportFeedbackCommand { get; }
+    public IRelayCommand DismissImportNotificationCommand { get; }
 
     public IRelayCommand DismissPlaybackFeedbackCommand { get; }
 
@@ -757,11 +772,9 @@ public sealed partial class LibraryViewModel : ObservableObject
         NotifyImportFeedbackChanged();
     }
 
-    private void ClearImportFeedback()
+    private void DismissImportNotification()
     {
-        ImportFeedbackItems.Clear();
-        ImportToast = null;
-        NotifyImportFeedbackChanged();
+        IsImportNotificationVisible = false;
     }
 
     private void UpdateCategoryFilters(

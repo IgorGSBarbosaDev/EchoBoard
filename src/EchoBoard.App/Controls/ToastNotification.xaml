@@ -5,36 +5,81 @@
     AutomationProperties.LiveSetting="Polite"
     AutomationProperties.Name="{x:Bind AccessibleLabel, Mode=OneTime}">
     <Border
-        Padding="{StaticResource EchoBoardPanelPadding}"
-        Background="{ThemeResource EchoBoardCardBrush}"
-        BorderBrush="{x:Bind KindBrush, Mode=OneTime}"
+        MinHeight="{x:Bind MinimumHeight, Mode=OneTime}"
+        Padding="{x:Bind ContentPadding, Mode=OneTime}"
+        Background="{x:Bind NotificationBackground, Mode=OneTime}"
+        BorderBrush="{x:Bind NotificationBorderBrush, Mode=OneTime}"
         BorderThickness="1"
         CornerRadius="{StaticResource EchoBoardRadiusLarge}">
-        <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <SymbolIcon
-                Symbol="{x:Bind Icon, Mode=OneTime}"
-                Foreground="{x:Bind KindBrush, Mode=OneTime}" />
-            <StackPanel Grid.Column="1" Spacing="{StaticResource EchoBoardSpace4}">
+        <Grid>
+            <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}" Visibility="{x:Bind StandardLayoutVisibility, Mode=OneTime}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <SymbolIcon
+                    Symbol="{x:Bind Icon, Mode=OneTime}"
+                    Foreground="{x:Bind KindBrush, Mode=OneTime}" />
+                <StackPanel Grid.Column="1" Spacing="{StaticResource EchoBoardSpace4}">
+                    <TextBlock
+                        Text="{x:Bind Title, Mode=OneTime}"
+                        Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                    <TextBlock
+                        Text="{x:Bind Description, Mode=OneTime}"
+                        Style="{StaticResource EchoBoardCaptionTextStyle}"
+                        Visibility="{x:Bind DescriptionVisibility, Mode=OneTime}" />
+                </StackPanel>
+                <Button
+                    Grid.Column="2"
+                    AutomationProperties.Name="Dismiss notification"
+                    Command="{x:Bind DismissCommand, Mode=OneTime}"
+                    Style="{StaticResource EchoBoardIconButtonStyle}">
+                    <SymbolIcon Symbol="Cancel" />
+                </Button>
+            </Grid>
+
+            <Grid
+                ColumnSpacing="{StaticResource EchoBoardSpace8}"
+                Visibility="{x:Bind CompactLayoutVisibility, Mode=OneTime}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <SymbolIcon
+                    VerticalAlignment="Center"
+                    Symbol="{x:Bind Icon, Mode=OneTime}"
+                    Foreground="{x:Bind KindBrush, Mode=OneTime}" />
                 <TextBlock
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
                     Text="{x:Bind Title, Mode=OneTime}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap"
                     Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
                 <TextBlock
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Text="—"
+                    Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                <TextBlock
+                    Grid.Column="3"
+                    VerticalAlignment="Center"
                     Text="{x:Bind Description, Mode=OneTime}"
-                    Style="{StaticResource EchoBoardCaptionTextStyle}"
-                    Visibility="{x:Bind DescriptionVisibility, Mode=OneTime}" />
-            </StackPanel>
-            <Button
-                Grid.Column="2"
-                AutomationProperties.Name="Dismiss notification"
-                Command="{x:Bind DismissCommand, Mode=OneTime}"
-                Style="{StaticResource EchoBoardIconButtonStyle}">
-                <SymbolIcon Symbol="Cancel" />
-            </Button>
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap"
+                    Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                <Button
+                    Grid.Column="4"
+                    AutomationProperties.Name="Dismiss notification"
+                    Command="{x:Bind DismissCommand, Mode=OneTime}"
+                    Style="{StaticResource EchoBoardIconButtonStyle}">
+                    <SymbolIcon Symbol="Cancel" />
+                </Button>
+            </Grid>
         </Grid>
     </Border>
 </UserControl>

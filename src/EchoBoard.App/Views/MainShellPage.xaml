@@ -144,19 +144,6 @@
                     IsHitTestVisible="False"
                     Foreground="{ThemeResource EchoBoardTextSecondaryBrush}"
                     Symbol="Find" />
-                <Border
-                    Margin="0,0,10,0"
-                    Padding="7,3"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Background="{ThemeResource EchoBoardBackgroundElevatedBrush}"
-                    BorderBrush="{ThemeResource EchoBoardBorderSoftBrush}"
-                    BorderThickness="1"
-                    CornerRadius="{StaticResource EchoBoardRadiusSmall}">
-                    <TextBlock
-                        Text="Ctrl K"
-                        Style="{StaticResource EchoBoardCaptionTextStyle}" />
-                </Border>
             </Grid>
 
             <StackPanel

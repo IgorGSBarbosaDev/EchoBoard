@@ -86,7 +86,7 @@
 
     <Style x:Key="EchoBoardTopbarSearchTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource EchoBoardSearchTextBoxStyle}">
         <Setter Property="MinHeight" Value="42" />
-        <Setter Property="Padding" Value="40,9,72,9" />
+        <Setter Property="Padding" Value="40,9,14,9" />
         <Setter Property="Background" Value="{ThemeResource EchoBoardBackgroundElevatedBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource EchoBoardBorderSoftBrush}" />
     </Style>

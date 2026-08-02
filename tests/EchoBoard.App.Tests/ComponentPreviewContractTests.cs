@@ -370,6 +370,28 @@ public sealed class ComponentPreviewContractTests
     }
 
     [Fact]
+    public async Task LibraryViewModelCanDismissImportNotificationAndShowsItAgainAfterAnotherImport()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var metadata = new FakeAudioFileMetadataReader();
+        metadata.Add("C:\\Audio\\intro.wav", "Intro", ".wav", TimeSpan.FromSeconds(2), 96000);
+        metadata.Add("C:\\Audio\\outro.mp3", "Outro", ".mp3", TimeSpan.FromSeconds(3), 128000);
+        var viewModel = CreateLibraryViewModel(sounds, metadata);
+
+        await viewModel.ImportFilePathsAsync(["C:\\Audio\\intro.wav"], CancellationToken.None);
+
+        viewModel.IsImportNotificationVisible.Should().BeTrue();
+        viewModel.DismissImportNotificationCommand.Execute(null);
+        viewModel.IsImportNotificationVisible.Should().BeFalse();
+        viewModel.ImportToastVisibility.Should().Be(Microsoft.UI.Xaml.Visibility.Collapsed);
+
+        await viewModel.ImportFilePathsAsync(["C:\\Audio\\outro.mp3"], CancellationToken.None);
+
+        viewModel.IsImportNotificationVisible.Should().BeTrue();
+        viewModel.ImportToastVisibility.Should().Be(Microsoft.UI.Xaml.Visibility.Visible);
+    }
+
+    [Fact]
     public async Task LibraryViewModelReportsCancelledImportWithoutMutation()
     {
         var sounds = new FakeSoundLibraryRepository();
