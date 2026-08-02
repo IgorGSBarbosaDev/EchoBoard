@@ -1,4 +1,5 @@
 using EchoBoard.Application.Audio;
+using EchoBoard.Audio;
 
 namespace EchoBoard.Audio.Microphone;
 
@@ -109,7 +110,9 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
             session = sessionFactory.Create(selectedDevice);
             source = new MicrophonePcmRingBuffer(
                 session.Format,
-                Math.Max(session.Format.SampleRate * Math.Max(session.Format.Channels, 1) * 2, 4096));
+                AudioLatencyConfiguration.CalculateBufferCapacitySamples(
+                    session.Format.SampleRate,
+                    session.Format.Channels));
             session.SamplesCaptured += OnSamplesCaptured;
             session.CaptureFailed += OnCaptureFailed;
             await session.StartAsync(cancellationToken);

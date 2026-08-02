@@ -1,4 +1,5 @@
 using EchoBoard.Application.Audio;
+using EchoBoard.Audio;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 
@@ -10,7 +11,10 @@ public sealed class WasapiMicrophoneCaptureSession : IMicrophoneCaptureSession
 
     public WasapiMicrophoneCaptureSession(MMDevice device)
     {
-        capture = new WasapiCapture(device);
+        capture = new WasapiCapture(
+            device,
+            useEventSync: true,
+            audioBufferMillisecondsLength: AudioLatencyConfiguration.TargetBufferMilliseconds);
         capture.DataAvailable += OnDataAvailable;
         capture.RecordingStopped += OnRecordingStopped;
         Format = ToFormat(capture.WaveFormat);
