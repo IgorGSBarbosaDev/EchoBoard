@@ -427,10 +427,8 @@ public sealed class ComponentPreviewContractTests
 
         await viewModel.LoadAsync(TestContext.Current.CancellationToken);
 
-        viewModel.LibraryValue.Should().Be("0 sons");
         viewModel.QuickSounds.Should().BeEmpty();
         viewModel.QuickEmptyVisibility.Should().Be(Microsoft.UI.Xaml.Visibility.Visible);
-        viewModel.SetupSteps.Should().HaveCount(4);
     }
 
     [Fact]
