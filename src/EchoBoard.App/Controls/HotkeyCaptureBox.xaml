@@ -2,18 +2,59 @@
     x:Class="EchoBoard.App.Controls.HotkeyCaptureBox"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-        <StackPanel
-            Orientation="Horizontal"
-            Spacing="{StaticResource EchoBoardSpace8}">
-            <CheckBox Content="Ctrl" IsChecked="{x:Bind Ctrl, Mode=TwoWay}" />
-            <CheckBox Content="Alt" IsChecked="{x:Bind Alt, Mode=TwoWay}" />
-            <CheckBox Content="Shift" IsChecked="{x:Bind Shift, Mode=TwoWay}" />
-            <CheckBox Content="Win" IsChecked="{x:Bind Win, Mode=TwoWay}" />
+    <Border
+        Padding="12"
+        Background="{ThemeResource EchoBoardBackgroundElevatedBrush}"
+        BorderBrush="{ThemeResource EchoBoardBorderSoftBrush}"
+        BorderThickness="1"
+        CornerRadius="{StaticResource EchoBoardRadiusMedium}">
+        <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
+            <TextBlock
+                Text="Modifiers"
+                Foreground="{ThemeResource EchoBoardTextSecondaryBrush}"
+                FontSize="{StaticResource EchoBoardFontSizeCaption}"
+                FontWeight="SemiBold" />
+            <StackPanel
+                Orientation="Horizontal"
+                Spacing="{StaticResource EchoBoardSpace8}">
+                <Border
+                    Padding="4,2"
+                    Background="{ThemeResource EchoBoardCardBrush}"
+                    BorderBrush="{ThemeResource EchoBoardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource EchoBoardRadiusMedium}">
+                    <CheckBox Content="Ctrl" IsChecked="{x:Bind Ctrl, Mode=TwoWay}" />
+                </Border>
+                <Border
+                    Padding="4,2"
+                    Background="{ThemeResource EchoBoardCardBrush}"
+                    BorderBrush="{ThemeResource EchoBoardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource EchoBoardRadiusMedium}">
+                    <CheckBox Content="Alt" IsChecked="{x:Bind Alt, Mode=TwoWay}" />
+                </Border>
+                <Border
+                    Padding="4,2"
+                    Background="{ThemeResource EchoBoardCardBrush}"
+                    BorderBrush="{ThemeResource EchoBoardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource EchoBoardRadiusMedium}">
+                    <CheckBox Content="Shift" IsChecked="{x:Bind Shift, Mode=TwoWay}" />
+                </Border>
+                <Border
+                    Padding="4,2"
+                    Background="{ThemeResource EchoBoardCardBrush}"
+                    BorderBrush="{ThemeResource EchoBoardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource EchoBoardRadiusMedium}">
+                    <CheckBox Content="Win" IsChecked="{x:Bind Win, Mode=TwoWay}" />
+                </Border>
+            </StackPanel>
+            <TextBox
+                Header="Primary key"
+                PlaceholderText="F8, S, PageDown"
+                Style="{StaticResource EchoBoardSearchTextBoxStyle}"
+                Text="{x:Bind PrimaryKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
-        <TextBox
-            Header="Primary key"
-            PlaceholderText="F8, S, PageDown"
-            Text="{x:Bind PrimaryKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-    </StackPanel>
+    </Border>
 </UserControl>
