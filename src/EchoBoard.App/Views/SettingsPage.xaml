@@ -234,13 +234,43 @@
                                             <ColumnDefinition Width="280" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel Spacing="{StaticResource EchoBoardSpace4}">
+                                        <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
                                             <TextBlock Text="{Binding Title}" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
                                             <TextBlock Text="{Binding Description}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
-                                            <controls:HotkeyBadge Text="{Binding HotkeyText}" />
-                                            <TextBlock Text="{Binding StatusText}" Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                                            <Grid ColumnSpacing="{StaticResource EchoBoardSpace8}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock
+                                                    VerticalAlignment="Center"
+                                                    Text="Current shortcut"
+                                                    Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                                                <controls:HotkeyBadge
+                                                    Grid.Column="1"
+                                                    Text="{Binding HotkeyText}"
+                                                    CornerRadius="{StaticResource EchoBoardRadiusMedium}"
+                                                    HorizontalAlignment="Left" />
+                                            </Grid>
+                                            <Grid ColumnSpacing="{StaticResource EchoBoardSpace8}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock
+                                                    VerticalAlignment="Center"
+                                                    Text="Status"
+                                                    Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                                                <TextBlock
+                                                    Grid.Column="1"
+                                                    Text="{Binding StatusText}"
+                                                    Style="{StaticResource EchoBoardCaptionTextStyle}" />
+                                            </Grid>
                                         </StackPanel>
-                                        <StackPanel Grid.Column="1" Spacing="{StaticResource EchoBoardSpace8}">
+                                        <StackPanel
+                                            Grid.Column="1"
+                                            MinWidth="280"
+                                            Spacing="{StaticResource EchoBoardSpace8}">
                                             <controls:HotkeyCaptureBox
                                                 Ctrl="{Binding Ctrl, Mode=TwoWay}"
                                                 Alt="{Binding Alt, Mode=TwoWay}"
@@ -256,7 +286,7 @@
                                                 Content="Save"
                                                 Command="{Binding SaveCommand}"
                                                 CommandParameter="{Binding}"
-                                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                                                Style="{StaticResource EchoBoardPrimaryButtonStyle}" />
                                             <Button
                                                 Content="{Binding ToggleEnabledText}"
                                                 Command="{Binding ToggleEnabledCommand}"
@@ -266,7 +296,7 @@
                                                 Content="Remove"
                                                 Command="{Binding RemoveCommand}"
                                                 CommandParameter="{Binding}"
-                                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                                                Style="{StaticResource EchoBoardDangerButtonStyle}" />
                                         </StackPanel>
                                     </Grid>
                                 </Border>
