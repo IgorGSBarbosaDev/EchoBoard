@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-22T15:21:05.6436652-03:00",
+  "title": "Design System: EchoBoard",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Azul elétrico de ação",
+        "canonical": "#2F80FF",
+        "tonalRamp": ["#0B1E3A", "#0D356B", "#0E4F9F", "#146EF5", "#2F80FF", "#5A9BFF", "#8AB7FF", "#DCEAFF"]
+      },
+      "neutral-bg": {
+        "role": "neutral",
+        "displayName": "Noite de operação",
+        "canonical": "#080B12",
+        "tonalRamp": ["#080B12", "#0B0F18", "#111827", "#151C2B", "#263147", "#5B6475", "#A9B3C6", "#F4F7FB"]
+      },
+      "neutral-surface": {
+        "role": "neutral",
+        "displayName": "Superfície de trabalho",
+        "canonical": "#111827",
+        "tonalRamp": ["#0B0F18", "#111827", "#151C2B", "#1B2435", "#263147", "#5B6475", "#A9B3C6", "#F4F7FB"]
+      },
+      "neutral-elevated": {
+        "role": "neutral",
+        "displayName": "Superfície elevada",
+        "canonical": "#0E1420",
+        "tonalRamp": ["#080B12", "#0E1420", "#151C2B", "#1B2435", "#263147", "#707A8F", "#A9B3C6", "#F4F7FB"]
+      },
+      "neutral-card": {
+        "role": "neutral",
+        "displayName": "Cartão de controle",
+        "canonical": "#151C2B",
+        "tonalRamp": ["#0E1420", "#151C2B", "#1B2435", "#263147", "#344057", "#707A8F", "#A9B3C6", "#F4F7FB"]
+      },
+      "neutral-selected": {
+        "role": "primary",
+        "displayName": "Seleção azulada",
+        "canonical": "#1C2D4D",
+        "tonalRamp": ["#0D1C32", "#142B4C", "#1C2D4D", "#2F80FF", "#5A9BFF", "#8AB7FF", "#C5DCFF", "#E7F0FF"]
+      },
+      "neutral-border": {
+        "role": "neutral",
+        "displayName": "Borda estrutural",
+        "canonical": "#263147",
+        "tonalRamp": ["#111827", "#1B2435", "#263147", "#344057", "#5B6475", "#707A8F", "#A9B3C6", "#D8E0ED"]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Texto primário",
+        "canonical": "#F4F7FB",
+        "tonalRamp": ["#111827", "#263147", "#344057", "#5B6475", "#707A8F", "#A9B3C6", "#D8E0ED", "#F4F7FB"]
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Texto secundário",
+        "canonical": "#A9B3C6",
+        "tonalRamp": ["#263147", "#344057", "#5B6475", "#707A8F", "#A9B3C6", "#D8E0ED", "#F4F7FB", "#FFFFFF"]
+      },
+      "success": {
+        "role": "tertiary",
+        "displayName": "Verde conectado",
+        "canonical": "#25C58A",
+        "tonalRamp": ["#0D3A2B", "#14563F", "#1A7655", "#168A60", "#25C58A", "#45C493", "#8BE0BE", "#DEF5EB"]
+      },
+      "warning": {
+        "role": "tertiary",
+        "displayName": "Âmbar de atenção",
+        "canonical": "#F0B429",
+        "tonalRamp": ["#4A3206", "#76530A", "#B77900", "#D89B0B", "#F0B429", "#F6CF72", "#FBE5AC", "#FFF8E8"]
+      },
+      "error": {
+        "role": "tertiary",
+        "displayName": "Vermelho de falha",
+        "canonical": "#F05252",
+        "tonalRamp": ["#4A1515", "#702323", "#A52F2F", "#C53030", "#F05252", "#F47C7C", "#F8B6B6", "#FDF0F0"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Título de página", "purpose": "Títulos de páginas e superfícies de maior contexto." },
+      "headline": { "displayName": "Título de seção", "purpose": "Títulos de painéis, cards e cabeçalhos do player." },
+      "label": { "displayName": "Label operacional", "purpose": "Metadados, badges e rótulos curtos." }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [
+      { "name": "compact", "value": "0px" },
+      { "name": "medium", "value": "720px" },
+      { "name": "wide-dashboard", "value": "1100px" },
+      { "name": "wide-player", "value": "1180px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Comando principal com acento azul, texto claro e resposta de hover e foco.",
+      "html": "<button class=\"ds-btn-primary\">Reproduzir</button>",
+      "css": ".ds-btn-primary { background: #2F80FF; color: #FFFFFF; padding: 8px 14px; min-height: 36px; border: 1px solid #2F80FF; border-radius: 6px; font: 600 14px 'Segoe UI', sans-serif; cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease; } .ds-btn-primary:hover { background: #5A9BFF; border-color: #5A9BFF; } .ds-btn-primary:focus-visible { outline: 2px solid #8AB7FF; outline-offset: 2px; } .ds-btn-primary:active { background: #0D4EB5; border-color: #0D4EB5; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Comando secundário em superfície selecionada, sem competir com a ação principal.",
+      "html": "<button class=\"ds-btn-secondary\">Editar rota</button>",
+      "css": ".ds-btn-secondary { background: #1C2D4D; color: #F4F7FB; padding: 8px 14px; min-height: 36px; border: 1px solid #263147; border-radius: 6px; font: 600 14px 'Segoe UI', sans-serif; cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease; } .ds-btn-secondary:hover { background: #1B2435; border-color: #5A9BFF; } .ds-btn-secondary:focus-visible { outline: 2px solid #8AB7FF; outline-offset: 2px; }"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "button-icon",
+      "description": "Ação compacta de shell ou card, centralizada em hit target quadrado.",
+      "html": "<button class=\"ds-btn-icon\" aria-label=\"Configurações\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm8 4a7.8 7.8 0 0 0-.1-1.2l2-1.5-2-3.4-2.4 1a8.5 8.5 0 0 0-2-1.2L15.2 3h-4l-.4 2.7a8.5 8.5 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.5A7.8 7.8 0 0 0 6.3 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.4-1a8.5 8.5 0 0 0 2 1.2l.4 2.7h4l.4-2.7a8.5 8.5 0 0 0 2-1.2l2.4 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z\" fill=\"currentColor\"/></svg></button>",
+      "css": ".ds-btn-icon { width: 40px; height: 40px; padding: 8px; display: inline-grid; place-items: center; background: #151C2B; color: #F4F7FB; border: 1px solid #263147; border-radius: 6px; cursor: pointer; transition: background-color 120ms ease, color 120ms ease; } .ds-btn-icon svg { width: 18px; height: 18px; } .ds-btn-icon:hover { background: #1B2435; color: #FFFFFF; } .ds-btn-icon:focus-visible { outline: 2px solid #8AB7FF; outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Campo de busca com superfície de cartão, ícone vetorial e borda discreta.",
+      "html": "<label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m20 20-4.4-4.4M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg><input placeholder=\"Buscar sons\" /></label>",
+      "css": ".ds-search { min-height: 40px; display: flex; align-items: center; gap: 10px; padding: 0 14px; background: #151C2B; color: #A9B3C6; border: 1px solid #263147; border-radius: 6px; } .ds-search svg { width: 16px; height: 16px; flex: 0 0 auto; } .ds-search input { min-width: 0; flex: 1; background: transparent; color: #F4F7FB; border: 0; outline: 0; font: 400 14px 'Segoe UI', sans-serif; } .ds-search:focus-within { border-color: #8AB7FF; outline: 2px solid #8AB7FF; outline-offset: 1px; }"
+    },
+    {
+      "name": "Panel Card",
+      "kind": "card",
+      "refersTo": "card-panel",
+      "description": "Container tonal com borda fina para agrupar uma região operacional.",
+      "html": "<section class=\"ds-panel\"><h3>Fluxo de áudio</h3><p>Entrada, mixer e saída em sequência.</p></section>",
+      "css": ".ds-panel { padding: 20px; background: #151C2B; color: #F4F7FB; border: 1px solid #263147; border-radius: 8px; } .ds-panel h3 { margin: 0 0 8px; font: 600 18px 'Segoe UI', sans-serif; } .ds-panel p { margin: 0; color: #A9B3C6; font: 400 14px 'Segoe UI', sans-serif; }"
+    },
+    {
+      "name": "Hotkey Badge",
+      "kind": "chip",
+      "refersTo": "hotkey-badge",
+      "description": "Badge pill reservado para uma combinação de teclado e seu estado.",
+      "html": "<span class=\"ds-hotkey\">Ctrl + Shift + A</span>",
+      "css": ".ds-hotkey { display: inline-flex; align-items: center; min-height: 24px; padding: 4px 10px; background: #1C2D4D; color: #F4F7FB; border: 1px solid #2F80FF; border-radius: 999px; font: 600 12px 'Segoe UI', sans-serif; } .ds-hotkey:hover { border-color: #5A9BFF; }"
+    },
+    {
+      "name": "Device Status Card",
+      "kind": "card",
+      "refersTo": "status-card",
+      "description": "Card retangular que combina ícone, nome do dispositivo e estado textual.",
+      "html": "<section class=\"ds-status\"><span class=\"ds-status-icon\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3v11m0 0a4 4 0 1 0 4 4m-4-4a4 4 0 1 1-4 4m-5-4a9 9 0 0 0 18 0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg></span><span><strong>Microfone</strong><small>NVIDIA Broadcast</small><em>Conectado</em></span></section>",
+      "css": ".ds-status { min-height: 84px; display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start; padding: 12px 14px; background: #142B25; color: #F4F7FB; border: 1px solid #285A4A; border-radius: 6px; font: 400 12px 'Segoe UI', sans-serif; } .ds-status-icon { width: 36px; height: 36px; display: grid; place-items: center; color: #25C58A; border: 1px solid #285A4A; border-radius: 4px; } .ds-status-icon svg { width: 18px; height: 18px; } .ds-status strong, .ds-status small, .ds-status em { display: block; } .ds-status strong { font-size: 12px; } .ds-status small { margin-top: 4px; color: #A9B3C6; } .ds-status em { margin-top: 4px; color: #25C58A; font-style: normal; font-weight: 600; }"
+    },
+    {
+      "name": "Player Play Button",
+      "kind": "button",
+      "refersTo": "player-play",
+      "description": "Exceção circular funcional que ancora o transporte no player inferior.",
+      "html": "<button class=\"ds-player-play\" aria-label=\"Reproduzir\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m9 6 9 6-9 6V6Z\" fill=\"currentColor\"/></svg></button>",
+      "css": ".ds-player-play { width: 38px; height: 38px; display: inline-grid; place-items: center; padding: 0; background: #2F80FF; color: #FFFFFF; border: 1px solid #2F80FF; border-radius: 19px; cursor: pointer; transition: background-color 120ms ease, transform 120ms ease; } .ds-player-play svg { width: 18px; height: 18px; } .ds-player-play:hover { background: #5A9BFF; transform: translateY(-1px); } .ds-player-play:focus-visible { outline: 2px solid #8AB7FF; outline-offset: 2px; } .ds-player-play:active { background: #0D4EB5; transform: translateY(0); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Mesa de mixagem operacional",
+    "overview": "EchoBoard é uma interface de controle de áudio, não um painel administrativo genérico. O sistema visual organiza entradas, efeitos, níveis, dispositivos e reprodução como uma mesa de mixagem compacta: cada superfície deve ajudar o usuário a localizar estado e agir rapidamente, sem competir com o áudio ou com a chamada em andamento.\n\nA atmosfera é precisa, limpa, discreta e orientada à operação rápida. O visual atual parte de uma base escura azul-marinho/grafite, com uma versão clara equivalente, bordas finas, ícones vetoriais nativos e um único acento semântico por vez. A combinação cromática atual é a autoridade documentada deste snapshot, mas permanece uma candidata explícita para uma futura revisão de cor; não deve ser tratada como uma decisão irreversível.",
+    "keyCharacteristics": [
+      "Controle operacional e leitura imediata de estado.",
+      "Superfícies tonais planas com bordas discretas.",
+      "Azul de ação reservado para comandos, seleção e progresso.",
+      "Densidade compacta, tipografia Segoe UI e hierarquia curta.",
+      "Tema escuro inicial com paridade clara e paletas de acento trocáveis."
+    ],
+    "rules": [
+      { "name": "The Signal Over Decoration Rule", "body": "Cor deve indicar ação, seleção ou estado do áudio; não deve virar textura ou preenchimento ornamental.", "section": "colors" },
+      { "name": "The One Accent Rule", "body": "A paleta de acento selecionada é a voz de ação da tela; estados de sucesso, atenção e erro mantêm seus significados semânticos.", "section": "colors" },
+      { "name": "The Short Hierarchy Rule", "body": "Toda tela deve declarar poucas camadas tipográficas claras; não criar títulos gigantes ou níveis decorativos dentro de painéis compactos.", "section": "typography" },
+      { "name": "The Tonal Layer Rule", "body": "Criar profundidade com superfícies tonais e bordas existentes antes de inventar sombra, gradiente ou efeito de vidro.", "section": "elevation" },
+      { "name": "The Quiet Surface Rule", "body": "Superfícies em repouso devem permanecer silenciosas; destaque aparece apenas quando existe uma ação, seleção ou estado de áudio que o justifique.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do usar os recursos `ThemeResource` e estilos compartilhados antes de criar valores locais.",
+      "Do manter temas claro e escuro semanticamente equivalentes e validar os dois.",
+      "Do usar ícones vetoriais nativos e AutomationProperties para comandos de áudio.",
+      "Do manter níveis, dispositivos, transporte, hotkeys e avisos visíveis sem ruído decorativo.",
+      "Do usar bordas de 1px, superfícies tonais e a escala de espaçamento existente.",
+      "Do tratar estados de áudio com texto, ícone e cor semântica combinados."
+    ],
+    "donts": [
+      "Don't transformar a interface em um dashboard administrativo cheio de métricas ou hero text.",
+      "Don't introduzir gradientes complexos, blur pesado, sombras decorativas ou animação ornamental.",
+      "Don't usar pill em cards de dispositivo, painéis ou controles que não sejam badges compactos.",
+      "Don't hardcodar cores de tema em páginas ou controles reutilizáveis.",
+      "Don't usar emoji, letras improvisadas ou ícones não vetoriais como substitutos dos símbolos nativos.",
+      "Don't mudar o significado de verde, âmbar, vermelho e neutro para apenas criar variedade cromática."
+    ]
+  }
+}
