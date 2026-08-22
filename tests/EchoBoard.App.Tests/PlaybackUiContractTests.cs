@@ -68,6 +68,41 @@ public sealed class PlaybackUiContractTests
     }
 
     [Fact]
+    public void PlayerShowsOnlyPreviousPlayAndNextTransportActions()
+    {
+        var shell = File.ReadAllText(Path.Combine(AppPath(), "Views", "MainShellPage.xaml"));
+
+        shell.Should().Contain("PlaybackBar.PreviousCommand");
+        shell.Should().Contain("PlaybackBar.PlayPauseCommand");
+        shell.Should().Contain("PlaybackBar.NextCommand");
+        shell.Should().NotContain("PlaybackBar.StopCommand");
+        shell.Should().NotContain("PlaybackBar.ToggleRepeatCommand");
+    }
+
+    [Fact]
+    public void PlayerSlidersKeepThumbClearOfTrackBounds()
+    {
+        var styles = File.ReadAllText(Path.Combine(AppPath(), "Themes", "ControlStyles.xaml"));
+
+        styles.Should().Contain("<Style x:Key=\"EchoBoardPlayerSliderStyle\" TargetType=\"Slider\">");
+        styles.Should().Contain("<Setter Property=\"Margin\" Value=\"6,0\" />");
+    }
+
+    [Fact]
+    public void PlayerTransportIconsUseExplicitSizesInsideTheirButtons()
+    {
+        var appPath = AppPath();
+        var shell = File.ReadAllText(Path.Combine(appPath, "Views", "MainShellPage.xaml"));
+        var styles = File.ReadAllText(Path.Combine(appPath, "Themes", "ControlStyles.xaml"));
+
+        shell.Should().Contain("Glyph=\"&#xE892;\" FontSize=\"14\"");
+        shell.Should().Contain("Glyph=\"{Binding PlaybackBar.PlayPauseGlyph}\" FontSize=\"18\"");
+        shell.Should().Contain("Glyph=\"&#xE893;\" FontSize=\"14\"");
+        styles.Should().Contain("<Setter Property=\"Padding\" Value=\"4\" />");
+        styles.Should().Contain("<Setter Property=\"FontSize\" Value=\"14\" />");
+    }
+
+    [Fact]
     public void SoundCardKeepsOnlyPlayAndMenuActions()
     {
         var card = File.ReadAllText(Path.Combine(AppPath(), "Controls", "SoundCard.xaml"));
