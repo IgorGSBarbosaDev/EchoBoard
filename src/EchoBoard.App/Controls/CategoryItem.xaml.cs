@@ -86,7 +86,9 @@ public sealed partial class CategoryItem : UserControl
 
     public Visibility CountVisibility => string.IsNullOrWhiteSpace(CountText) ? Visibility.Collapsed : Visibility.Visible;
 
-    public string AccessibleLabel => $"{CategoryName} category {CountText}".Trim();
+    public string AccessibleLabel => string.IsNullOrWhiteSpace(CountText)
+        ? CategoryName
+        : $"{CategoryName} {CountText}";
 
     public Brush ItemBackground => (Brush)Microsoft.UI.Xaml.Application.Current.Resources[IsSelected ? "EchoBoardSelectedBrush" : "EchoBoardCardBrush"];
 

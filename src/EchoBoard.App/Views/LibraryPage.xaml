@@ -32,7 +32,17 @@
 
                 <Border Style="{StaticResource EchoBoardPanelStyle}">
                     <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
-                        <TextBlock Text="Categories" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                        <Grid>
+                            <TextBlock Text="Categories" Style="{StaticResource EchoBoardSectionTitleTextStyle}" VerticalAlignment="Center" />
+                            <Button
+                                HorizontalAlignment="Right"
+                                Style="{StaticResource EchoBoardCardActionButtonStyle}"
+                                Click="OnManageCategoriesClicked"
+                                ToolTipService.ToolTip="Manage categories"
+                                AutomationProperties.Name="Manage categories">
+                                <FontIcon Glyph="&#xE70F;" />
+                            </Button>
+                        </Grid>
                         <ItemsControl ItemsSource="{Binding Categories}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -48,27 +58,6 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-
-                        <Button
-                            Content="Create category"
-                            Click="OnCreateCategoryClicked"
-                            HorizontalAlignment="Stretch"
-                            Style="{StaticResource EchoBoardPrimaryButtonStyle}" />
-                        <StackPanel
-                            Orientation="Horizontal"
-                            Spacing="{StaticResource EchoBoardSpace8}"
-                            Visibility="{Binding SelectedCategoryManagementVisibility}">
-                            <Button
-                                Content="Edit"
-                                Click="OnEditSelectedCategoryClicked"
-                                HorizontalAlignment="Stretch"
-                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                            <Button
-                                Content="Delete"
-                                Click="OnDeleteSelectedCategoryClicked"
-                                HorizontalAlignment="Stretch"
-                                Style="{StaticResource EchoBoardDangerButtonStyle}" />
-                        </StackPanel>
 
                         <StackPanel
                             Spacing="{StaticResource EchoBoardSpace8}"
@@ -122,10 +111,6 @@
                                 IsEnabled="{Binding IsImportEnabled}"
                                 Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
                         </Grid>
-
-                        <CheckBox
-                            Content="Favorites only"
-                            IsChecked="{Binding IsFavoritesOnly, Mode=TwoWay}" />
 
                         <controls:ToastNotification
                             IsCompact="True"
