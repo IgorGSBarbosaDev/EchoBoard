@@ -66,6 +66,113 @@ public sealed class ComponentPreviewContractTests
     }
 
     [Fact]
+    public async Task CategoryEditorShowsAllSoundsAndPreselectsCurrentMembership()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var selectedCategory = Category.Create("Memes", 0, Now);
+        var otherCategory = Category.Create("Games", 1, Now);
+        await categories.AddCategoryAsync(selectedCategory, CancellationToken.None);
+        await categories.AddCategoryAsync(otherCategory, CancellationToken.None);
+        var selectedSound = Sound.Create("Zing", "C:\\Audio\\zing.wav", ".wav", TimeSpan.FromSeconds(1), 1, selectedCategory.Id, 0, Now);
+        var otherSound = Sound.Create("Intro", "C:\\Audio\\intro.wav", ".wav", TimeSpan.FromSeconds(1), 1, otherCategory.Id, 1, Now);
+        var uncategorizedSound = Sound.Create("Alert", "C:\\Audio\\alert.wav", ".wav", TimeSpan.FromSeconds(1), 1, null, 2, Now);
+        await sounds.AddSoundAsync(selectedSound, CancellationToken.None);
+        await sounds.AddSoundAsync(otherSound, CancellationToken.None);
+        await sounds.AddSoundAsync(uncategorizedSound, CancellationToken.None);
+        var viewModel = CreateLibraryViewModel(sounds, categories: categories, files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        viewModel.PrepareCategoryEditor(selectedCategory.Id);
+        await viewModel.LoadCategoryEditorSoundsAsync(CancellationToken.None);
+
+        viewModel.CategoryEditorSounds.Should().HaveCount(3);
+        viewModel.CategoryEditorSounds.Select(sound => sound.Name).Should().Equal("Alert", "Intro", "Zing");
+        viewModel.CategoryEditorSounds.Single(sound => sound.Id == selectedSound.Id).IsSelected.Should().BeTrue();
+        viewModel.CategoryEditorSounds.Single(sound => sound.Id == otherSound.Id).IsSelected.Should().BeFalse();
+        viewModel.CategoryEditorSounds.Single(sound => sound.Id == uncategorizedSound.Id).IsSelected.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CategoryEditorCreatesCategoryAndMovesSelectedSounds()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var sourceCategory = Category.Create("Old", 0, Now);
+        await categories.AddCategoryAsync(sourceCategory, CancellationToken.None);
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.wav", ".wav", TimeSpan.FromSeconds(1), 1, sourceCategory.Id, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var viewModel = CreateLibraryViewModel(sounds, categories: categories, files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        viewModel.PrepareCategoryEditor(categoryId: null);
+        await viewModel.LoadCategoryEditorSoundsAsync(CancellationToken.None);
+        viewModel.CategoryEditorName = "New category";
+        viewModel.CategoryEditorSounds.Single().IsSelected = true;
+
+        var saved = await viewModel.SaveCategoryEditorAsync(CancellationToken.None);
+
+        saved.Should().BeTrue();
+        var createdCategory = categories.Items.Single(category => category.Name == "New category");
+        sound.CategoryId.Should().Be(createdCategory.Id);
+        viewModel.Categories.Should().Contain(category => category.Name == "New category" && category.CountText == "1");
+    }
+
+    [Fact]
+    public async Task CategoryEditorUnchecksExistingSoundsAndRenamesCategory()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var editedCategory = Category.Create("Old", 0, Now);
+        var otherCategory = Category.Create("Other", 1, Now);
+        await categories.AddCategoryAsync(editedCategory, CancellationToken.None);
+        await categories.AddCategoryAsync(otherCategory, CancellationToken.None);
+        var existingSound = Sound.Create("Existing", "C:\\Audio\\existing.wav", ".wav", TimeSpan.FromSeconds(1), 1, editedCategory.Id, 0, Now);
+        var movedSound = Sound.Create("Moved", "C:\\Audio\\moved.wav", ".wav", TimeSpan.FromSeconds(1), 1, otherCategory.Id, 1, Now);
+        await sounds.AddSoundAsync(existingSound, CancellationToken.None);
+        await sounds.AddSoundAsync(movedSound, CancellationToken.None);
+        var viewModel = CreateLibraryViewModel(sounds, categories: categories, files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        viewModel.PrepareCategoryEditor(editedCategory.Id);
+        await viewModel.LoadCategoryEditorSoundsAsync(CancellationToken.None);
+        viewModel.CategoryEditorName = "Renamed";
+        viewModel.CategoryEditorSounds.Single(sound => sound.Id == existingSound.Id).IsSelected = false;
+        viewModel.CategoryEditorSounds.Single(sound => sound.Id == movedSound.Id).IsSelected = true;
+
+        var saved = await viewModel.SaveCategoryEditorAsync(CancellationToken.None);
+
+        saved.Should().BeTrue();
+        editedCategory.Name.Should().Be("Renamed");
+        existingSound.CategoryId.Should().BeNull();
+        movedSound.CategoryId.Should().Be(editedCategory.Id);
+    }
+
+    [Fact]
+    public async Task DeletingCategoryMovesItsSoundsToChosenDestination()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var sourceCategory = Category.Create("Temporary", 0, Now);
+        var destinationCategory = Category.Create("Keep", 1, Now);
+        await categories.AddCategoryAsync(sourceCategory, CancellationToken.None);
+        await categories.AddCategoryAsync(destinationCategory, CancellationToken.None);
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.wav", ".wav", TimeSpan.FromSeconds(1), 1, sourceCategory.Id, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var viewModel = CreateLibraryViewModel(sounds, categories: categories, files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
+        await viewModel.LoadAsync(CancellationToken.None);
+        await viewModel.SelectCategoryCommand.ExecuteAsync(viewModel.Categories.Single(category => category.Id == sourceCategory.Id));
+        viewModel.PrepareCategoryDeletion();
+
+        var deleted = await viewModel.DeleteSelectedCategoryAsync(destinationCategory.Id, CancellationToken.None);
+
+        deleted.Should().BeTrue();
+        sound.CategoryId.Should().Be(destinationCategory.Id);
+        viewModel.Categories.Should().NotContain(category => category.Id == sourceCategory.Id);
+        viewModel.Categories.Should().Contain(category => category.Id == destinationCategory.Id && category.CountText == "1");
+    }
+
+    [Fact]
     public async Task LibraryViewModelDisplaysSoundHotkeyBindings()
     {
         var sounds = new FakeSoundLibraryRepository();
@@ -552,6 +659,8 @@ public sealed class ComponentPreviewContractTests
     private sealed class FakeCategoryRepository : ICategoryRepository
     {
         private readonly List<Category> categories = [];
+
+        public IReadOnlyList<Category> Items => categories;
 
         public Task<IReadOnlyList<Category>> ListCategoriesAsync(CancellationToken cancellationToken)
         {

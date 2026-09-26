@@ -136,7 +136,6 @@ public sealed record CategoryPreviewModel(
     string Name,
     string CountText,
     Symbol Icon,
-    Brush? IndicatorBrush,
     bool IsSelected = false,
     bool IsEnabled = true,
     Guid? Id = null,

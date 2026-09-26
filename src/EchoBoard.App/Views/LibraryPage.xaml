@@ -31,7 +31,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Border Style="{StaticResource EchoBoardPanelStyle}">
-                    <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
                         <TextBlock Text="Categories" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
                         <ItemsControl ItemsSource="{Binding Categories}">
                             <ItemsControl.ItemTemplate>
@@ -41,7 +41,6 @@
                                         CategoryName="{Binding Name}"
                                         CountText="{Binding CountText}"
                                         Icon="{Binding Icon}"
-                                        IndicatorBrush="{Binding IndicatorBrush}"
                                         IsSelected="{Binding IsSelected}"
                                         IsEnabled="{Binding IsEnabled}"
                                         Command="{Binding SelectCommand}"
@@ -50,47 +49,25 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                            <TextBlock Text="Create category" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                            <TextBox
-                                x:Name="CreateCategoryNameTextBox"
-                                Header="Name"
-                                PlaceholderText="Memes" />
+                        <Button
+                            Content="Create category"
+                            Click="OnCreateCategoryClicked"
+                            HorizontalAlignment="Stretch"
+                            Style="{StaticResource EchoBoardPrimaryButtonStyle}" />
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="{StaticResource EchoBoardSpace8}"
+                            Visibility="{Binding SelectedCategoryManagementVisibility}">
                             <Button
-                                Content="Create"
-                                Click="OnCreateCategoryClicked"
+                                Content="Edit"
+                                Click="OnEditSelectedCategoryClicked"
+                                HorizontalAlignment="Stretch"
                                 Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                        </StackPanel>
-
-                        <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                            <TextBlock Text="Selected category" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                            <TextBox
-                                x:Name="RenameCategoryNameTextBox"
-                                Header="New name"
-                                PlaceholderText="Rename selected category" />
-                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}">
-                                <Button
-                                    Content="Rename"
-                                    Click="OnRenameCategoryClicked"
-                                    Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                                <Button
-                                    Content="Delete"
-                                    Click="OnDeleteCategoryClicked"
-                                    Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                            </StackPanel>
-                        </StackPanel>
-
-                        <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                            <TextBlock Text="Selected sound" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                            <ComboBox
-                                x:Name="AssignCategoryComboBox"
-                                Header="Assign category"
-                                DisplayMemberPath="Name"
-                                ItemsSource="{Binding AssignableCategories}" />
                             <Button
-                                Content="Apply category"
-                                Click="OnAssignSelectedCategoryClicked"
-                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
+                                Content="Delete"
+                                Click="OnDeleteSelectedCategoryClicked"
+                                HorizontalAlignment="Stretch"
+                                Style="{StaticResource EchoBoardDangerButtonStyle}" />
                         </StackPanel>
 
                         <StackPanel
