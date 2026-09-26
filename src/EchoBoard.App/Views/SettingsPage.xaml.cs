@@ -11,11 +11,13 @@ public sealed partial class SettingsPage : Page
     private bool isPageLoaded;
     private readonly Stopwatch meterStopwatch = new();
     private readonly DispatcherTimer refreshTimer = new() { Interval = TimeSpan.FromMilliseconds(1000.0 / 30.0) };
+    private readonly DispatcherTimer diagnosticsRefreshTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
 
     public SettingsPage()
     {
         InitializeComponent();
         refreshTimer.Tick += OnRefreshTimerTick;
+        diagnosticsRefreshTimer.Tick += OnDiagnosticsRefreshTimerTick;
         Unloaded += OnUnloaded;
     }
 
@@ -42,6 +44,7 @@ public sealed partial class SettingsPage : Page
 
         meterStopwatch.Restart();
         refreshTimer.Start();
+        diagnosticsRefreshTimer.Start();
     }
 
     private void OnRefreshTimerTick(object? sender, object e)
@@ -51,10 +54,16 @@ public sealed partial class SettingsPage : Page
         ViewModel?.RefreshMicrophoneSnapshot(elapsed);
     }
 
+    private void OnDiagnosticsRefreshTimerTick(object? sender, object e)
+    {
+        ViewModel?.RefreshAudioDiagnostics();
+    }
+
     private async void OnUnloaded(object sender, RoutedEventArgs e)
     {
         isPageLoaded = false;
         refreshTimer.Stop();
+        diagnosticsRefreshTimer.Stop();
         meterStopwatch.Stop();
         if (ViewModel is not null)
         {

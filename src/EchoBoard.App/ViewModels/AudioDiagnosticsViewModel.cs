@@ -37,7 +37,7 @@ public sealed class AudioDiagnosticsViewModel : ObservableObject
 
     public string EmptyStateTitle => "Microphone capture is stopped";
 
-    public string EmptyStateMessage => "Select a microphone in Settings and start capture to see input level.";
+    public string EmptyStateMessage => "Select a microphone above and start capture to see input level.";
 
     public DevicePreviewModel MicrophoneDevice
     {

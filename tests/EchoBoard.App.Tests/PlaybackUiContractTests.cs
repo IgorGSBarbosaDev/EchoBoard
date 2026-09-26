@@ -115,14 +115,10 @@ public sealed class PlaybackUiContractTests
         card.Should().NotContain(">Stopped<");
     }
 
-    [Theory]
-    [InlineData("DashboardViewModel.cs")]
-    [InlineData("FavoritesViewModel.cs")]
-    [InlineData("LibraryViewModel.cs")]
-    [InlineData("RecentViewModel.cs")]
-    public void SoundSurfacesUseTheSharedPlaybackCommand(string fileName)
+    [Fact]
+    public void LibraryUsesTheSharedPlaybackCommand()
     {
-        var source = File.ReadAllText(Path.Combine(AppPath(), "ViewModels", fileName));
+        var source = File.ReadAllText(Path.Combine(AppPath(), "ViewModels", "LibraryViewModel.cs"));
 
         source.Should().Contain("playbackCoordinator?.PlaySoundCommand");
     }

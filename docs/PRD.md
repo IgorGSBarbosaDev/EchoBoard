@@ -132,8 +132,7 @@ Os itens abaixo não podem atrasar a primeira versão utilizável:
 | LIB-05 | Categorias | Permitir criar, renomear, reordenar e excluir categorias. Ao excluir categoria, solicitar destino para os sons vinculados. | MVP |
 | LIB-06 | Organização | Permitir mover sons entre categorias e definir ordem manual. | MVP |
 | LIB-07 | Busca | Filtrar sons por nome enquanto o usuário digita. | MVP |
-| LIB-08 | Favoritos | Marcar/desmarcar som como favorito e exibir coleção dedicada. | MVP |
-| LIB-09 | Recentes | Exibir sons reproduzidos recentemente. | MVP |
+| LIB-08 | Favoritos | Marcar/desmarcar sons como favoritos e filtrar favoritos na Biblioteca. | MVP |
 | LIB-10 | Renomear | Alterar apenas o nome exibido no EchoBoard, sem renomear o arquivo original. | MVP |
 | LIB-11 | Remover da biblioteca | Remover referência do EchoBoard sem apagar o arquivo do disco. | MVP |
 | LIB-12 | Informações visuais | Exibir categoria, nome, formato, duração, usos, waveform real, hotkey, favorito e estado de reprodução no card. | MVP |
@@ -311,7 +310,7 @@ Princípios:
 
 ### 9.3 Layout principal
 
-O Dashboard inicial ocupa toda a área do conteúdo e apresenta cabeçalho de ações, métricas reais, acesso rápido, primeiros passos, fluxo de áudio e níveis disponíveis. Em janelas largas usa duas colunas proporcionais; entre 720px e 1099px empilha o conteúdo com métricas 2x2; abaixo de 720px usa uma única coluna sem overflow horizontal.
+Ao iniciar, a Biblioteca ocupa a área de conteúdo e lista todos os áudios cadastrados. A busca, o filtro de favoritos e as categorias refinam essa mesma lista; importar e organizar sons continua disponível na tela. Settings concentra a seleção de dispositivos e o roteamento. A seção Audio diagnostics fica abaixo das configurações e mostra dispositivos, níveis e estado das rotas.
 
 Os detalhes do som são exibidos em uma drawer compartilhada sobre o conteúdo. Fechada, ela permanece `Collapsed` e não reserva largura. O corpo do card reproduz o áudio; favorito e menu de detalhes/edição são ações independentes.
 
@@ -319,12 +318,11 @@ Os detalhes do som são exibidos em uma drawer compartilhada sobre o conteúdo. 
 ┌───────────────────────────────────────────────────────────────────┐
 │ EchoBoard | Busca | Mic ativo | Saída virtual | Tema | Settings   │
 ├───────────────┬───────────────────────────────────────┬───────────┤
-│ Categorias    │ Grid de sons                          │ Detalhes  │
-│               │                                       │ / Fila    │
-│ Favoritos     │ [Som 1] [Som 2] [Som 3]               │           │
-│ Recentes      │ [Som 4] [Som 5] [Som 6]               │           │
-│ Memes         │ [Som 7] [Som 8] [Som 9]               │           │
-│ Jogos         │                                       │           │
+│ Biblioteca    │ Busca | Favoritos | Importar          │ Detalhes  │
+│ Todas         │ [Som 1] [Som 2] [Som 3]               │ / Fila    │
+│ Memes         │ [Som 4] [Som 5] [Som 6]               │           │
+│ Jogos         │ [Som 7] [Som 8] [Som 9]               │           │
+│               │                                       │           │
 ├───────────────┴───────────────────────────────────────┴───────────┤
 │ Player | Progresso | Mic | Efeitos | Monitor | Saída virtual | Stop │
 └───────────────────────────────────────────────────────────────────┘
@@ -574,7 +572,7 @@ RecentlyPlayed
 - PlayedAt
 ```
 
-`RecentlyPlayed` registra apenas reproduções iniciadas com sucesso, independentemente de terem sido acionadas por clique, drawer ou hotkey. A remoção de `Sound` elimina seu histórico em cascata, mas nunca apaga o arquivo de áudio do disco.
+`RecentlyPlayed` registra apenas reproduções iniciadas com sucesso, independentemente de terem sido acionadas por clique, drawer ou hotkey. O histórico continua interno e não tem uma tela dedicada. A remoção de `Sound` elimina seu histórico em cascata, mas nunca apaga o arquivo de áudio do disco.
 
 ### 13.2 Persistência
 

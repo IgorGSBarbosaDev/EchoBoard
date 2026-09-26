@@ -19,20 +19,16 @@ namespace EchoBoard.App.Tests;
 public sealed class ShellNavigationContractTests
 {
     [Fact]
-    public void NavigationServiceDefaultsToDashboard()
+    public void NavigationServiceDefaultsToLibrary()
     {
         var service = new NavigationService();
 
-        service.CurrentRoute.Should().Be(ShellRoute.Dashboard);
+        service.CurrentRoute.Should().Be(ShellRoute.Library);
     }
 
     [Theory]
-    [InlineData(ShellRoute.Dashboard)]
     [InlineData(ShellRoute.Library)]
-    [InlineData(ShellRoute.Favorites)]
-    [InlineData(ShellRoute.Recent)]
     [InlineData(ShellRoute.Settings)]
-    [InlineData(ShellRoute.AudioDiagnostics)]
     public void NavigationServiceTracksSelectedRoute(ShellRoute route)
     {
         var service = new NavigationService();
@@ -50,16 +46,16 @@ public sealed class ShellNavigationContractTests
         viewModel.NavigationItems
             .Select(item => item.Label)
             .Should()
-            .Equal("Dashboard", "Library", "Favorites", "Recent", "Settings", "Audio Diagnostics");
+            .Equal("Library", "Settings");
     }
 
     [Fact]
-    public void MainShellViewModelDefaultsToDashboardPage()
+    public void MainShellViewModelDefaultsToLibraryPage()
     {
         var viewModel = CreateViewModel();
 
-        viewModel.SelectedNavigationItem.Route.Should().Be(ShellRoute.Dashboard);
-        viewModel.CurrentPage.Should().BeOfType<DashboardViewModel>();
+        viewModel.SelectedNavigationItem.Route.Should().Be(ShellRoute.Library);
+        viewModel.CurrentPage.Should().BeOfType<LibraryViewModel>();
     }
 
     [Fact]
@@ -181,55 +177,14 @@ public sealed class ShellNavigationContractTests
 
         return new MainShellViewModel(
             navigation,
-            CreateDashboardViewModel(navigation),
             CreateLibraryViewModel(),
-            CreateFavoritesViewModel(),
-            CreateRecentViewModel(),
             CreateSettingsViewModel(),
-            CreateAudioDiagnosticsViewModel(),
             CreatePlaybackBarViewModel(),
             soundDetails,
             new GetMicrophoneCaptureSnapshotUseCase(microphone),
             new LoadAppearanceSettingsUseCase(appearanceSettings),
             new SaveAppearanceSettingsUseCase(appearanceSettings),
             appearanceResources);
-    }
-
-    private static DashboardViewModel CreateDashboardViewModel(INavigationService navigation)
-    {
-        var sounds = new FakeSoundLibraryRepository();
-        var categories = new FakeCategoryRepository();
-        var files = new FakeSoundFileAvailabilityReader();
-        var hotkeys = new FakeHotkeyBindingRepository();
-        var runtime = new FakeHotkeyRuntime();
-        var history = new FakeRecentlyPlayedRepository();
-        var playback = new FakeSoundPlaybackEngine();
-        var microphone = new FakeMicrophoneCaptureController();
-        var query = new QuerySoundLibraryUseCase(sounds, categories, files, history);
-        var play = new PlaySoundUseCase(sounds, files, history, playback);
-
-        return new DashboardViewModel(
-            query,
-            new ImportSoundsUseCase(sounds, new FakeAudioFileMetadataReader()),
-            new SetSoundFavoriteUseCase(sounds),
-            new GenerateSoundWaveformUseCase(sounds, new FakeAudioFileMetadataReader()),
-            new ListHotkeyBindingsUseCase(hotkeys, runtime),
-            new GetMicrophoneCaptureSnapshotUseCase(microphone),
-            play,
-            CreateSoundDetailsViewModel(),
-            navigation);
-    }
-
-    private static RecentViewModel CreateRecentViewModel()
-    {
-        var sounds = new FakeSoundLibraryRepository();
-        var files = new FakeSoundFileAvailabilityReader();
-        var history = new FakeRecentlyPlayedRepository();
-        var playback = new FakeSoundPlaybackEngine();
-        return new RecentViewModel(
-            new ListRecentlyPlayedUseCase(history, sounds),
-            new PlaySoundUseCase(sounds, files, history, playback),
-            CreateSoundDetailsViewModel());
     }
 
     private static SoundDetailsViewModel CreateSoundDetailsViewModel()
@@ -277,8 +232,6 @@ public sealed class ShellNavigationContractTests
 
     private static SettingsViewModel CreateSettingsViewModel()
     {
-        var hotkeys = new FakeHotkeyBindingRepository();
-        var runtime = new FakeHotkeyRuntime();
         var settings = new FakeAppSettingRepository();
         var microphone = new FakeMicrophoneCaptureController();
 
@@ -291,22 +244,6 @@ public sealed class ShellNavigationContractTests
             new StartMicrophoneCaptureUseCase(microphone),
             new StopMicrophoneCaptureUseCase(microphone),
             new GetMicrophoneCaptureSnapshotUseCase(microphone));
-    }
-
-    private static AudioDiagnosticsViewModel CreateAudioDiagnosticsViewModel()
-    {
-        return new AudioDiagnosticsViewModel(new GetMicrophoneCaptureSnapshotUseCase(new FakeMicrophoneCaptureController()));
-    }
-
-    private static FavoritesViewModel CreateFavoritesViewModel()
-    {
-        var sounds = new FakeSoundLibraryRepository();
-        var categories = new FakeCategoryRepository();
-        var files = new FakeSoundFileAvailabilityReader();
-
-        return new FavoritesViewModel(
-            new QuerySoundLibraryUseCase(sounds, categories, files),
-            new SetSoundFavoriteUseCase(sounds));
     }
 
     private sealed class FakeDatabaseInitializer : IDatabaseInitializer

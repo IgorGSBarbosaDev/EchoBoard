@@ -6,31 +6,15 @@
     xmlns:viewModels="using:EchoBoard.App.ViewModels"
     xmlns:views="using:EchoBoard.App.Views">
     <Page.Resources>
-        <DataTemplate x:Key="DashboardTemplate">
-            <views:DashboardPage />
-        </DataTemplate>
         <DataTemplate x:Key="LibraryTemplate">
             <views:LibraryPage />
-        </DataTemplate>
-        <DataTemplate x:Key="FavoritesTemplate">
-            <views:FavoritesPage />
-        </DataTemplate>
-        <DataTemplate x:Key="RecentTemplate">
-            <views:RecentPage />
         </DataTemplate>
         <DataTemplate x:Key="SettingsTemplate">
             <views:SettingsPage />
         </DataTemplate>
-        <DataTemplate x:Key="AudioDiagnosticsTemplate">
-            <views:AudioDiagnosticsPage />
-        </DataTemplate>
         <views:ShellPageTemplateSelector
             x:Key="ShellPageTemplateSelector"
-            AudioDiagnosticsTemplate="{StaticResource AudioDiagnosticsTemplate}"
-            DashboardTemplate="{StaticResource DashboardTemplate}"
-            FavoritesTemplate="{StaticResource FavoritesTemplate}"
             LibraryTemplate="{StaticResource LibraryTemplate}"
-            RecentTemplate="{StaticResource RecentTemplate}"
             SettingsTemplate="{StaticResource SettingsTemplate}" />
     </Page.Resources>
 

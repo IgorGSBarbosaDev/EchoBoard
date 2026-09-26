@@ -4,7 +4,7 @@ public sealed class NavigationService : INavigationService
 {
     public event EventHandler<ShellRoute>? RouteChanged;
 
-    public ShellRoute CurrentRoute { get; private set; } = ShellRoute.Dashboard;
+    public ShellRoute CurrentRoute { get; private set; } = ShellRoute.Library;
 
     public void NavigateTo(ShellRoute route)
     {

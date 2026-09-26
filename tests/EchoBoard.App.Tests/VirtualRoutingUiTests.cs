@@ -63,35 +63,39 @@ public sealed class VirtualRoutingUiTests
     }
 
     [Fact]
-    public void SettingsAndDiagnosticsContainCompactVirtualRouteGuidance()
+    public void SettingsContainsAudioDiagnosticsAfterAudioRoutingSettings()
     {
         var root = FindRepositoryRoot();
         var settings = File.ReadAllText(Path.Combine(root, "src", "EchoBoard.App", "Views", "SettingsPage.xaml"));
-        var diagnostics = File.ReadAllText(Path.Combine(root, "src", "EchoBoard.App", "Views", "AudioDiagnosticsPage.xaml"));
 
         settings.Should().Contain("VirtualOutputWarningVisibility");
         settings.Should().Contain("VirtualOutputWarningText");
         settings.Should().Contain("Select VB-CABLE or VoiceMeeter");
-        diagnostics.Should().Contain("VirtualOutputRouteText");
+        settings.Should().Contain("VirtualOutputRouteText");
+        settings.IndexOf("Audio diagnostics", StringComparison.Ordinal)
+            .Should()
+            .BeGreaterThan(settings.IndexOf("Mixer and routing", StringComparison.Ordinal));
+        File.Exists(Path.Combine(root, "src", "EchoBoard.App", "Views", "AudioDiagnosticsPage.xaml"))
+            .Should()
+            .BeFalse();
     }
 
     [Fact]
-    public void SettingsAndDiagnosticsUseResponsiveRectangularDeviceCards()
+    public void SettingsDiagnosticsUseResponsiveRectangularDeviceCards()
     {
         var root = FindRepositoryRoot();
         var appRoot = Path.Combine(root, "src", "EchoBoard.App");
         var card = File.ReadAllText(Path.Combine(appRoot, "Controls", "DeviceStatusBadge.xaml"));
         var settings = File.ReadAllText(Path.Combine(appRoot, "Views", "SettingsPage.xaml"));
-        var diagnostics = File.ReadAllText(Path.Combine(appRoot, "Views", "AudioDiagnosticsPage.xaml"));
 
         card.Should().Contain("EchoBoardDeviceStatusCardStyle");
         card.Should().Contain("TextWrapping=\"Wrap\"");
         card.Should().NotContain("EchoBoardRadiusPill");
         settings.Should().Contain("RefreshMicrophoneButton");
         settings.Should().Contain("DeviceName=\"{Binding SelectedMicrophoneName}\"");
-        diagnostics.Should().Contain("DeviceCardsGrid");
-        diagnostics.Should().Contain("MonitorDeviceCard");
-        diagnostics.Should().Contain("VirtualOutputDeviceCard");
+        settings.Should().Contain("DiagnosticsDeviceCardsGrid");
+        settings.Should().Contain("DiagnosticsVirtualOutputDeviceCard");
+        settings.Should().Contain("DiagnosticsVirtualOutputMeter");
     }
 
     private static string FindRepositoryRoot()

@@ -122,10 +122,10 @@
                 <Border Grid.Column="1" Style="{StaticResource EchoBoardPanelStyle}">
                     <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
                         <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBox
                                 Header="Search"
@@ -145,6 +145,10 @@
                                 IsEnabled="{Binding IsImportEnabled}"
                                 Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
                         </Grid>
+
+                        <CheckBox
+                            Content="Favorites only"
+                            IsChecked="{Binding IsFavoritesOnly, Mode=TwoWay}" />
 
                         <controls:ToastNotification
                             IsCompact="True"

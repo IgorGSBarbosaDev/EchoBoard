@@ -37,11 +37,11 @@ EchoBoard blocks known input/output pairs from the same endpoint family when tha
 - **Active**: the renderer accepted the stream and is transmitting.
 - **Unconfigured**: no virtual endpoint was selected; local playback remains available.
 - **Unavailable**: the saved endpoint is disconnected and reconnection is pending.
-- **Failed**: initialization, format negotiation, or feedback protection prevented the route from starting. The technical error is available in Audio Diagnostics and the log.
+- **Failed**: initialization, format negotiation, or feedback protection prevented the route from starting. The technical error is available under **Settings → Audio diagnostics** and in the log.
 
 ## Manual validation
 
-- Play an imported sound from Dashboard, Library, Favorites, and Recent.
+- Play an imported sound from the Library, including with the favorites filter active.
 - Confirm the local monitor contains effects and does not loop the microphone.
 - Confirm the virtual cable receives microphone + effects.
 - Disconnect and reconnect each endpoint independently.

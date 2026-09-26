@@ -51,13 +51,9 @@ public static class AppHost
                 services.AddSingleton<PlaybackCoordinator>();
                 services.AddSingleton<AudioRoutingSettingsCoordinator>();
                 services.AddSingleton<SoundLibraryInteractionCoordinator>();
-                services.AddTransient<DashboardViewModel>();
                 services.AddScoped<SoundDetailsViewModel>();
                 services.AddTransient<LibraryViewModel>();
-                services.AddTransient<FavoritesViewModel>();
-                services.AddTransient<RecentViewModel>();
                 services.AddTransient<SettingsViewModel>();
-                services.AddTransient<AudioDiagnosticsViewModel>();
                 services.AddTransient<PlaybackBarViewModel>();
                 services.AddTransient<MainShellViewModel>();
                 services.AddTransient<MainShellPage>();

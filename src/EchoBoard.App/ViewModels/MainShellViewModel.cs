@@ -31,12 +31,8 @@ public sealed partial class MainShellViewModel : ObservableObject
 
     public MainShellViewModel(
         INavigationService navigationService,
-        DashboardViewModel dashboardViewModel,
         LibraryViewModel libraryViewModel,
-        FavoritesViewModel favoritesViewModel,
-        RecentViewModel recentViewModel,
         SettingsViewModel settingsViewModel,
-        AudioDiagnosticsViewModel audioDiagnosticsViewModel,
         PlaybackBarViewModel playbackBarViewModel,
         SoundDetailsViewModel soundDetailsViewModel,
         GetMicrophoneCaptureSnapshotUseCase getMicrophoneSnapshot,
@@ -59,22 +55,14 @@ public sealed partial class MainShellViewModel : ObservableObject
         Notifications = notifications ?? new TransientNotificationService();
         pages = new Dictionary<ShellRoute, ObservableObject>
         {
-            [ShellRoute.Dashboard] = dashboardViewModel,
             [ShellRoute.Library] = libraryViewModel,
-            [ShellRoute.Favorites] = favoritesViewModel,
-            [ShellRoute.Recent] = recentViewModel,
-            [ShellRoute.Settings] = settingsViewModel,
-            [ShellRoute.AudioDiagnostics] = audioDiagnosticsViewModel
+            [ShellRoute.Settings] = settingsViewModel
         };
 
         NavigationItems =
         [
-            new(ShellRoute.Dashboard, "Dashboard", Symbol.Home, "Open dashboard"),
             new(ShellRoute.Library, "Library", Symbol.Library, "Open sound library"),
-            new(ShellRoute.Favorites, "Favorites", Symbol.Favorite, "Open favorite sounds"),
-            new(ShellRoute.Recent, "Recent", Symbol.Clock, "Open recent sounds"),
-            new(ShellRoute.Settings, "Settings", Symbol.Setting, "Open settings"),
-            new(ShellRoute.AudioDiagnostics, "Audio Diagnostics", Symbol.Repair, "Open audio diagnostics")
+            new(ShellRoute.Settings, "Settings", Symbol.Setting, "Open settings")
         ];
 
         selectedNavigationItem = NavigationItems.First(item => item.Route == navigationService.CurrentRoute);

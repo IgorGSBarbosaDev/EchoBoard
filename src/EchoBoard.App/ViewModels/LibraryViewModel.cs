@@ -38,6 +38,7 @@ public sealed partial class LibraryViewModel : ObservableObject
     private string hotkeyPrimaryKey = string.Empty;
     private Guid? selectedCategoryId;
     private bool includeUncategorizedOnly;
+    private bool isFavoritesOnly;
     private bool hotkeyCtrl = true;
     private bool hotkeyAlt;
     private bool hotkeyShift;
@@ -152,7 +153,7 @@ public sealed partial class LibraryViewModel : ObservableObject
             }
 
             return HasActiveFilters
-                ? "Try clearing search or category filters."
+                ? "Try clearing the search, category, or favorites filter."
                 : "Import MP3 or WAV files to add them to EchoBoard without copying or changing the originals.";
         }
     }
@@ -222,6 +223,28 @@ public sealed partial class LibraryViewModel : ObservableObject
         }
     }
 
+    public bool IsFavoritesOnly
+    {
+        get => isFavoritesOnly;
+        set
+        {
+            if (SetProperty(ref isFavoritesOnly, value))
+            {
+                _ = RefreshAsync(CancellationToken.None);
+            }
+        }
+    }
+
+    public async Task UpdateFavoritesOnlyAsync(bool value, CancellationToken cancellationToken)
+    {
+        if (!SetProperty(ref isFavoritesOnly, value, nameof(IsFavoritesOnly)))
+        {
+            return;
+        }
+
+        await RefreshAsync(cancellationToken);
+    }
+
     public Guid? SelectedSoundId { get; private set; }
 
     public string ImportButtonText => IsBusy ? "Working..." : "Import";
@@ -284,7 +307,8 @@ public sealed partial class LibraryViewModel : ObservableObject
     public bool HasActiveFilters =>
         !string.IsNullOrWhiteSpace(SearchText) ||
         selectedCategoryId is not null ||
-        includeUncategorizedOnly;
+        includeUncategorizedOnly ||
+        IsFavoritesOnly;
 
     public Visibility EmptyStateVisibility => IsBusy || loadError is not null || Sounds.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -545,7 +569,7 @@ public sealed partial class LibraryViewModel : ObservableObject
             loadError = null;
             await RefreshHotkeysAsync(cancellationToken);
             var result = await queryLibrary.ExecuteAsync(
-                new SoundLibraryFilter(SearchText, selectedCategoryId, includeUncategorizedOnly, FavoritesOnly: false),
+                new SoundLibraryFilter(SearchText, selectedCategoryId, includeUncategorizedOnly, FavoritesOnly: IsFavoritesOnly),
                 cancellationToken);
             ReplaceSounds(result.Sounds);
             UpdateCategoryFilters(result.Categories, result.TotalSoundCount, result.UncategorizedSoundCount);
@@ -567,7 +591,13 @@ public sealed partial class LibraryViewModel : ObservableObject
         searchText = string.Empty;
         selectedCategoryId = null;
         includeUncategorizedOnly = false;
+        if (isFavoritesOnly)
+        {
+            isFavoritesOnly = false;
+            OnPropertyChanged(nameof(IsFavoritesOnly));
+        }
         OnPropertyChanged(nameof(SearchText));
+        OnPropertyChanged(nameof(HasActiveFilters));
         await RefreshAsync(cancellationToken);
     }
 

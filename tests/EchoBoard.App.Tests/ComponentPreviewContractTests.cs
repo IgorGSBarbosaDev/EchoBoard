@@ -321,7 +321,7 @@ public sealed class ComponentPreviewContractTests
     }
 
     [Fact]
-    public async Task FavoritesViewModelLoadsOnlyFavoriteSounds()
+    public async Task LibraryViewModelFiltersFavoritesAndClearingFiltersRestoresAllSounds()
     {
         var sounds = new FakeSoundLibraryRepository();
         var favorite = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, null, 0, Now);
@@ -329,16 +329,27 @@ public sealed class ComponentPreviewContractTests
         var regular = Sound.Create("Alert", "C:\\Audio\\alert.wav", ".wav", TimeSpan.FromSeconds(2), 456, null, 1, Now);
         await sounds.AddSoundAsync(favorite, CancellationToken.None);
         await sounds.AddSoundAsync(regular, CancellationToken.None);
-        var categories = new FakeCategoryRepository();
-        var files = new FakeSoundFileAvailabilityReader(DefaultExists: true);
-        var viewModel = new FavoritesViewModel(
-            new QuerySoundLibraryUseCase(sounds, categories, files),
-            new SetSoundFavoriteUseCase(sounds));
+        var viewModel = CreateLibraryViewModel(
+            sounds,
+            files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
 
         await viewModel.LoadAsync(CancellationToken.None);
+        viewModel.Sounds.Should().HaveCount(2);
+
+        await viewModel.UpdateFavoritesOnlyAsync(true, CancellationToken.None);
 
         viewModel.Sounds.Should().ContainSingle(item => item.Id == favorite.Id);
-        viewModel.EmptyStateVisibility.Should().Be(Microsoft.UI.Xaml.Visibility.Collapsed);
+        viewModel.IsFavoritesOnly.Should().BeTrue();
+
+        await viewModel.UpdateSearchTextAsync("Alert", CancellationToken.None);
+        viewModel.Sounds.Should().BeEmpty();
+        viewModel.EmptyStateTitle.Should().Be("No results");
+
+        await viewModel.ClearFiltersCommand.ExecuteAsync(null);
+
+        viewModel.IsFavoritesOnly.Should().BeFalse();
+        viewModel.SearchText.Should().BeEmpty();
+        viewModel.Sounds.Should().HaveCount(2);
     }
 
     [Fact]
@@ -409,64 +420,6 @@ public sealed class ComponentPreviewContractTests
     }
 
     [Fact]
-    public async Task DashboardUsesRealEmptyStateInsteadOfPreviewData()
-    {
-        var viewModel = CreateDashboardViewModel();
-
-        await viewModel.LoadAsync(TestContext.Current.CancellationToken);
-
-        viewModel.LibraryValue.Should().Be("0 sons");
-        viewModel.QuickSounds.Should().BeEmpty();
-        viewModel.QuickEmptyVisibility.Should().Be(Microsoft.UI.Xaml.Visibility.Visible);
-        viewModel.SetupSteps.Should().HaveCount(4);
-    }
-
-    [Fact]
-    public async Task DashboardRanksFavoritesBeforeUsageAndLimitsQuickAccessToFourSounds()
-    {
-        var sounds = new FakeSoundLibraryRepository();
-        var history = new FakeRecentlyPlayedRepository();
-        var ranked = new[]
-        {
-            CreateDashboardSound("Popular", favorite: false),
-            CreateDashboardSound("Favorite", favorite: true),
-            CreateDashboardSound("Top favorite", favorite: true),
-            CreateDashboardSound("Second popular", favorite: false),
-            CreateDashboardSound("Excluded", favorite: false)
-        };
-        foreach (var sound in ranked)
-        {
-            await sounds.AddSoundAsync(sound, CancellationToken.None);
-        }
-
-        history.AddPlays(ranked[0].Id, 20);
-        history.AddPlays(ranked[1].Id, 1);
-        history.AddPlays(ranked[2].Id, 5);
-        history.AddPlays(ranked[3].Id, 10);
-        history.AddPlays(ranked[4].Id, 3);
-        var viewModel = CreateDashboardViewModel(sounds, history: history, filesExist: true);
-
-        await viewModel.LoadAsync(TestContext.Current.CancellationToken);
-
-        viewModel.QuickSounds.Select(sound => sound.Title).Should().Equal("Top favorite", "Favorite", "Popular", "Second popular");
-        viewModel.QuickSounds.Select(sound => sound.UsageText).Should().Equal("5 usos", "1 uso", "20 usos", "10 usos");
-    }
-
-    [Fact]
-    public async Task DashboardKeepsNeutralWaveformStateWhenBackfillCannotDecodeFile()
-    {
-        var sounds = new FakeSoundLibraryRepository();
-        var sound = Sound.Create("Unreadable", "C:\\Audio\\unreadable.wav", ".wav", TimeSpan.FromSeconds(1), 1, null, 0, Now);
-        await sounds.AddSoundAsync(sound, CancellationToken.None);
-        var viewModel = CreateDashboardViewModel(sounds, filesExist: true);
-
-        var act = () => viewModel.LoadAsync(TestContext.Current.CancellationToken);
-
-        await act.Should().NotThrowAsync();
-        viewModel.QuickSounds.Should().ContainSingle().Which.WaveformBars.Should().BeEmpty();
-    }
-
-    [Fact]
     public void MeterPreviewModelClampsNormalizedLevel()
     {
         new AudioMeterPreviewModel("Quiet", 0.25, AudioLevelMeterVariant.Microphone).Level.Should().Be(0.25);
@@ -528,50 +481,6 @@ public sealed class ComponentPreviewContractTests
     private static AudioDiagnosticsViewModel CreateAudioDiagnosticsViewModel()
     {
         return new AudioDiagnosticsViewModel(new GetMicrophoneCaptureSnapshotUseCase(new FakeMicrophoneCaptureController()));
-    }
-
-    private static Sound CreateDashboardSound(string name, bool favorite)
-    {
-        var sound = Sound.Create(name, $"C:\\Audio\\{Guid.NewGuid():N}.wav", ".wav", TimeSpan.FromSeconds(1), 1, null, 0, Now, Enumerable.Repeat((byte)64, 32).ToArray());
-        sound.SetFavorite(favorite, Now.AddSeconds(1));
-        return sound;
-    }
-
-    private static DashboardViewModel CreateDashboardViewModel(
-        FakeSoundLibraryRepository? sounds = null,
-        FakeAudioFileMetadataReader? metadata = null,
-        FakeRecentlyPlayedRepository? history = null,
-        bool filesExist = false)
-    {
-        sounds ??= new FakeSoundLibraryRepository();
-        var categories = new FakeCategoryRepository();
-        var files = new FakeSoundFileAvailabilityReader(filesExist);
-        metadata ??= new FakeAudioFileMetadataReader();
-        var hotkeys = new FakeHotkeyBindingRepository();
-        var runtime = new FakeHotkeyRuntime();
-        history ??= new FakeRecentlyPlayedRepository();
-        var playback = new FakeSoundPlaybackEngine();
-        var query = new QuerySoundLibraryUseCase(sounds, categories, files, history);
-        var play = new PlaySoundUseCase(sounds, files, history, playback);
-        var details = new SoundDetailsViewModel(
-            query,
-            new UpdateSoundUseCase(sounds, categories),
-            new DeleteSoundUseCase(sounds),
-            new ListHotkeyBindingsUseCase(hotkeys, runtime),
-            new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
-            new RemoveHotkeyBindingUseCase(hotkeys, runtime),
-            play);
-
-        return new DashboardViewModel(
-            query,
-            new ImportSoundsUseCase(sounds, metadata),
-            new SetSoundFavoriteUseCase(sounds),
-            new GenerateSoundWaveformUseCase(sounds, metadata),
-            new ListHotkeyBindingsUseCase(hotkeys, runtime),
-            new GetMicrophoneCaptureSnapshotUseCase(new FakeMicrophoneCaptureController()),
-            play,
-            details,
-            new NavigationService());
     }
 
     private sealed class FakeSoundLibraryRepository : ISoundLibraryRepository

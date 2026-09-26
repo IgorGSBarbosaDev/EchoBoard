@@ -79,6 +79,7 @@ public sealed class SettingsViewModel : ObservableObject
         this.saveAudioRoutingSettings = saveAudioRoutingSettings;
         this.getAudioRoutingSnapshot = getAudioRoutingSnapshot;
         this.audioSettings = audioSettings;
+        AudioDiagnostics = new AudioDiagnosticsViewModel(getMicrophoneCaptureSnapshot, getAudioRoutingSnapshot);
 
         MicrophoneDevices = [];
         MonitorDevices = [];
@@ -96,6 +97,8 @@ public sealed class SettingsViewModel : ObservableObject
     public string Title => "Settings";
 
     public string Subtitle => "Application preferences and daily-use behavior.";
+
+    public AudioDiagnosticsViewModel AudioDiagnostics { get; }
 
     public ObservableCollection<MicrophoneDeviceOptionViewModel> MicrophoneDevices { get; }
 
@@ -424,6 +427,7 @@ public sealed class SettingsViewModel : ObservableObject
         }
         ApplyMicrophoneSnapshot(getMicrophoneCaptureSnapshot.Execute());
         ApplyRoutingSnapshot();
+        AudioDiagnostics.Refresh();
     }
 
     public async Task RefreshMicrophoneDevicesAsync(CancellationToken cancellationToken)
@@ -485,6 +489,11 @@ public sealed class SettingsViewModel : ObservableObject
     {
         ApplyMicrophoneSnapshot(getMicrophoneCaptureSnapshot.Execute(), elapsed ?? DefaultMeterInterval);
         ApplyRoutingSnapshot();
+    }
+
+    public void RefreshAudioDiagnostics()
+    {
+        AudioDiagnostics.Refresh();
     }
 
     public async Task DeactivateAsync(CancellationToken cancellationToken)
