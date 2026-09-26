@@ -76,52 +76,15 @@ public sealed partial class LibraryPage : Page
         await ViewModel.ImportFilePathsAsync(paths, CancellationToken.None);
     }
 
-    private async void OnCreateCategoryClicked(object sender, RoutedEventArgs e)
+    private async void OnManageCategoriesClicked(object sender, RoutedEventArgs e)
     {
         if (ViewModel is null)
         {
             return;
         }
 
-        await ShowCategoryEditorAsync(categoryId: null);
-    }
-
-    private async void OnEditSelectedCategoryClicked(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel?.SelectedCategoryId is not Guid categoryId)
-        {
-            return;
-        }
-
-        await ShowCategoryEditorAsync(categoryId);
-    }
-
-    private async void OnDeleteSelectedCategoryClicked(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel?.SelectedCategoryId is null)
-        {
-            return;
-        }
-
-        ViewModel.PrepareCategoryDeletion();
-        var dialog = new CategoryDeletionDialog
-        {
-            XamlRoot = XamlRoot,
-            DataContext = ViewModel
-        };
-
-        await dialog.ShowAsync();
-    }
-
-    private async Task ShowCategoryEditorAsync(Guid? categoryId)
-    {
-        if (ViewModel is null)
-        {
-            return;
-        }
-
-        ViewModel.PrepareCategoryEditor(categoryId);
-        var dialog = new CategoryEditorDialog
+        ViewModel.PrepareCategoryManagement();
+        var dialog = new CategoryManagementDialog
         {
             XamlRoot = XamlRoot,
             DataContext = ViewModel

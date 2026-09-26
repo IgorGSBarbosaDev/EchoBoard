@@ -56,6 +56,8 @@ public sealed class ComponentPreviewContractTests
         await viewModel.LoadAsync(CancellationToken.None);
 
         viewModel.Categories.Should().Contain(item => item.Name == "All sounds" && item.CountText == "1" && item.IsSelected);
+        viewModel.Categories.Select(item => item.Name).Should().ContainInOrder("All sounds", "Favorites", "Memes");
+        viewModel.Categories.Should().NotContain(item => item.Name == "Uncategorized");
         viewModel.Categories.Should().Contain(item => item.Name == "Memes" && item.CountText == "1");
         viewModel.Sounds.Should().ContainSingle(sound =>
             sound.Title == "Intro" &&
@@ -119,6 +121,29 @@ public sealed class ComponentPreviewContractTests
     }
 
     [Fact]
+    public async Task CategoryManagerLoadsCategoriesAndOpensTheChosenEditor()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var category = Category.Create("Memes", 0, Now);
+        await categories.AddCategoryAsync(category, CancellationToken.None);
+        await sounds.AddSoundAsync(
+            Sound.Create("Intro", "C:\\Audio\\intro.wav", ".wav", TimeSpan.FromSeconds(1), 1, category.Id, 0, Now),
+            CancellationToken.None);
+        var viewModel = CreateLibraryViewModel(sounds, categories: categories, files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
+        await viewModel.LoadAsync(CancellationToken.None);
+
+        viewModel.PrepareCategoryManagement();
+        await viewModel.LoadCategoryManagementAsync(CancellationToken.None);
+        await viewModel.EditManagedCategoryCommand.ExecuteAsync(category.Id);
+
+        viewModel.ManagedCategories.Should().ContainSingle(item => item.Id == category.Id && item.Name == "Memes");
+        viewModel.IsCategoryEditorActive.Should().BeTrue();
+        viewModel.CategoryEditorName.Should().Be("Memes");
+        viewModel.CategoryEditorSounds.Should().ContainSingle(item => item.Name == "Intro" && item.IsSelected);
+    }
+
+    [Fact]
     public async Task CategoryEditorUnchecksExistingSoundsAndRenamesCategory()
     {
         var sounds = new FakeSoundLibraryRepository();
@@ -161,15 +186,18 @@ public sealed class ComponentPreviewContractTests
         await sounds.AddSoundAsync(sound, CancellationToken.None);
         var viewModel = CreateLibraryViewModel(sounds, categories: categories, files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
         await viewModel.LoadAsync(CancellationToken.None);
-        await viewModel.SelectCategoryCommand.ExecuteAsync(viewModel.Categories.Single(category => category.Id == sourceCategory.Id));
-        viewModel.PrepareCategoryDeletion();
+        await viewModel.SelectCategoryCommand.ExecuteAsync(viewModel.Categories.Single(category => category.Id == destinationCategory.Id));
+        viewModel.PrepareCategoryManagement();
+        await viewModel.LoadCategoryManagementAsync(CancellationToken.None);
+        viewModel.PrepareCategoryDeletion(sourceCategory.Id);
 
-        var deleted = await viewModel.DeleteSelectedCategoryAsync(destinationCategory.Id, CancellationToken.None);
+        var deleted = await viewModel.DeleteManagedCategoryAsync(destinationCategory.Id, CancellationToken.None);
 
         deleted.Should().BeTrue();
         sound.CategoryId.Should().Be(destinationCategory.Id);
         viewModel.Categories.Should().NotContain(category => category.Id == sourceCategory.Id);
         viewModel.Categories.Should().Contain(category => category.Id == destinationCategory.Id && category.CountText == "1");
+        viewModel.Categories.Should().Contain(category => category.Id == destinationCategory.Id && category.IsSelected);
     }
 
     [Fact]
@@ -443,10 +471,13 @@ public sealed class ComponentPreviewContractTests
         await viewModel.LoadAsync(CancellationToken.None);
         viewModel.Sounds.Should().HaveCount(2);
 
-        await viewModel.UpdateFavoritesOnlyAsync(true, CancellationToken.None);
+        await viewModel.SelectCategoryCommand.ExecuteAsync(
+            viewModel.Categories.Single(category => category.FilterKind == SoundLibraryCategoryFilterKinds.Favorites));
 
         viewModel.Sounds.Should().ContainSingle(item => item.Id == favorite.Id);
         viewModel.IsFavoritesOnly.Should().BeTrue();
+        viewModel.Categories.Should().Contain(item => item.Name == "Favorites" && item.IsSelected);
+        viewModel.Categories.Should().NotContain(item => item.Name == "All sounds" && item.IsSelected);
 
         await viewModel.UpdateSearchTextAsync("Alert", CancellationToken.None);
         viewModel.Sounds.Should().BeEmpty();

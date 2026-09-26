@@ -129,10 +129,10 @@ Os itens abaixo não podem atrasar a primeira versão utilizável:
 | LIB-02 | Arrastar e soltar | Permitir arrastar arquivos compatíveis para a janela do aplicativo. | MVP |
 | LIB-03 | Validar importação | Recusar extensões não suportadas, arquivos ilegíveis e duplicidades por caminho. | MVP |
 | LIB-04 | Metadados do som | Salvar nome, caminho, formato, duração, tamanho, data de criação e data de alteração. | MVP |
-| LIB-05 | Categorias | Permitir criar e renomear categorias em um editor modal, reordenar e excluir categorias. Ao excluir categoria, solicitar destino para os sons vinculados. | MVP |
-| LIB-06 | Organização | Permitir selecionar sons de uma lista rolável da biblioteca, reproduzir uma prévia e movê-los entre categorias. Cada som pertence a no máximo uma categoria. | MVP |
+| LIB-05 | Categorias | Abrir um painel central para criar, selecionar, renomear e excluir categorias. Ao excluir categoria, solicitar destino para os sons vinculados. | MVP |
+| LIB-06 | Organização | Exibir os sons em uma lista rolável, com nome, seleção e prévia reproduzível, para adicionar ou remover sons de uma categoria. Cada som pertence a no máximo uma categoria. | MVP |
 | LIB-07 | Busca | Filtrar sons por nome enquanto o usuário digita. | MVP |
-| LIB-08 | Favoritos | Marcar/desmarcar sons como favoritos e filtrar favoritos na Biblioteca. | MVP |
+| LIB-08 | Favoritos | Marcar/desmarcar sons como favoritos e abrir o filtro Favorites na navegação lateral da Biblioteca. | MVP |
 | LIB-10 | Renomear | Alterar apenas o nome exibido no EchoBoard, sem renomear o arquivo original. | MVP |
 | LIB-11 | Remover da biblioteca | Remover referência do EchoBoard sem apagar o arquivo do disco. | MVP |
 | LIB-12 | Informações visuais | Exibir categoria, nome, formato, duração, usos, waveform real, hotkey, favorito e estado de reprodução no card. | MVP |
@@ -290,7 +290,7 @@ Princípios:
 
 ### 9.3 Layout principal
 
-Ao iniciar, a Biblioteca ocupa a área de conteúdo e lista todos os áudios cadastrados. A busca, o filtro de favoritos e as categorias refinam essa mesma lista; importar e organizar sons continua disponível na tela. Settings reúne a seleção de dispositivos, o roteamento e os diagnósticos de áudio em uma única tela. Favoritos não têm página própria, e reproduções recentes permanecem no histórico interno, sem tela dedicada.
+Ao iniciar, a Biblioteca ocupa a área de conteúdo e lista todos os áudios cadastrados. A busca, as categorias e Favorites refinam essa mesma lista; áudios sem categoria continuam em All sounds e não aparecem como uma categoria lateral separada. Um botão de lápis na seção de categorias abre um painel central para criar, editar, excluir e organizar sons. Settings reúne a seleção de dispositivos, o roteamento e os diagnósticos de áudio em uma única tela. Favoritos não têm página própria, e reproduções recentes permanecem no histórico interno, sem tela dedicada.
 
 Os detalhes do som são exibidos em uma drawer compartilhada sobre o conteúdo. Fechada, ela permanece `Collapsed` e não reserva largura. O corpo do card reproduz o áudio; favorito e menu de detalhes/edição são ações independentes.
 
@@ -299,9 +299,10 @@ Os detalhes do som são exibidos em uma drawer compartilhada sobre o conteúdo. 
 │ EchoBoard | Busca | Mic ativo | Saída virtual | Tema | Settings   │
 ├───────────────┬───────────────────────────────────────┬───────────┤
 │ Biblioteca    │ Busca | Favoritos | Importar          │ Detalhes  │
-│ Todas         │ [Som 1] [Som 2] [Som 3]               │ / Fila    │
-│ Memes         │ [Som 4] [Som 5] [Som 6]               │           │
-│ Jogos         │ [Som 7] [Som 8] [Som 9]               │           │
+│ All sounds    │ [Som 1] [Som 2] [Som 3]               │ / Fila    │
+│ Favorites     │ [Som 4] [Som 5] [Som 6]               │           │
+│ Memes         │ [Som 7] [Som 8] [Som 9]               │           │
+│ Jogos         │ [Som 10] [Som 11] [Som 12]             │           │
 │               │                                       │           │
 ├───────────────┴───────────────────────────────────────┴───────────┤
 │ Player | Progresso | Mic | Efeitos | Monitor | Saída virtual | Stop │
