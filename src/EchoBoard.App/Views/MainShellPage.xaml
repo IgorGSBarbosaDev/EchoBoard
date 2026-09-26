@@ -200,14 +200,6 @@
                     </StackPanel>
                 </Button>
                 <Button
-                    AutomationProperties.Name="Mostrar detalhes do som"
-                    Command="{Binding ToggleSoundDetailsCommand}"
-                    IsEnabled="{Binding SoundDetails.HasSelection}"
-                    Style="{StaticResource EchoBoardIconButtonStyle}"
-                    ToolTipService.ToolTip="Mostrar ou ocultar detalhes do som">
-                    <FontIcon Glyph="&#xE8A7;" />
-                </Button>
-                <Button
                     AutomationProperties.Name="Open settings"
                     Command="{Binding OpenSettingsCommand}"
                     Style="{StaticResource EchoBoardIconButtonStyle}"

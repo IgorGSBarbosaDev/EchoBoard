@@ -91,18 +91,6 @@ public sealed class ComponentPreviewContractTests
     }
 
     [Fact]
-    public void SettingsViewModelExposesRequiredGlobalHotkeyRows()
-    {
-        var hotkeys = new FakeHotkeyBindingRepository();
-        var viewModel = CreateSettingsViewModel(hotkeys);
-
-        viewModel.GlobalHotkeys.Select(item => item.Command).Should().Equal(
-            GlobalHotkeyCommand.StopAllSounds,
-            GlobalHotkeyCommand.PauseResumePlayback,
-            GlobalHotkeyCommand.ShowHideMainWindow);
-    }
-
-    [Fact]
     public async Task LibraryViewModelSeparatesEmptyLibraryFromFilteredNoResults()
     {
         var sounds = new FakeSoundLibraryRepository();
@@ -527,10 +515,6 @@ public sealed class ComponentPreviewContractTests
         var controller = new FakeMicrophoneCaptureController();
 
         return new SettingsViewModel(
-            new ListHotkeyBindingsUseCase(hotkeys, runtime),
-            new AssignGlobalHotkeyUseCase(hotkeys, runtime),
-            new RemoveHotkeyBindingUseCase(hotkeys, runtime),
-            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime),
             new ListMicrophoneDevicesUseCase(controller),
             new LoadMicrophoneSettingsUseCase(settings, controller),
             new SelectMicrophoneDeviceUseCase(settings, controller),
@@ -763,11 +747,6 @@ public sealed class ComponentPreviewContractTests
         public Task<HotkeyBinding?> GetForSoundAsync(Guid soundId, CancellationToken cancellationToken)
         {
             return Task.FromResult(bindings.SingleOrDefault(binding => binding.SoundId == soundId));
-        }
-
-        public Task<HotkeyBinding?> GetForGlobalCommandAsync(GlobalHotkeyCommand command, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(bindings.SingleOrDefault(binding => binding.GlobalCommand == command));
         }
 
         public Task<bool> CombinationExistsAsync(string normalizedKeyCombination, Guid? excludingBindingId, CancellationToken cancellationToken)

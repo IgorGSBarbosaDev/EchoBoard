@@ -20,8 +20,11 @@ public sealed class HotkeyPersistenceTests
     {
         await using var database = await TestDatabase.CreateAsync();
         var repository = new EfHotkeyBindingRepository(database.Context);
-        var binding = HotkeyBinding.CreateForGlobalCommand(
-            GlobalHotkeyCommand.ShowHideMainWindow,
+        var sounds = new EfSoundLibraryRepository(database.Context);
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var binding = HotkeyBinding.CreateForSound(
+            sound.Id,
             HotkeyCombination.Create(HotkeyModifiers.Control | HotkeyModifiers.Alt, "F10"),
             isEnabled: true,
             Now);
@@ -29,7 +32,7 @@ public sealed class HotkeyPersistenceTests
         await repository.AddAsync(binding, CancellationToken.None);
         database.Context.ChangeTracker.Clear();
 
-        var stored = await repository.GetForGlobalCommandAsync(GlobalHotkeyCommand.ShowHideMainWindow, CancellationToken.None);
+        var stored = await repository.GetForSoundAsync(binding.SoundId!.Value, CancellationToken.None);
 
         stored.Should().NotBeNull();
         stored!.NormalizedKeyCombination.Should().Be("Ctrl+Alt+F10");
@@ -42,16 +45,21 @@ public sealed class HotkeyPersistenceTests
     {
         await using var database = await TestDatabase.CreateAsync();
         var repository = new EfHotkeyBindingRepository(database.Context);
+        var sounds = new EfSoundLibraryRepository(database.Context);
+        var firstSound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, null, 0, Now);
+        var secondSound = Sound.Create("Alert", "C:\\Audio\\alert.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, null, 1, Now);
+        await sounds.AddSoundAsync(firstSound, CancellationToken.None);
+        await sounds.AddSoundAsync(secondSound, CancellationToken.None);
         await repository.AddAsync(
-            HotkeyBinding.CreateForGlobalCommand(
-                GlobalHotkeyCommand.StopAllSounds,
+            HotkeyBinding.CreateForSound(
+                firstSound.Id,
                 HotkeyCombination.Create(HotkeyModifiers.Control, "F8"),
                 isEnabled: true,
                 Now),
             CancellationToken.None);
 
-        var duplicate = HotkeyBinding.CreateForGlobalCommand(
-            GlobalHotkeyCommand.PauseResumePlayback,
+        var duplicate = HotkeyBinding.CreateForSound(
+            secondSound.Id,
             HotkeyCombination.Create(HotkeyModifiers.Control, "F8"),
             isEnabled: true,
             Now);

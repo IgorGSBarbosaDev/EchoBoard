@@ -28,7 +28,6 @@ public static class DependencyInjection
         services.AddTransient<DeleteCategoryUseCase>();
         services.AddTransient<ListHotkeyBindingsUseCase>();
         services.AddTransient<AssignSoundHotkeyUseCase>();
-        services.AddTransient<AssignGlobalHotkeyUseCase>();
         services.AddTransient<SetHotkeyBindingEnabledUseCase>();
         services.AddTransient<RemoveHotkeyBindingUseCase>();
         services.AddTransient<RestoreHotkeyBindingsUseCase>();

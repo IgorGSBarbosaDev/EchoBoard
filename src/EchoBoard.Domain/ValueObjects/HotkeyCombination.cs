@@ -43,7 +43,7 @@ public sealed record HotkeyCombination
         var lookupKey = NormalizeLookupKey(primaryKey);
         if (!SupportedPrimaryKeys.TryGetValue(lookupKey, out var normalizedPrimaryKey))
         {
-            throw new DomainValidationException($"Primary key '{primaryKey.Trim()}' is not supported for global hotkeys.");
+            throw new DomainValidationException($"Primary key '{primaryKey.Trim()}' is not supported for audio hotkeys.");
         }
 
         var normalizedText = BuildNormalizedText(modifiers, normalizedPrimaryKey);

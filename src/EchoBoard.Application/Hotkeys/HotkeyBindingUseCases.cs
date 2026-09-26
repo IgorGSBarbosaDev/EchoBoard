@@ -33,7 +33,6 @@ public sealed class ListHotkeyBindingsUseCase
             binding.Id,
             binding.TargetKind,
             binding.SoundId,
-            binding.GlobalCommand,
             binding.NormalizedKeyCombination,
             binding.Modifiers,
             binding.PrimaryKey,
@@ -95,46 +94,6 @@ public sealed class AssignSoundHotkeyUseCase
         {
             throw new DuplicateHotkeyBindingException(normalizedKeyCombination);
         }
-    }
-}
-
-public sealed class AssignGlobalHotkeyUseCase
-{
-    private readonly IHotkeyBindingRepository hotkeys;
-    private readonly IHotkeyRuntimeService runtime;
-
-    public AssignGlobalHotkeyUseCase(IHotkeyBindingRepository hotkeys, IHotkeyRuntimeService runtime)
-    {
-        this.hotkeys = hotkeys;
-        this.runtime = runtime;
-    }
-
-    public async Task<HotkeyBindingDto> ExecuteAsync(AssignGlobalHotkeyRequest request, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var combination = HotkeyCombination.Create(request.Modifiers, request.PrimaryKey);
-        var existing = await hotkeys.GetForGlobalCommandAsync(request.Command, cancellationToken);
-        if (await hotkeys.CombinationExistsAsync(combination.NormalizedText, existing?.Id, cancellationToken))
-        {
-            throw new DuplicateHotkeyBindingException(combination.NormalizedText);
-        }
-
-        var binding = existing ?? HotkeyBinding.CreateForGlobalCommand(request.Command, combination, request.IsEnabled, request.UpdatedAt);
-        if (existing is not null)
-        {
-            await runtime.UnregisterBindingAsync(existing.Id, cancellationToken);
-            binding.ChangeCombination(combination, request.UpdatedAt);
-            binding.SetEnabled(request.IsEnabled, request.UpdatedAt);
-            await hotkeys.UpdateAsync(binding, cancellationToken);
-        }
-        else
-        {
-            await hotkeys.AddAsync(binding, cancellationToken);
-        }
-
-        var registration = await runtime.RegisterBindingAsync(binding, cancellationToken);
-        return ListHotkeyBindingsUseCase.Map(binding, registration.State, registration.Message);
     }
 }
 

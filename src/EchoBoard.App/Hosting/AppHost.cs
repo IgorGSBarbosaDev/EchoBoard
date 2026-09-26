@@ -45,8 +45,6 @@ public static class AppHost
                 services.AddInfrastructure(settings);
                 services.AddSingleton<SoundPlaybackCommandPorts>();
                 services.AddSingleton<ISoundPlaybackCommandPort>(services => services.GetRequiredService<SoundPlaybackCommandPorts>());
-                services.AddSingleton<IPlaybackControlCommandPort>(services => services.GetRequiredService<SoundPlaybackCommandPorts>());
-                services.AddSingleton<IShellWindowCommandPort, ShellWindowCommandPort>();
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IAppearanceResourceManager, AppearanceResourceManager>();
                 services.AddSingleton<TransientNotificationService>();

@@ -10,18 +10,10 @@ public sealed record AssignSoundHotkeyRequest(
     bool IsEnabled,
     DateTimeOffset UpdatedAt);
 
-public sealed record AssignGlobalHotkeyRequest(
-    GlobalHotkeyCommand Command,
-    HotkeyModifiers Modifiers,
-    string PrimaryKey,
-    bool IsEnabled,
-    DateTimeOffset UpdatedAt);
-
 public sealed record HotkeyBindingDto(
     Guid Id,
     HotkeyBindingTargetKind TargetKind,
     Guid? SoundId,
-    GlobalHotkeyCommand? GlobalCommand,
     string NormalizedKeyCombination,
     HotkeyModifiers Modifiers,
     string PrimaryKey,
@@ -67,8 +59,6 @@ public interface IHotkeyBindingRepository
 
     Task<HotkeyBinding?> GetForSoundAsync(Guid soundId, CancellationToken cancellationToken);
 
-    Task<HotkeyBinding?> GetForGlobalCommandAsync(GlobalHotkeyCommand command, CancellationToken cancellationToken);
-
     Task<bool> CombinationExistsAsync(string normalizedKeyCombination, Guid? excludingBindingId, CancellationToken cancellationToken);
 
     Task AddAsync(HotkeyBinding binding, CancellationToken cancellationToken);
@@ -101,18 +91,6 @@ public interface IGlobalHotkeyRegistrar
 public interface ISoundPlaybackCommandPort
 {
     Task<HotkeyCommandResult> PlaySoundAsync(Guid soundId, CancellationToken cancellationToken);
-}
-
-public interface IPlaybackControlCommandPort
-{
-    Task<HotkeyCommandResult> StopAllSoundsAsync(CancellationToken cancellationToken);
-
-    Task<HotkeyCommandResult> PauseResumePlaybackAsync(CancellationToken cancellationToken);
-}
-
-public interface IShellWindowCommandPort
-{
-    Task<HotkeyCommandResult> ShowOrHideMainWindowAsync(CancellationToken cancellationToken);
 }
 
 public sealed class DuplicateHotkeyBindingException : InvalidOperationException

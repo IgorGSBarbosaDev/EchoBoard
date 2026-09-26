@@ -57,7 +57,7 @@
 
                 <StackPanel Spacing="9">
                     <TextBlock Text="ATALHO" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" FontSize="10" FontWeight="SemiBold" CharacterSpacing="80" />
-                    <Grid><TextBlock Text="Hotkey global" Style="{StaticResource EchoBoardCaptionTextStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding HotkeyText}" Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" /></Grid>
+                    <Grid><TextBlock Text="Hotkey" Style="{StaticResource EchoBoardCaptionTextStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding HotkeyText}" Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" /></Grid>
                     <Grid><TextBlock Text="Registro" Style="{StaticResource EchoBoardCaptionTextStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding HotkeyStatusText}" Foreground="{ThemeResource EchoBoardSuccessBrush}" /></Grid>
                     <controls:HotkeyCaptureBox
                         Ctrl="{Binding HotkeyCtrl, Mode=TwoWay}"

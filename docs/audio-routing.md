@@ -46,7 +46,7 @@ EchoBoard blocks known input/output pairs from the same endpoint family when tha
 - Confirm the virtual cable receives microphone + effects.
 - Disconnect and reconnect each endpoint independently.
 - Restart EchoBoard and confirm the same MMDevice IDs are restored.
-- Trigger a sound through a global hotkey while EchoBoard is unfocused.
+- Trigger an audio sound through a hotkey while EchoBoard is unfocused.
 - Change all four volumes and mutes while voice and effects are active.
 - Verify Discord/OBS input levels and disable aggressive noise suppression if it removes sound effects.
 

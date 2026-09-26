@@ -521,7 +521,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         }
 
         await removeHotkeyBinding.ExecuteAsync(binding.Id, cancellationToken);
-        ImportToast = new ToastPreviewModel(ToastNotificationKind.Success, "Hotkey removed", "The selected sound no longer has a global hotkey.");
+        ImportToast = new ToastPreviewModel(ToastNotificationKind.Success, "Hotkey removed", "The selected sound no longer has a hotkey.");
         await RefreshAsync(cancellationToken);
     }
 
@@ -850,7 +850,7 @@ public sealed partial class LibraryViewModel : ObservableObject
     {
         var bindings = await listHotkeys.ExecuteAsync(cancellationToken);
         hotkeyBySoundId.Clear();
-        foreach (var binding in bindings.Where(binding => binding.TargetKind == HotkeyBindingTargetKind.Sound && binding.SoundId is not null))
+        foreach (var binding in bindings.Where(binding => binding.SoundId is not null))
         {
             hotkeyBySoundId[binding.SoundId!.Value] = binding;
         }

@@ -2,7 +2,7 @@
 
 EchoBoard is a local-first Windows desktop soundboard and audio-routing app. The product requirements live in [docs/PRD.md](docs/PRD.md).
 
-The current application includes the local sound library, content-aware decoding, global hotkeys, centralized playback, continuous microphone capture, a 48 kHz float mixer, local effects monitoring, and routing to an external virtual audio endpoint.
+The current application includes the local sound library, content-aware decoding, audio hotkeys that work while EchoBoard is unfocused, centralized playback, continuous microphone capture, a 48 kHz float mixer, local effects monitoring, and routing to an external virtual audio endpoint.
 
 ## Prerequisites
 

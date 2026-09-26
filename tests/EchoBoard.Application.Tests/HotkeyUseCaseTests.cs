@@ -82,8 +82,8 @@ public sealed class HotkeyUseCaseTests
     {
         var hotkeys = new FakeHotkeyBindingRepository();
         var runtime = new FakeHotkeyRuntime();
-        var binding = HotkeyBinding.CreateForGlobalCommand(
-            GlobalHotkeyCommand.ShowHideMainWindow,
+        var binding = HotkeyBinding.CreateForSound(
+            Guid.NewGuid(),
             HotkeyCombination.Create(HotkeyModifiers.Alt, "F10"),
             isEnabled: true,
             Now);
@@ -103,11 +103,9 @@ public sealed class HotkeyUseCaseTests
         registrar.NextState = HotkeyRegistrationState.Conflicting;
         var runtime = new HotkeyRuntimeService(
             registrar,
-            new FakeSoundPlaybackPort(),
-            new FakePlaybackControlPort(),
-            new FakeShellWindowPort());
-        var binding = HotkeyBinding.CreateForGlobalCommand(
-            GlobalHotkeyCommand.StopAllSounds,
+            new FakeSoundPlaybackPort());
+        var binding = HotkeyBinding.CreateForSound(
+            Guid.NewGuid(),
             HotkeyCombination.Create(HotkeyModifiers.Control, "F12"),
             isEnabled: true,
             Now);
@@ -116,28 +114,6 @@ public sealed class HotkeyUseCaseTests
 
         result.State.Should().Be(HotkeyRegistrationState.Conflicting);
         runtime.GetRegistrationState(binding.Id).Should().Be(HotkeyRegistrationState.Conflicting);
-    }
-
-    [Fact]
-    public async Task RuntimeDispatchesGlobalCommandsToPorts()
-    {
-        var registrar = new FakeGlobalHotkeyRegistrar();
-        var shell = new FakeShellWindowPort();
-        var runtime = new HotkeyRuntimeService(
-            registrar,
-            new FakeSoundPlaybackPort(),
-            new FakePlaybackControlPort(),
-            shell);
-        var binding = HotkeyBinding.CreateForGlobalCommand(
-            GlobalHotkeyCommand.ShowHideMainWindow,
-            HotkeyCombination.Create(HotkeyModifiers.Control, "F11"),
-            isEnabled: true,
-            Now);
-        await runtime.RegisterBindingAsync(binding, CancellationToken.None);
-
-        registrar.RaisePressed(binding.Id);
-
-        shell.ToggleCount.Should().Be(1);
     }
 
     private sealed class FakeHotkeyBindingRepository : IHotkeyBindingRepository
@@ -159,11 +135,6 @@ public sealed class HotkeyUseCaseTests
         public Task<HotkeyBinding?> GetForSoundAsync(Guid soundId, CancellationToken cancellationToken)
         {
             return Task.FromResult(bindings.SingleOrDefault(binding => binding.SoundId == soundId));
-        }
-
-        public Task<HotkeyBinding?> GetForGlobalCommandAsync(GlobalHotkeyCommand command, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(bindings.SingleOrDefault(binding => binding.GlobalCommand == command));
         }
 
         public Task<bool> CombinationExistsAsync(string normalizedKeyCombination, Guid? excludingBindingId, CancellationToken cancellationToken)
@@ -268,27 +239,4 @@ public sealed class HotkeyUseCaseTests
         }
     }
 
-    private sealed class FakePlaybackControlPort : IPlaybackControlCommandPort
-    {
-        public Task<HotkeyCommandResult> StopAllSoundsAsync(CancellationToken cancellationToken)
-        {
-            return Task.FromResult(HotkeyCommandResult.Unavailable("Playback unavailable."));
-        }
-
-        public Task<HotkeyCommandResult> PauseResumePlaybackAsync(CancellationToken cancellationToken)
-        {
-            return Task.FromResult(HotkeyCommandResult.Unavailable("Playback unavailable."));
-        }
-    }
-
-    private sealed class FakeShellWindowPort : IShellWindowCommandPort
-    {
-        public int ToggleCount { get; private set; }
-
-        public Task<HotkeyCommandResult> ShowOrHideMainWindowAsync(CancellationToken cancellationToken)
-        {
-            ToggleCount++;
-            return Task.FromResult(HotkeyCommandResult.Success("Window toggled."));
-        }
-    }
 }

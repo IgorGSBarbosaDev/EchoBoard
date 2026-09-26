@@ -45,29 +45,15 @@ public sealed class HotkeyTests
 
         binding.TargetKind.Should().Be(HotkeyBindingTargetKind.Sound);
         binding.SoundId.Should().NotBeNull();
-        binding.GlobalCommand.Should().BeNull();
         binding.NormalizedKeyCombination.Should().Be("Ctrl+S");
         binding.IsEnabled.Should().BeTrue();
     }
 
     [Fact]
-    public void GlobalCommandBindingRequiresGlobalCommandTargetOnly()
-    {
-        var combination = HotkeyCombination.Create(HotkeyModifiers.Alt, "F10");
-
-        var binding = HotkeyBinding.CreateForGlobalCommand(GlobalHotkeyCommand.ShowHideMainWindow, combination, isEnabled: false, Now);
-
-        binding.TargetKind.Should().Be(HotkeyBindingTargetKind.GlobalCommand);
-        binding.SoundId.Should().BeNull();
-        binding.GlobalCommand.Should().Be(GlobalHotkeyCommand.ShowHideMainWindow);
-        binding.IsEnabled.Should().BeFalse();
-    }
-
-    [Fact]
     public void BindingMutationsValidateUtcAndUpdateCombination()
     {
-        var binding = HotkeyBinding.CreateForGlobalCommand(
-            GlobalHotkeyCommand.StopAllSounds,
+        var binding = HotkeyBinding.CreateForSound(
+            Guid.NewGuid(),
             HotkeyCombination.Create(HotkeyModifiers.Control, "F8"),
             isEnabled: true,
             Now);

@@ -170,10 +170,6 @@ public sealed class MicrophoneViewModelTests
         var runtime = new FakeHotkeyRuntime();
 
         return new SettingsViewModel(
-            new ListHotkeyBindingsUseCase(hotkeys, runtime),
-            new AssignGlobalHotkeyUseCase(hotkeys, runtime),
-            new RemoveHotkeyBindingUseCase(hotkeys, runtime),
-            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime),
             new ListMicrophoneDevicesUseCase(controller),
             new LoadMicrophoneSettingsUseCase(settings, controller),
             new SelectMicrophoneDeviceUseCase(settings, controller),
@@ -278,8 +274,6 @@ public sealed class MicrophoneViewModelTests
         public Task<HotkeyBinding?> GetAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<HotkeyBinding?>(null);
 
         public Task<HotkeyBinding?> GetForSoundAsync(Guid soundId, CancellationToken cancellationToken) => Task.FromResult<HotkeyBinding?>(null);
-
-        public Task<HotkeyBinding?> GetForGlobalCommandAsync(GlobalHotkeyCommand command, CancellationToken cancellationToken) => Task.FromResult<HotkeyBinding?>(null);
 
         public Task<bool> CombinationExistsAsync(string normalizedKeyCombination, Guid? excludingBindingId, CancellationToken cancellationToken) => Task.FromResult(false);
 

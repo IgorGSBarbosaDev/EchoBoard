@@ -71,20 +71,6 @@ public sealed class HotkeyBinding
             utcCreatedAt);
     }
 
-    public static HotkeyBinding CreateForGlobalCommand(GlobalHotkeyCommand command, HotkeyCombination combination, bool isEnabled, DateTimeOffset createdAt)
-    {
-        var utcCreatedAt = ValidateUtc(createdAt, nameof(createdAt));
-        return new HotkeyBinding(
-            Guid.NewGuid(),
-            HotkeyBindingTargetKind.GlobalCommand,
-            null,
-            command,
-            combination,
-            isEnabled,
-            utcCreatedAt,
-            utcCreatedAt);
-    }
-
     public HotkeyCombination ToCombination()
     {
         return HotkeyCombination.FromPersisted(Modifiers, PrimaryKey, NormalizedKeyCombination);

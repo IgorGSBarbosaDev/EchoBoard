@@ -283,10 +283,6 @@ public sealed class ShellNavigationContractTests
         var microphone = new FakeMicrophoneCaptureController();
 
         return new SettingsViewModel(
-            new ListHotkeyBindingsUseCase(hotkeys, runtime),
-            new AssignGlobalHotkeyUseCase(hotkeys, runtime),
-            new RemoveHotkeyBindingUseCase(hotkeys, runtime),
-            new SetHotkeyBindingEnabledUseCase(hotkeys, runtime),
             new ListMicrophoneDevicesUseCase(microphone),
             new LoadMicrophoneSettingsUseCase(settings, microphone),
             new SelectMicrophoneDeviceUseCase(settings, microphone),
@@ -437,11 +433,6 @@ public sealed class ShellNavigationContractTests
         }
 
         public Task<HotkeyBinding?> GetForSoundAsync(Guid soundId, CancellationToken cancellationToken)
-        {
-            return Task.FromResult<HotkeyBinding?>(null);
-        }
-
-        public Task<HotkeyBinding?> GetForGlobalCommandAsync(GlobalHotkeyCommand command, CancellationToken cancellationToken)
         {
             return Task.FromResult<HotkeyBinding?>(null);
         }

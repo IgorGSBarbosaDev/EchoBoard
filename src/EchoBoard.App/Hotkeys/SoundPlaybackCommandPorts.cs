@@ -7,19 +7,16 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace EchoBoard.App.Hotkeys;
 
-public sealed class SoundPlaybackCommandPorts : ISoundPlaybackCommandPort, IPlaybackControlCommandPort
+public sealed class SoundPlaybackCommandPorts : ISoundPlaybackCommandPort
 {
     private readonly IServiceScopeFactory scopeFactory;
-    private readonly ISoundPlaybackEngine playback;
     private readonly PlaybackCoordinator playbackCoordinator;
 
     public SoundPlaybackCommandPorts(
         IServiceScopeFactory scopeFactory,
-        ISoundPlaybackEngine playback,
         PlaybackCoordinator playbackCoordinator)
     {
         this.scopeFactory = scopeFactory;
-        this.playback = playback;
         this.playbackCoordinator = playbackCoordinator;
     }
 
@@ -39,17 +36,4 @@ public sealed class SoundPlaybackCommandPorts : ISoundPlaybackCommandPort, IPlay
         }
     }
 
-    public async Task<HotkeyCommandResult> StopAllSoundsAsync(CancellationToken cancellationToken)
-    {
-        await playback.StopAllAsync(cancellationToken);
-        playbackCoordinator.Refresh();
-        return HotkeyCommandResult.Success("All sounds stopped.");
-    }
-
-    public async Task<HotkeyCommandResult> PauseResumePlaybackAsync(CancellationToken cancellationToken)
-    {
-        await playback.TogglePauseAsync(cancellationToken);
-        playbackCoordinator.Refresh();
-        return HotkeyCommandResult.Success("Playback state changed.");
-    }
 }

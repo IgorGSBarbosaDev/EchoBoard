@@ -8,21 +8,15 @@ public sealed class HotkeyRuntimeService : IHotkeyRuntimeService, IAsyncDisposab
 {
     private readonly IGlobalHotkeyRegistrar registrar;
     private readonly ISoundPlaybackCommandPort soundPlayback;
-    private readonly IPlaybackControlCommandPort playbackControl;
-    private readonly IShellWindowCommandPort shellWindow;
     private readonly ConcurrentDictionary<Guid, HotkeyBinding> activeBindings = new();
     private readonly ConcurrentDictionary<Guid, HotkeyRegistrationState> registrationStates = new();
 
     public HotkeyRuntimeService(
         IGlobalHotkeyRegistrar registrar,
-        ISoundPlaybackCommandPort soundPlayback,
-        IPlaybackControlCommandPort playbackControl,
-        IShellWindowCommandPort shellWindow)
+        ISoundPlaybackCommandPort soundPlayback)
     {
         this.registrar = registrar;
         this.soundPlayback = soundPlayback;
-        this.playbackControl = playbackControl;
-        this.shellWindow = shellWindow;
         this.registrar.HotkeyPressed += OnHotkeyPressed;
     }
 
@@ -80,17 +74,8 @@ public sealed class HotkeyRuntimeService : IHotkeyRuntimeService, IAsyncDisposab
 
     private Task<HotkeyCommandResult> DispatchAsync(HotkeyBinding binding, CancellationToken cancellationToken)
     {
-        return binding.TargetKind switch
-        {
-            HotkeyBindingTargetKind.Sound when binding.SoundId is not null =>
-                soundPlayback.PlaySoundAsync(binding.SoundId.Value, cancellationToken),
-            HotkeyBindingTargetKind.GlobalCommand when binding.GlobalCommand == GlobalHotkeyCommand.StopAllSounds =>
-                playbackControl.StopAllSoundsAsync(cancellationToken),
-            HotkeyBindingTargetKind.GlobalCommand when binding.GlobalCommand == GlobalHotkeyCommand.PauseResumePlayback =>
-                playbackControl.PauseResumePlaybackAsync(cancellationToken),
-            HotkeyBindingTargetKind.GlobalCommand when binding.GlobalCommand == GlobalHotkeyCommand.ShowHideMainWindow =>
-                shellWindow.ShowOrHideMainWindowAsync(cancellationToken),
-            _ => Task.FromResult(HotkeyCommandResult.Failed("Hotkey target is invalid."))
-        };
+        return binding.TargetKind == HotkeyBindingTargetKind.Sound && binding.SoundId is not null
+            ? soundPlayback.PlaySoundAsync(binding.SoundId.Value, cancellationToken)
+            : Task.FromResult(HotkeyCommandResult.Failed("Hotkey target is invalid."));
     }
 }

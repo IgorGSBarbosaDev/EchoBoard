@@ -19,8 +19,8 @@ public sealed class EfHotkeyBindingRepository : IHotkeyBindingRepository
     {
         return await context.HotkeyBindings
             .AsNoTracking()
-            .OrderBy(binding => binding.TargetKind)
-            .ThenBy(binding => binding.NormalizedKeyCombination)
+            .Where(binding => binding.TargetKind == HotkeyBindingTargetKind.Sound && binding.SoundId != null)
+            .OrderBy(binding => binding.NormalizedKeyCombination)
             .ToArrayAsync(cancellationToken);
     }
 
@@ -28,7 +28,9 @@ public sealed class EfHotkeyBindingRepository : IHotkeyBindingRepository
     {
         return await context.HotkeyBindings
             .AsNoTracking()
-            .SingleOrDefaultAsync(binding => binding.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(
+                binding => binding.Id == id && binding.TargetKind == HotkeyBindingTargetKind.Sound && binding.SoundId != null,
+                cancellationToken);
     }
 
     public async Task<HotkeyBinding?> GetForSoundAsync(Guid soundId, CancellationToken cancellationToken)
@@ -38,19 +40,12 @@ public sealed class EfHotkeyBindingRepository : IHotkeyBindingRepository
             .SingleOrDefaultAsync(binding => binding.SoundId == soundId, cancellationToken);
     }
 
-    public async Task<HotkeyBinding?> GetForGlobalCommandAsync(GlobalHotkeyCommand command, CancellationToken cancellationToken)
-    {
-        return await context.HotkeyBindings
-            .AsNoTracking()
-            .SingleOrDefaultAsync(binding => binding.GlobalCommand == command, cancellationToken);
-    }
-
     public async Task<bool> CombinationExistsAsync(string normalizedKeyCombination, Guid? excludingBindingId, CancellationToken cancellationToken)
     {
         return await context.HotkeyBindings
             .AsNoTracking()
             .AnyAsync(
-                binding => binding.Id != excludingBindingId && binding.NormalizedKeyCombination == normalizedKeyCombination,
+                binding => binding.Id != excludingBindingId && binding.TargetKind == HotkeyBindingTargetKind.Sound && binding.SoundId != null && binding.NormalizedKeyCombination == normalizedKeyCombination,
                 cancellationToken);
     }
 
