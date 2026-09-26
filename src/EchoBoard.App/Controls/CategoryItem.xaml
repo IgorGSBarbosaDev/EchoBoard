@@ -21,7 +21,6 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid Width="20" Height="20">
-                <Ellipse Fill="{x:Bind DisplayIndicatorBrush, Mode=OneTime}" />
                 <SymbolIcon
                     Symbol="{x:Bind Icon, Mode=OneTime}"
                     Foreground="{ThemeResource EchoBoardTextPrimaryBrush}" />

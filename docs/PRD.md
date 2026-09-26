@@ -91,7 +91,7 @@ O EchoBoard centraliza a biblioteca, a reprodução, os atalhos, a mixagem de vo
 - Interface responsiva enquanto há reprodução e captura de áudio.
 - Configuração inicial compreensível para alguém que não conhece roteamento de áudio.
 - Consumo controlado de CPU e memória.
-- Design consistente em tema escuro e claro.
+- Design consistente no tema escuro.
 - Código modular, testável e documentado.
 
 ---
@@ -129,8 +129,8 @@ Os itens abaixo não podem atrasar a primeira versão utilizável:
 | LIB-02 | Arrastar e soltar | Permitir arrastar arquivos compatíveis para a janela do aplicativo. | MVP |
 | LIB-03 | Validar importação | Recusar extensões não suportadas, arquivos ilegíveis e duplicidades por caminho. | MVP |
 | LIB-04 | Metadados do som | Salvar nome, caminho, formato, duração, tamanho, data de criação e data de alteração. | MVP |
-| LIB-05 | Categorias | Permitir criar, renomear, reordenar e excluir categorias. Ao excluir categoria, solicitar destino para os sons vinculados. | MVP |
-| LIB-06 | Organização | Permitir mover sons entre categorias e definir ordem manual. | MVP |
+| LIB-05 | Categorias | Permitir criar e renomear categorias em um editor modal, reordenar e excluir categorias. Ao excluir categoria, solicitar destino para os sons vinculados. | MVP |
+| LIB-06 | Organização | Permitir selecionar sons de uma lista rolável da biblioteca, reproduzir uma prévia e movê-los entre categorias. Cada som pertence a no máximo uma categoria. | MVP |
 | LIB-07 | Busca | Filtrar sons por nome enquanto o usuário digita. | MVP |
 | LIB-08 | Favoritos | Marcar/desmarcar sons como favoritos e filtrar favoritos na Biblioteca. | MVP |
 | LIB-10 | Renomear | Alterar apenas o nome exibido no EchoBoard, sem renomear o arquivo original. | MVP |
@@ -212,17 +212,14 @@ Os itens abaixo não podem atrasar a primeira versão utilizável:
 
 | ID | Requisito | Comportamento esperado | Prioridade |
 |---|---|---|---|
-| SET-01 | Tema escuro | Usar tema escuro por padrão. | MVP |
-| SET-02 | Tema claro | Permitir alternar para tema claro. | MVP |
-| SET-03 | Persistência do tema | Manter o tema escolhido após reiniciar. | MVP |
-| SET-04 | Bandeja do sistema | Minimizar para a bandeja do Windows. | MVP |
-| SET-05 | Fechar para bandeja | Ao fechar a janela, permitir manter processo ativo na bandeja conforme preferência. | MVP |
-| SET-06 | Inicialização | Permitir abrir junto com Windows e/ou iniciar minimizado. | MVP |
-| SET-07 | Modo compacto | Exibir mini-player com controles essenciais. | MVP |
-| SET-08 | Restaurar sessão | Restaurar última categoria, dimensões da janela e configurações relevantes. | MVP |
-| SET-09 | Reset | Permitir restaurar configurações padrão com confirmação. | MVP |
-| SET-10 | Diagnóstico | Exibir dispositivos, perfil ativo, frequência de áudio, estado do motor e últimos erros relevantes. | MVP |
-| SET-11 | Perfis de uso | Criar perfis como Discord, OBS e Jogos. | Fase 2 |
+| SET-01 | Bandeja do sistema | Minimizar para a bandeja do Windows. | MVP |
+| SET-02 | Fechar para bandeja | Ao fechar a janela, permitir manter processo ativo na bandeja conforme preferência. | MVP |
+| SET-03 | Inicialização | Permitir abrir junto com Windows e/ou iniciar minimizado. | MVP |
+| SET-04 | Modo compacto | Exibir mini-player com controles essenciais. | MVP |
+| SET-05 | Restaurar sessão | Restaurar última categoria, dimensões da janela e configurações relevantes. | MVP |
+| SET-06 | Reset | Permitir restaurar configurações padrão com confirmação. | MVP |
+| SET-07 | Diagnóstico | Exibir dispositivos, perfil ativo, frequência de áudio, estado do motor e últimos erros relevantes. | MVP |
+| SET-08 | Perfis de uso | Criar perfis como Discord, OBS e Jogos. | Fase 2 |
 
 ### 7.7 Feedback, erros e acessibilidade
 
@@ -233,7 +230,7 @@ Os itens abaixo não podem atrasar a primeira versão utilizável:
 | UX-03 | Estados vazios | Biblioteca, categoria e busca vazias devem orientar a próxima ação. | MVP |
 | UX-04 | Teclado | Permitir navegação básica por teclado. | MVP |
 | UX-05 | Escala do Windows | Suportar escalonamento e resoluções usuais sem sobreposição. | MVP |
-| UX-06 | Contraste | Manter contraste adequado em ambos os temas. | MVP |
+| UX-06 | Contraste | Manter contraste adequado no tema escuro. | MVP |
 | UX-07 | Tooltips | Exibir dicas em ícones e controles menos óbvios. | MVP |
 | UX-08 | Não depender só de cor | Estados críticos devem usar texto, ícone ou forma além de cor. | MVP |
 
@@ -273,7 +270,7 @@ Princípios:
 
 ### 9.2 Paleta de cores
 
-#### Tema escuro — padrão
+#### Tema escuro
 
 | Token | Cor |
 |---|---|
@@ -290,23 +287,6 @@ Princípios:
 | Success | `#25C58A` |
 | Warning | `#F0B429` |
 | Error | `#F05252` |
-
-#### Tema claro
-
-| Token | Cor |
-|---|---|
-| Background Primary | `#F5F7FB` |
-| Background Secondary | `#FFFFFF` |
-| Surface / Card | `#FFFFFF` |
-| Surface Active | `#E7F0FF` |
-| Blue Primary | `#146EF5` |
-| Blue Hover | `#0E5CD1` |
-| Text Primary | `#111827` |
-| Text Secondary | `#5B6475` |
-| Border | `#D8E0ED` |
-| Success | `#168A60` |
-| Warning | `#B77900` |
-| Error | `#C53030` |
 
 ### 9.3 Layout principal
 
@@ -620,7 +600,7 @@ Essas metas dependem de hardware, driver, headset e dispositivo virtual do usuá
 ### 14.4 Acessibilidade
 
 - Navegação básica por teclado.
-- Contraste adequado em ambos os temas.
+- Contraste adequado no tema escuro.
 - Escala respeitando configurações do Windows.
 - Tooltips e labels para ícones.
 - Estados comunicados por texto/ícone além de cor.
@@ -690,7 +670,7 @@ A tela de diagnóstico deve mostrar:
 - [ ] Discord recebe o áudio pela entrada virtual.
 - [ ] OBS recebe o áudio pela entrada virtual.
 - [x] Monitoramento local pode ser ligado/desligado.
-- [ ] Alterna tema claro/escuro.
+- [x] Inicia e permanece no tema escuro.
 - [ ] Funciona na bandeja do sistema.
 - [x] Não trava com reprodução repetida de sons.
 - [x] Detecta ausência de dispositivo configurado e informa ação recomendada.
@@ -725,7 +705,7 @@ A tela de diagnóstico deve mostrar:
 
 ### Fase 1 — Design e navegação
 
-- Temas claro/escuro.
+- Tema escuro.
 - Layout principal.
 - Componentes reutilizáveis.
 - Estados vazios e feedbacks.
@@ -804,7 +784,7 @@ O repositório deverá conter:
 - guia de configuração para OBS;
 - guia de uso de dispositivo virtual;
 - troubleshooting para eco, ausência de dispositivo, silêncio e latência;
-- screenshots dos temas claro/escuro;
+- screenshot da interface no tema escuro;
 - GIF ou vídeo curto demonstrando o fluxo principal;
 - roadmap;
 - licença;
@@ -821,7 +801,8 @@ O repositório deverá conter:
 | 04/07/2026 | Não desenvolver driver virtual no MVP | Alto risco técnico, instalação privilegiada e escopo incompatível com a primeira entrega. |
 | 04/07/2026 | Usar dispositivo virtual externo | Permite integração real com Discord/OBS sem criar driver próprio. |
 | 04/07/2026 | Hotkeys apenas de teclado no MVP | Reduz complexidade e conflitos com jogos, antivírus e acessibilidade. |
-| 04/07/2026 | Tema escuro por padrão; claro opcional | Uso frequente durante chamadas/jogos e preferência visual definida. |
+| 04/07/2026 | Tema escuro por padrão; claro opcional (substituído em 26/09/2026) | Uso frequente durante chamadas/jogos e preferência visual definida. |
+| 26/09/2026 | Manter somente o tema escuro | Simplifica a interface e mantém o produto alinhado à identidade visual atual. |
 
 ---
 

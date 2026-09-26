@@ -83,39 +83,50 @@ public sealed partial class LibraryPage : Page
             return;
         }
 
-        await ViewModel.CreateCategoryAsync(CreateCategoryNameTextBox.Text, CancellationToken.None);
-        CreateCategoryNameTextBox.Text = string.Empty;
+        await ShowCategoryEditorAsync(categoryId: null);
     }
 
-    private async void OnRenameCategoryClicked(object sender, RoutedEventArgs e)
+    private async void OnEditSelectedCategoryClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.SelectedCategoryId is not Guid categoryId)
+        {
+            return;
+        }
+
+        await ShowCategoryEditorAsync(categoryId);
+    }
+
+    private async void OnDeleteSelectedCategoryClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.SelectedCategoryId is null)
+        {
+            return;
+        }
+
+        ViewModel.PrepareCategoryDeletion();
+        var dialog = new CategoryDeletionDialog
+        {
+            XamlRoot = XamlRoot,
+            DataContext = ViewModel
+        };
+
+        await dialog.ShowAsync();
+    }
+
+    private async Task ShowCategoryEditorAsync(Guid? categoryId)
     {
         if (ViewModel is null)
         {
             return;
         }
 
-        await ViewModel.RenameSelectedCategoryAsync(RenameCategoryNameTextBox.Text, CancellationToken.None);
-        RenameCategoryNameTextBox.Text = string.Empty;
-    }
-
-    private async void OnDeleteCategoryClicked(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel is null)
+        ViewModel.PrepareCategoryEditor(categoryId);
+        var dialog = new CategoryEditorDialog
         {
-            return;
-        }
+            XamlRoot = XamlRoot,
+            DataContext = ViewModel
+        };
 
-        await ViewModel.DeleteSelectedCategoryAsync(CancellationToken.None);
-    }
-
-    private async void OnAssignSelectedCategoryClicked(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel?.SelectedSoundId is not Guid soundId)
-        {
-            return;
-        }
-
-        var selectedCategory = AssignCategoryComboBox.SelectedItem as SoundLibraryCategoryOptionViewModel;
-        await ViewModel.AssignSoundCategoryAsync(soundId, selectedCategory?.Id, CancellationToken.None);
+        await dialog.ShowAsync();
     }
 }
