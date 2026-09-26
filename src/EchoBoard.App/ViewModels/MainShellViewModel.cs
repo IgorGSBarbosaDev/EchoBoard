@@ -123,8 +123,18 @@ public sealed partial class MainShellViewModel : ObservableObject
     public ElementTheme RequestedTheme
     {
         get => requestedTheme;
-        private set => SetProperty(ref requestedTheme, value);
+        private set
+        {
+            if (SetProperty(ref requestedTheme, value))
+            {
+                OnPropertyChanged(nameof(AccentPalettePickerVisibility));
+            }
+        }
     }
+
+    public Visibility AccentPalettePickerVisibility => RequestedTheme == ElementTheme.Light
+        ? Visibility.Visible
+        : Visibility.Collapsed;
 
     public string SelectedThemeLabel
     {

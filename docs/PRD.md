@@ -310,7 +310,7 @@ Princípios:
 
 ### 9.3 Layout principal
 
-Ao iniciar, a Biblioteca ocupa a área de conteúdo e lista todos os áudios cadastrados. A busca, o filtro de favoritos e as categorias refinam essa mesma lista; importar e organizar sons continua disponível na tela. Settings concentra a seleção de dispositivos e o roteamento. A seção Audio diagnostics fica abaixo das configurações e mostra dispositivos, níveis e estado das rotas.
+Ao iniciar, a Biblioteca ocupa a área de conteúdo e lista todos os áudios cadastrados. A busca, o filtro de favoritos e as categorias refinam essa mesma lista; importar e organizar sons continua disponível na tela. Settings reúne a seleção de dispositivos, o roteamento e os diagnósticos de áudio em uma única tela. Favoritos não têm página própria, e reproduções recentes permanecem no histórico interno, sem tela dedicada.
 
 Os detalhes do som são exibidos em uma drawer compartilhada sobre o conteúdo. Fechada, ela permanece `Collapsed` e não reserva largura. O corpo do card reproduz o áudio; favorito e menu de detalhes/edição são ações independentes.
 

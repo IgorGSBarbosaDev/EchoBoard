@@ -117,10 +117,12 @@ public sealed class ShellNavigationContractTests
         var viewModel = CreateViewModel(settings, resources);
 
         await viewModel.LoadAsync(TestContext.Current.CancellationToken);
+        viewModel.AccentPalettePickerVisibility.Should().Be(Visibility.Visible);
         await viewModel.ChangeAccentPaletteCommand.ExecuteAsync(AppearancePalettes.Emerald);
         await viewModel.ToggleThemeCommand.ExecuteAsync(null);
 
         viewModel.RequestedTheme.Should().Be(ElementTheme.Dark);
+        viewModel.AccentPalettePickerVisibility.Should().Be(Visibility.Collapsed);
         viewModel.SelectedAccentPalette.Should().Be(AppearancePalettes.Emerald);
         resources.LastPalette.Should().Be(AppearancePalettes.Emerald);
         resources.LastTheme.Should().Be(ElementTheme.Dark);

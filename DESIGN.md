@@ -2,25 +2,25 @@
 name: EchoBoard
 description: Mesa de mixagem operacional para sons, voz e roteamento local no Windows.
 colors:
-  primary: "#2F80FF"
+  primary: "#D3D3D3"
   primary-light: "#146EF5"
-  primary-hover: "#5A9BFF"
-  primary-pressed: "#0D4EB5"
-  neutral-bg: "#080B12"
-  neutral-surface: "#111827"
-  neutral-elevated: "#0E1420"
-  neutral-card: "#151C2B"
-  neutral-selected: "#1C2D4D"
-  neutral-hover: "#1B2435"
-  neutral-border: "#263147"
-  neutral-border-soft: "#1D2738"
-  text-primary: "#F4F7FB"
-  text-secondary: "#A9B3C6"
-  text-disabled: "#707A8F"
-  on-primary: "#FFFFFF"
-  success: "#25C58A"
-  warning: "#F0B429"
-  error: "#F05252"
+  primary-hover: "#F0F0F0"
+  primary-pressed: "#AFAFAF"
+  neutral-bg: "#111111"
+  neutral-surface: "#171717"
+  neutral-elevated: "#202020"
+  neutral-card: "#191919"
+  neutral-selected: "#2D2D2D"
+  neutral-hover: "#252525"
+  neutral-border: "#303030"
+  neutral-border-soft: "#252525"
+  text-primary: "#F5F5F5"
+  text-secondary: "#B8B8B8"
+  text-disabled: "#8A8A8A"
+  on-primary: "#121212"
+  success: "#D0D0D0"
+  warning: "#A6A6A6"
+  error: "#EAEAEA"
   light-bg: "#F5F7FB"
   light-surface: "#FFFFFF"
   light-elevated: "#F8FAFD"
@@ -31,10 +31,10 @@ colors:
   light-success: "#168A60"
   light-warning: "#B77900"
   light-error: "#C53030"
-  accent-cyan: "#1597A8"
-  accent-violet: "#8B6FFF"
-  accent-emerald: "#25A978"
-  accent-rose: "#E0527C"
+  light-accent-cyan: "#087E8B"
+  light-accent-violet: "#6D4DE3"
+  light-accent-emerald: "#168A60"
+  light-accent-rose: "#C93663"
 typography:
   display:
     fontFamily: "Segoe UI, sans-serif"
@@ -127,33 +127,33 @@ components:
 
 EchoBoard é uma interface de controle de áudio, não um painel administrativo genérico. O sistema visual organiza entradas, efeitos, níveis, dispositivos e reprodução como uma mesa de mixagem compacta: cada superfície deve ajudar o usuário a localizar estado e agir rapidamente, sem competir com o áudio ou com a chamada em andamento.
 
-A atmosfera é precisa, limpa, discreta e orientada à operação rápida. O visual atual parte de uma base escura azul-marinho/grafite, com uma versão clara equivalente, bordas finas, ícones vetoriais nativos e um único acento semântico por vez. A combinação cromática atual é a autoridade documentada deste snapshot, mas permanece uma candidata explícita para uma futura revisão de cor; não deve ser tratada como uma decisão irreversível.
+A atmosfera é precisa, limpa, discreta e orientada à operação rápida. O tema escuro usa preto e grafite em camadas tonais, bordas finas e texto claro; ações, seleção e estados também permanecem em tons neutros. O tema claro preserva a paleta azul e os acentos selecionáveis existentes. Ícones e rótulos mantêm a leitura dos estados de áudio nos dois temas.
 
 **Key Characteristics:**
 
 - Controle operacional e leitura imediata de estado.
 - Superfícies tonais planas com bordas discretas.
-- Azul de ação reservado para comandos, seleção e progresso.
+- Tons claros de cinza reservados para comandos, seleção e progresso no tema escuro.
 - Densidade compacta, tipografia Segoe UI e hierarquia curta.
-- Tema escuro inicial com paridade clara e paletas de acento trocáveis.
+- Tema escuro inicial monocromático; paletas de acento selecionáveis no tema claro.
 
 ## Colors
 
-A paleta é temática e semântica: superfícies frias formam a base, o acento selecionado orienta a ação e verde, âmbar e vermelho comunicam estado. A implementação possui famílias de acento Blue, Cyan, Violet, Emerald e Rose; os tokens de frontmatter registram o azul padrão e os principais representantes alternativos.
+A paleta é temática. No tema escuro, superfícies, ações, foco e estados usam uma escala de preto e cinza. O tema claro conserva a paleta azul e as alternativas de acento Blue, Cyan, Violet, Emerald e Rose.
 
 ### Primary
 
-- **Azul elétrico de ação** (`{colors.primary}`): comandos primários, seleção ativa, foco visual, progresso e indicadores de reprodução.
-- **Azul de ação para tema claro** (`{colors.primary-light}`): variante de contraste usada quando o tema claro está ativo.
-- **Azul de resposta** (`{colors.primary-hover}`): estado de passagem do ponteiro sobre ações.
-- **Azul pressionado** (`{colors.primary-pressed}`): confirmação tátil de comandos acionados.
+- **Cinza de ação** (`{colors.primary}`): comandos primários, seleção ativa, foco visual, progresso e indicadores de reprodução no tema escuro.
+- **Azul de ação para tema claro** (`{colors.primary-light}`): variante preservada quando o tema claro está ativo.
+- **Cinza de resposta** (`{colors.primary-hover}`): estado de passagem do ponteiro sobre ações escuras.
+- **Cinza pressionado** (`{colors.primary-pressed}`): confirmação tátil de comandos acionados no tema escuro.
 
 ### Secondary
 
-- **Ciano de sinal** (`{colors.accent-cyan}`): alternativa de acento disponível na paleta do aplicativo.
-- **Violeta de sinal** (`{colors.accent-violet}`): alternativa de acento disponível na paleta do aplicativo.
-- **Esmeralda de sinal** (`{colors.accent-emerald}`): alternativa de acento disponível na paleta do aplicativo.
-- **Rosa de sinal** (`{colors.accent-rose}`): alternativa de acento disponível na paleta do aplicativo.
+- **Ciano de sinal** (`{colors.light-accent-cyan}`): alternativa de acento disponível no tema claro.
+- **Violeta de sinal** (`{colors.light-accent-violet}`): alternativa de acento disponível no tema claro.
+- **Esmeralda de sinal** (`{colors.light-accent-emerald}`): alternativa de acento disponível no tema claro.
+- **Rosa de sinal** (`{colors.light-accent-rose}`): alternativa de acento disponível no tema claro.
 
 ### Neutral
 
@@ -161,7 +161,7 @@ A paleta é temática e semântica: superfícies frias formam a base, o acento s
 - **Superfície de trabalho** (`{colors.neutral-surface}`): shell, áreas de conteúdo e painéis principais.
 - **Superfície elevada** (`{colors.neutral-elevated}`): topbar, player inferior, busca e camadas que precisam se separar sem sombra.
 - **Cartão de controle** (`{colors.neutral-card}`): cards, campos, botões de ícone e áreas interativas.
-- **Seleção azulada** (`{colors.neutral-selected}`): seleção, estados ativos e botões secundários.
+- **Seleção grafite** (`{colors.neutral-selected}`): seleção, estados ativos e botões secundários.
 - **Hover de superfície** (`{colors.neutral-hover}`): resposta discreta de navegação e controles.
 - **Borda estrutural** (`{colors.neutral-border}`): contornos de 1px que organizam a interface.
 - **Borda suave** (`{colors.neutral-border-soft}`): divisores e separações de menor ênfase.
@@ -174,7 +174,7 @@ A paleta é temática e semântica: superfícies frias formam a base, o acento s
 
 **The Signal Over Decoration Rule.** Cor deve indicar ação, seleção ou estado do áudio; não deve virar textura ou preenchimento ornamental.
 
-**The One Accent Rule.** A paleta de acento selecionada é a voz de ação da tela; estados de sucesso, atenção e erro mantêm seus significados semânticos.
+**The Neutral Dark State Rule.** O tema escuro distingue sucesso, atenção e erro por rótulo, ícone e intensidade de cinza; o tema claro preserva as cores semânticas atuais.
 
 ## Typography
 
@@ -202,9 +202,9 @@ A paleta é temática e semântica: superfícies frias formam a base, o acento s
 
 O shell usa três faixas: topbar de 80px, conteúdo flexível e player inferior persistente. A navegação fica à esquerda em modo compacto de 56px ou expandido de 224px; o conteúdo usa padding de página de 32px e ocupa o espaço restante com alinhamento stretch.
 
-O ritmo base é a escala 2/4/8/12/16/20/24/32px, com 14px como gap recorrente entre blocos de dashboard e 20px como distância entre regiões do shell. Painéis usam padding interno de 20px; controles usam 14px horizontal por 8px vertical.
+O ritmo base é a escala 2/4/8/12/16/20/24/32px, com 14px como gap recorrente entre blocos da Biblioteca e 20px como distância entre regiões do shell. Painéis usam padding interno de 20px; controles usam 14px horizontal por 8px vertical.
 
-O layout é responsivo dentro do desktop Windows. O Dashboard usa estados amplo a partir de 1100px, médio a partir de 720px e compacto abaixo disso. O player usa 1180px para a composição completa, 720px para reorganizar a mixagem em duas linhas e um modo compacto que empilha agora tocando, transporte e mixer.
+O layout é responsivo dentro do desktop Windows. O shell expõe Biblioteca e Configurações; filtros de favoritos permanecem na Biblioteca, e diagnósticos de áudio ficam na página única de Configurações. O player usa 1180px para a composição completa, 720px para reorganizar a mixagem em duas linhas e um modo compacto que empilha agora tocando, transporte e mixer.
 
 ## Elevation & Depth
 

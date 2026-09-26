@@ -2,14 +2,14 @@
 
 ## Direction
 
-EchoBoard uses a restrained audio-control-panel style: dark or light surfaces, electric blue actions, clear hierarchy, and subtle depth through borders and layered surfaces. Avoid decorative animation, heavy blur, complex gradients, and dashboard-style density that makes the app feel administrative.
+EchoBoard uses a restrained audio-control-panel style. The dark theme builds depth from black and graphite surfaces, neutral actions, and fine borders. The light theme keeps its existing blue actions and selectable accent palettes. Dark status colors are grayscale; labels and icons keep audio states clear in both themes. Use tonal surface layers instead of decorative gradients, heavy blur, or dashboard-style density.
 
 ## Theme Tokens
 
 Theme resources live in `src/EchoBoard.App/Themes/` and are merged from `App.xaml`.
 
 - `Colors.xaml`: theme-aware primitive colors for dark, light, and system-default fallback.
-- `Palettes.xaml`: centralized dark/light accent palettes used by the global palette selector.
+- `Palettes.xaml`: centralized dark/light accent palettes. Dark palette variants are monochrome; selectable accent colors remain available in the light theme.
 - `Brushes.xaml`: reusable brushes based on color tokens.
 - `Typography.xaml`: shared font sizes for title, section title, body, caption, badge, and controls.
 - `Spacing.xaml`: spacing scale and common padding values.
@@ -18,7 +18,7 @@ Theme resources live in `src/EchoBoard.App/Themes/` and are merged from `App.xam
 
 Use `{ThemeResource ...}` for theme-aware color and brush references. Do not hardcode PRD palette hex values in pages or reusable controls.
 
-The application starts in dark mode, persists the selected dark/light theme and accent palette in `AppSettings`, and restores both on launch. Runtime palette changes update the shared action, hover, pressed, focus, selection, and active-surface brushes so all screens remain consistent without duplicating colors in views.
+The application starts in dark mode and persists the selected theme and accent palette in `AppSettings`. The dark theme applies the same black-and-graphite palette regardless of the saved accent choice; its accent picker is hidden. The saved accent palette remains available when the user switches to light mode. Shared action, hover, pressed, focus, selection, and active-surface brushes keep screens consistent without duplicating colors in views.
 
 ## Typography
 
@@ -61,12 +61,12 @@ Prefer these styles before adding custom controls. Add a custom control only whe
 - Keep views focused on layout and bind state/actions through view models.
 - Add tokens before duplicating colors, spacing, or typography values.
 - Keep audio-specific UI direct and scannable: levels, device state, transport state, and warnings should be visible without decorative noise.
-- Use status color together with text or shape; do not rely on color alone.
+- Keep status identifiable by text and icon in both themes. The light theme may add semantic colors; the dark theme uses grayscale only.
 - Validate both light and dark themes when adding a screen or reusable component.
 
-## Dashboard And Sound Details
+## Library, Settings, And Sound Details
 
-- The Dashboard uses four summary metrics and a proportional two-column content grid at 1100px and above, a 2x2 metric grid with stacked content from 720px to 1099px, and a single column below 720px.
+- The shell exposes Library and Settings. Favorites remain a filter in Library; recent playback stays in internal history without a dedicated page. Device configuration, routing, and audio diagnostics are combined in the single Settings page.
 - `SoundCard` keeps the card body as the playback action. Favorite and overflow-menu actions are separate controls and must never trigger playback through event bubbling.
 - Waveforms render only persisted peaks extracted from the real audio file. Missing or unreadable waveform data uses a neutral unavailable state instead of simulated bars.
 - `SoundDetailsDrawer` overlays the shell content from the right, is limited to 360px, and uses a short transition. Its closed state is `Collapsed`; no column, background, border, or invisible hit target may remain.

@@ -163,6 +163,7 @@
                 <Button
                     AutomationProperties.Name="Choose accent palette"
                     Style="{StaticResource EchoBoardPaletteButtonStyle}"
+                    Visibility="{Binding AccentPalettePickerVisibility}"
                     ToolTipService.ToolTip="Choose accent palette">
                     <Button.Flyout>
                         <MenuFlyout>
