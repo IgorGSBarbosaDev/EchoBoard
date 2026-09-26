@@ -91,13 +91,6 @@
         <Setter Property="BorderBrush" Value="{ThemeResource EchoBoardBorderSoftBrush}" />
     </Style>
 
-    <Style x:Key="EchoBoardPaletteButtonStyle" TargetType="Button" BasedOn="{StaticResource EchoBoardSecondaryButtonStyle}">
-        <Setter Property="Height" Value="40" />
-        <Setter Property="MinWidth" Value="96" />
-        <Setter Property="Padding" Value="12,8" />
-        <Setter Property="Background" Value="{ThemeResource EchoBoardBackgroundElevatedBrush}" />
-    </Style>
-
     <Style x:Key="EchoBoardTopbarStatusStyle" TargetType="Border">
         <Setter Property="Height" Value="44" />
         <Setter Property="MinWidth" Value="112" />

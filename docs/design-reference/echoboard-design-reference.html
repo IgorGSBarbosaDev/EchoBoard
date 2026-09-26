@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark light" />
+  <meta name="color-scheme" content="dark" />
   <title>EchoBoard — Referência visual</title>
   <style>
     :root {
@@ -38,30 +38,6 @@
       --commandbar-height: 68px;
       --ease: 160ms cubic-bezier(.2,.8,.2,1);
       font-family: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
-    }
-
-    html[data-theme="light"] {
-      --bg: #f5f7fb;
-      --bg-elevated: #ffffff;
-      --sidebar: #ffffff;
-      --surface: #ffffff;
-      --surface-2: #ffffff;
-      --surface-3: #e7f0ff;
-      --surface-hover: #eef3fa;
-      --text: #111827;
-      --text-2: #5b6475;
-      --text-3: #7c8798;
-      --border: #d8e0ed;
-      --border-soft: #e7ecf3;
-      --blue: #146ef5;
-      --blue-hover: #0e5cd1;
-      --blue-deep: #0d4eb5;
-      --cyan: #008ba0;
-      --success: #168a60;
-      --warning: #b77900;
-      --danger: #c53030;
-      --purple: #7457d9;
-      --shadow: 0 18px 44px rgba(27, 39, 65, 0.14);
     }
 
     * { box-sizing: border-box; }
@@ -787,7 +763,6 @@
       <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
       <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></symbol>
       <symbol id="i-output" viewBox="0 0 24 24"><path d="M14 8a5 5 0 0 1 0 8M17 5a9 9 0 0 1 0 14M4 10h4l5-4v12l-5-4H4z"/></symbol>
-      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
       <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></symbol>
       <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
       <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5h14v-5"/></symbol>
@@ -886,7 +861,6 @@
           </div>
 
           <div class="command-actions">
-            <button class="icon-button" id="themeToggle" title="Alternar tema" aria-label="Alternar tema"><svg class="icon"><use href="#i-sun"/></svg></button>
             <button class="icon-button" id="compactToggle" title="Modo compacto" aria-label="Modo compacto"><svg class="icon"><use href="#i-wave"/></svg></button>
             <button class="icon-button active" id="inspectorToggle" title="Mostrar ou ocultar painel lateral" aria-label="Mostrar ou ocultar painel lateral"><svg class="icon"><use href="#i-panel"/></svg></button>
           </div>
@@ -1294,9 +1268,6 @@
     });
 
     document.getElementById('sidebarToggle').addEventListener('click', () => app.classList.toggle('sidebar-collapsed'));
-    document.getElementById('themeToggle').addEventListener('click', () => {
-      document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    });
     document.getElementById('compactToggle').addEventListener('click', event => {
       app.classList.toggle('compact-mode');
       event.currentTarget.classList.toggle('active');

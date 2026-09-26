@@ -1,11 +1,8 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using EchoBoard.App.Appearance;
 using EchoBoard.App.Navigation;
-using EchoBoard.Application.Appearance;
 using EchoBoard.Application.Audio;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace EchoBoard.App.ViewModels;
@@ -13,18 +10,12 @@ namespace EchoBoard.App.ViewModels;
 public sealed partial class MainShellViewModel : ObservableObject
 {
     private readonly INavigationService navigationService;
-    private readonly LoadAppearanceSettingsUseCase loadAppearanceSettings;
-    private readonly SaveAppearanceSettingsUseCase saveAppearanceSettings;
-    private readonly IAppearanceResourceManager appearanceResourceManager;
     private readonly GetMicrophoneCaptureSnapshotUseCase getMicrophoneSnapshot;
     private readonly GetAudioRoutingSnapshotUseCase? getAudioRoutingSnapshot;
     private readonly PlaybackCoordinator? playbackCoordinator;
     private readonly Dictionary<ShellRoute, ObservableObject> pages;
     private ShellNavigationItemViewModel selectedNavigationItem;
     private ObservableObject currentPage;
-    private ElementTheme requestedTheme = ElementTheme.Dark;
-    private string selectedThemeLabel = "Dark theme";
-    private string selectedAccentPalette = AppearancePalettes.Blue;
     private bool isNavigationPaneOpen = true;
     private string microphoneStatusLabel = "Mic not configured";
     private string virtualOutputStatusLabel = "Virtual output not configured";
@@ -36,17 +27,11 @@ public sealed partial class MainShellViewModel : ObservableObject
         PlaybackBarViewModel playbackBarViewModel,
         SoundDetailsViewModel soundDetailsViewModel,
         GetMicrophoneCaptureSnapshotUseCase getMicrophoneSnapshot,
-        LoadAppearanceSettingsUseCase loadAppearanceSettings,
-        SaveAppearanceSettingsUseCase saveAppearanceSettings,
-        IAppearanceResourceManager appearanceResourceManager,
         PlaybackCoordinator? playbackCoordinator = null,
         TransientNotificationService? notifications = null,
         GetAudioRoutingSnapshotUseCase? getAudioRoutingSnapshot = null)
     {
         this.navigationService = navigationService;
-        this.loadAppearanceSettings = loadAppearanceSettings;
-        this.saveAppearanceSettings = saveAppearanceSettings;
-        this.appearanceResourceManager = appearanceResourceManager;
         this.getMicrophoneSnapshot = getMicrophoneSnapshot;
         this.playbackCoordinator = playbackCoordinator;
         this.getAudioRoutingSnapshot = getAudioRoutingSnapshot;
@@ -69,11 +54,8 @@ public sealed partial class MainShellViewModel : ObservableObject
         currentPage = pages[selectedNavigationItem.Route];
 
         NavigateCommand = new RelayCommand<object?>(Navigate);
-        ToggleThemeCommand = new AsyncRelayCommand(ToggleThemeAsync);
         ToggleSoundDetailsCommand = new RelayCommand(SoundDetails.Toggle);
         OpenSettingsCommand = new RelayCommand(() => Navigate(ShellRoute.Settings));
-        ChangeThemeCommand = new AsyncRelayCommand<string>(ChangeThemeAsync);
-        ChangeAccentPaletteCommand = new AsyncRelayCommand<string>(ChangeAccentPaletteAsync);
 
         navigationService.RouteChanged += OnRouteChanged;
     }
@@ -120,40 +102,6 @@ public sealed partial class MainShellViewModel : ObservableObject
         private set => SetProperty(ref currentPage, value);
     }
 
-    public ElementTheme RequestedTheme
-    {
-        get => requestedTheme;
-        private set
-        {
-            if (SetProperty(ref requestedTheme, value))
-            {
-                OnPropertyChanged(nameof(AccentPalettePickerVisibility));
-            }
-        }
-    }
-
-    public Visibility AccentPalettePickerVisibility => RequestedTheme == ElementTheme.Light
-        ? Visibility.Visible
-        : Visibility.Collapsed;
-
-    public string SelectedThemeLabel
-    {
-        get => selectedThemeLabel;
-        private set => SetProperty(ref selectedThemeLabel, value);
-    }
-
-    public string ThemeIconGlyph => RequestedTheme == ElementTheme.Dark ? "\uE706" : "\uE708";
-
-    public string ThemeToggleToolTip => RequestedTheme == ElementTheme.Dark
-        ? "Switch to light theme"
-        : "Switch to dark theme";
-
-    public string SelectedAccentPalette
-    {
-        get => selectedAccentPalette;
-        private set => SetProperty(ref selectedAccentPalette, value);
-    }
-
     public bool IsNavigationPaneOpen
     {
         get => isNavigationPaneOpen;
@@ -173,21 +121,13 @@ public sealed partial class MainShellViewModel : ObservableObject
 
     public IRelayCommand<object?> NavigateCommand { get; }
 
-    public IAsyncRelayCommand ToggleThemeCommand { get; }
-
     public IRelayCommand ToggleSoundDetailsCommand { get; }
 
     public IRelayCommand OpenSettingsCommand { get; }
 
-    public IAsyncRelayCommand<string> ChangeThemeCommand { get; }
-
-    public IAsyncRelayCommand<string> ChangeAccentPaletteCommand { get; }
-
     public async Task LoadAsync(CancellationToken cancellationToken)
     {
         await PlaybackBar.LoadAsync(cancellationToken);
-        var appearance = await loadAppearanceSettings.ExecuteAsync(cancellationToken);
-        ApplyAppearance(appearance.Theme, appearance.AccentPalette);
         RefreshAudioStatus();
     }
 
@@ -236,63 +176,10 @@ public sealed partial class MainShellViewModel : ObservableObject
         }
     }
 
-    private async Task ToggleThemeAsync(CancellationToken cancellationToken)
-    {
-        var theme = RequestedTheme == ElementTheme.Dark ? AppearanceThemes.Light : AppearanceThemes.Dark;
-        ApplyAppearance(theme, SelectedAccentPalette);
-        await SaveAppearanceAsync(cancellationToken);
-    }
-
-    private async Task ChangeThemeAsync(string? themeName, CancellationToken cancellationToken)
-    {
-        ApplyAppearance(AppearanceThemes.Normalize(themeName), SelectedAccentPalette);
-        await SaveAppearanceAsync(cancellationToken);
-    }
-
-    private async Task ChangeAccentPaletteAsync(string? palette, CancellationToken cancellationToken)
-    {
-        ApplyAppearance(CurrentThemeName(), AppearancePalettes.Normalize(palette));
-        await SaveAppearanceAsync(cancellationToken);
-    }
-
     private void OnRouteChanged(object? sender, ShellRoute route)
     {
         SelectedNavigationItem = NavigationItems.First(item => item.Route == route);
         CurrentPage = pages[route];
     }
 
-    private void UpdateSelectedThemeLabel()
-    {
-        SelectedThemeLabel = RequestedTheme switch
-        {
-            ElementTheme.Light => "Light theme",
-            ElementTheme.Dark => "Dark theme",
-            _ => "Dark theme"
-        };
-
-        OnPropertyChanged(nameof(ThemeIconGlyph));
-        OnPropertyChanged(nameof(ThemeToggleToolTip));
-    }
-
-    private void ApplyAppearance(string theme, string palette)
-    {
-        RequestedTheme = AppearanceThemes.Normalize(theme) == AppearanceThemes.Light
-            ? ElementTheme.Light
-            : ElementTheme.Dark;
-        SelectedAccentPalette = AppearancePalettes.Normalize(palette);
-        UpdateSelectedThemeLabel();
-        appearanceResourceManager.Apply(SelectedAccentPalette, RequestedTheme);
-    }
-
-    private Task SaveAppearanceAsync(CancellationToken cancellationToken)
-    {
-        return saveAppearanceSettings.ExecuteAsync(
-            new AppearanceSettingsDto(CurrentThemeName(), SelectedAccentPalette),
-            cancellationToken);
-    }
-
-    private string CurrentThemeName()
-    {
-        return RequestedTheme == ElementTheme.Light ? AppearanceThemes.Light : AppearanceThemes.Dark;
-    }
 }
