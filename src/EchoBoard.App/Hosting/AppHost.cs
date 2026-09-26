@@ -4,7 +4,6 @@ using EchoBoard.Application.Audio;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Interfaces;
 using EchoBoard.App.Hotkeys;
-using EchoBoard.App.Appearance;
 using EchoBoard.App.Navigation;
 using EchoBoard.App.ViewModels;
 using EchoBoard.App.Views;
@@ -46,7 +45,6 @@ public static class AppHost
                 services.AddSingleton<SoundPlaybackCommandPorts>();
                 services.AddSingleton<ISoundPlaybackCommandPort>(services => services.GetRequiredService<SoundPlaybackCommandPorts>());
                 services.AddSingleton<INavigationService, NavigationService>();
-                services.AddSingleton<IAppearanceResourceManager, AppearanceResourceManager>();
                 services.AddSingleton<TransientNotificationService>();
                 services.AddSingleton<PlaybackCoordinator>();
                 services.AddSingleton<AudioRoutingSettingsCoordinator>();

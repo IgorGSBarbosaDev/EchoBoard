@@ -23,7 +23,6 @@ public sealed class ThemeResourceContractTests
 
         mergedSources.Should().ContainInOrder(
             "Themes/Colors.xaml",
-            "Themes/Palettes.xaml",
             "Themes/Brushes.xaml",
             "Themes/Typography.xaml",
             "Themes/Spacing.xaml",
@@ -39,7 +38,6 @@ public sealed class ThemeResourceContractTests
             .ToArray();
 
         var themeHexValues = ReadColorResources("src/EchoBoard.App/Themes/Colors.xaml")
-            .Concat(ReadColorResources("src/EchoBoard.App/Themes/Palettes.xaml"))
             .Select(resource => resource.Value)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
@@ -54,15 +52,12 @@ public sealed class ThemeResourceContractTests
     }
 
     [Fact]
-    public void DarkThemeAndAccentPalettesUseOnlyGrayscaleColors()
+    public void DarkThemeUsesOnlyGrayscaleColors()
     {
         var darkThemeColors = ReadThemeDictionaryColors("Dark")
             .Concat(ReadThemeDictionaryColors("Default"));
-        var darkPaletteColors = ReadColorResources("src/EchoBoard.App/Themes/Palettes.xaml")
-            .Where(resource => resource.Key.Contains("Dark", StringComparison.Ordinal));
 
         var nonGrayscaleColors = darkThemeColors
-            .Concat(darkPaletteColors)
             .Where(resource => !IsGrayscale(resource.Value))
             .Select(resource => $"{resource.Key}={resource.Value}")
             .ToArray();
@@ -71,51 +66,23 @@ public sealed class ThemeResourceContractTests
     }
 
     [Fact]
-    public void LightThemeRetainsItsExistingSurfaceActionAndStatusColors()
+    public void AppUsesOnlyTheDarkThemeAndHasNoAppearancePickers()
     {
-        var lightColors = ReadThemeDictionaryColors("Light")
-            .ToDictionary(resource => resource.Key, resource => resource.Value, StringComparer.Ordinal);
-        var lightPalettes = ReadColorResources("src/EchoBoard.App/Themes/Palettes.xaml")
-            .Where(resource => resource.Key.Contains("Light", StringComparison.Ordinal))
-            .ToDictionary(resource => resource.Key, resource => resource.Value, StringComparer.Ordinal);
+        var colors = XDocument.Load(ProjectPath("src/EchoBoard.App/Themes/Colors.xaml"));
+        var shellPage = XDocument.Load(ProjectPath("src/EchoBoard.App/Views/MainShellPage.xaml"));
+        var shellRoot = shellPage.Descendants().Single(element =>
+            (string?)element.Attribute(XamlNamespace + "Name") == "ShellRoot");
 
-        lightColors["EchoBoardBackgroundPrimaryColor"].Should().Be("#F5F7FB");
-        lightColors["EchoBoardBackgroundSurfaceColor"].Should().Be("#FFFFFF");
-        lightColors["EchoBoardActionColor"].Should().Be("#146EF5");
-        lightColors["EchoBoardSuccessColor"].Should().Be("#168A60");
-        lightColors["EchoBoardWarningColor"].Should().Be("#B77900");
-        lightColors["EchoBoardErrorColor"].Should().Be("#C53030");
-        lightPalettes.Should().BeEquivalentTo(new Dictionary<string, string>
-        {
-            ["EchoBoardPaletteBlueLightActionColor"] = "#146EF5",
-            ["EchoBoardPaletteBlueLightHoverColor"] = "#0E5CD1",
-            ["EchoBoardPaletteBlueLightPressedColor"] = "#0B49A6",
-            ["EchoBoardPaletteBlueLightTintColor"] = "#E7F0FF",
-            ["EchoBoardPaletteCyanLightActionColor"] = "#087E8B",
-            ["EchoBoardPaletteCyanLightHoverColor"] = "#066A75",
-            ["EchoBoardPaletteCyanLightPressedColor"] = "#05545D",
-            ["EchoBoardPaletteCyanLightTintColor"] = "#DDF5F7",
-            ["EchoBoardPaletteVioletLightActionColor"] = "#6D4DE3",
-            ["EchoBoardPaletteVioletLightHoverColor"] = "#583AC7",
-            ["EchoBoardPaletteVioletLightPressedColor"] = "#452D9E",
-            ["EchoBoardPaletteVioletLightTintColor"] = "#EEE9FF",
-            ["EchoBoardPaletteEmeraldLightActionColor"] = "#168A60",
-            ["EchoBoardPaletteEmeraldLightHoverColor"] = "#11734F",
-            ["EchoBoardPaletteEmeraldLightPressedColor"] = "#0D593D",
-            ["EchoBoardPaletteEmeraldLightTintColor"] = "#DEF5EB",
-            ["EchoBoardPaletteRoseLightActionColor"] = "#C93663",
-            ["EchoBoardPaletteRoseLightHoverColor"] = "#AA294F",
-            ["EchoBoardPaletteRoseLightPressedColor"] = "#861F3E",
-            ["EchoBoardPaletteRoseLightTintColor"] = "#FCE5EC"
-        });
-    }
+        colors.Descendants().Should().NotContain(element =>
+            element.Name.LocalName == "ResourceDictionary"
+            && (string?)element.Attribute(XamlNamespace + "Key") == "Light");
+        shellRoot.Attribute("RequestedTheme")?.Value.Should().Be("Dark");
+        File.ReadAllText(ProjectPath("src/EchoBoard.App/App.xaml"))
+            .Should().NotContain("Palettes.xaml");
+        shellPage.ToString().Should().NotContain("Switch theme").And.NotContain("Choose accent palette");
 
-    [Fact]
-    public void AccentPalettePickerUsesThemeSpecificVisibility()
-    {
-        var shellPage = File.ReadAllText(ProjectPath("src/EchoBoard.App/Views/MainShellPage.xaml"));
-
-        shellPage.Should().Contain("Visibility=\"{Binding AccentPalettePickerVisibility}\"");
+        var designReference = File.ReadAllText(ProjectPath("docs/design-reference/echoboard-design-reference.html"));
+        designReference.Should().NotContain("themeToggle").And.NotContain("data-theme=\"light\"");
     }
 
     private static KeyValuePair<string, string>[] ReadColorResources(string relativePath)

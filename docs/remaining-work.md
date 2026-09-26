@@ -28,7 +28,7 @@ Atualizado após o merge de `bugfix/audio-playback-mixer` na `main`.
    - voz continuando depois do término de um efeito.
 3. Repetir a validação após reiniciar o aplicativo e após desconectar/reconectar o cabo.
 4. Executar smoke test de hotkey com o EchoBoard sem foco.
-5. Fazer revisão visual manual em tema claro/escuro e larguras compacta, média e ampla.
+5. Fazer revisão visual manual em tema escuro e larguras compacta, média e ampla.
 
 ## Melhorias futuras
 

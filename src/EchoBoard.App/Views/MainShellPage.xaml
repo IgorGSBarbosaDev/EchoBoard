@@ -22,7 +22,7 @@
         Background="{ThemeResource EchoBoardBackgroundPrimaryBrush}"
         HorizontalAlignment="Stretch"
         KeyDown="OnShellKeyDown"
-        RequestedTheme="{Binding RequestedTheme}">
+        RequestedTheme="Dark">
         <Grid.RowDefinitions>
             <RowDefinition Height="80" />
             <RowDefinition Height="*" />
@@ -153,37 +153,6 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
-                <Button
-                    AutomationProperties.Name="Switch theme"
-                    Command="{Binding ToggleThemeCommand}"
-                    Style="{StaticResource EchoBoardIconButtonStyle}"
-                    ToolTipService.ToolTip="{Binding ThemeToggleToolTip}">
-                    <FontIcon Glyph="{Binding ThemeIconGlyph}" />
-                </Button>
-                <Button
-                    AutomationProperties.Name="Choose accent palette"
-                    Style="{StaticResource EchoBoardPaletteButtonStyle}"
-                    Visibility="{Binding AccentPalettePickerVisibility}"
-                    ToolTipService.ToolTip="Choose accent palette">
-                    <Button.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="Blue" Command="{x:Bind ViewModel.ChangeAccentPaletteCommand}" CommandParameter="Blue" />
-                            <MenuFlyoutItem Text="Cyan" Command="{x:Bind ViewModel.ChangeAccentPaletteCommand}" CommandParameter="Cyan" />
-                            <MenuFlyoutItem Text="Violet" Command="{x:Bind ViewModel.ChangeAccentPaletteCommand}" CommandParameter="Violet" />
-                            <MenuFlyoutItem Text="Emerald" Command="{x:Bind ViewModel.ChangeAccentPaletteCommand}" CommandParameter="Emerald" />
-                            <MenuFlyoutItem Text="Rose" Command="{x:Bind ViewModel.ChangeAccentPaletteCommand}" CommandParameter="Rose" />
-                        </MenuFlyout>
-                    </Button.Flyout>
-                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}">
-                        <Border
-                            Width="10"
-                            Height="10"
-                            VerticalAlignment="Center"
-                            Background="{ThemeResource EchoBoardActionBrush}"
-                            CornerRadius="5" />
-                        <TextBlock VerticalAlignment="Center" Text="{Binding SelectedAccentPalette}" />
-                    </StackPanel>
-                </Button>
                 <Button
                     AutomationProperties.Name="Open settings"
                     Command="{Binding OpenSettingsCommand}"

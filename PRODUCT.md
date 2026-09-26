@@ -37,7 +37,7 @@ O EchoBoard centraliza biblioteca de sons, hotkeys globais, reprodução, captur
 - Usar Windows 10/11, 64 bits, com .NET 10, WinUI 3, MVVM, NAudio/WASAPI e arquitetura modular separando App, Application, Domain, Audio e Infrastructure.
 - Permanecer local-first: não adicionar contas, backend, nuvem, telemetria, sincronização ou driver de áudio próprio.
 - Não incluir no MVP macOS, Linux, mobile, download de áudio, compartilhamento público, gravação/edição de áudio, TTS, equalizador, efeitos de voz, hotkeys globais de mouse, Stream Deck ou captura de aplicativos específicos.
-- Manter temas claro e escuro, operação por teclado e comportamento estável quando dispositivos físicos ou virtuais não estiverem disponíveis.
+- Manter somente o tema escuro, operação por teclado e comportamento estável quando dispositivos físicos ou virtuais não estiverem disponíveis.
 - O produto não instala nem implementa um driver virtual; o roteamento para Discord e OBS depende de endpoint externo configurado pelo usuário.
 
 ## Brand Commitments
@@ -68,4 +68,4 @@ O EchoBoard centraliza biblioteca de sons, hotkeys globais, reprodução, captur
 
 - Operações importantes devem permanecer acessíveis por teclado, incluindo hotkeys globais e comandos equivalentes na interface.
 - Informações de estado de reprodução, níveis e disponibilidade de dispositivos devem ter representação textual além de sinais visuais.
-- Os temas claro e escuro devem manter legibilidade e estados de foco identificáveis.
+- O tema escuro deve manter legibilidade e estados de foco identificáveis.
