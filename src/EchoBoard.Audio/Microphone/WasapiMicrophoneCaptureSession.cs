@@ -1,3 +1,4 @@
+using System.Buffers;
 using EchoBoard.Application.Audio;
 using EchoBoard.Audio;
 using NAudio.CoreAudioApi;
@@ -20,7 +21,7 @@ public sealed class WasapiMicrophoneCaptureSession : IMicrophoneCaptureSession
         Format = ToFormat(capture.WaveFormat);
     }
 
-    public event EventHandler<MicrophoneSamplesCapturedEventArgs>? SamplesCaptured;
+    public event MicrophoneSamplesCapturedHandler? SamplesCaptured;
 
     public event EventHandler<Exception>? CaptureFailed;
 
@@ -50,14 +51,29 @@ public sealed class WasapiMicrophoneCaptureSession : IMicrophoneCaptureSession
 
     private void OnDataAvailable(object? sender, WaveInEventArgs e)
     {
+        float[]? sampleBuffer = null;
         try
         {
-            var samples = ConvertToFloatSamples(capture.WaveFormat, e.Buffer, e.BytesRecorded);
-            SamplesCaptured?.Invoke(this, new MicrophoneSamplesCapturedEventArgs(samples));
+            var sampleCount = GetSampleCount(capture.WaveFormat, e.BytesRecorded);
+            if (sampleCount == 0)
+            {
+                return;
+            }
+
+            sampleBuffer = ArrayPool<float>.Shared.Rent(sampleCount);
+            ConvertToFloatSamples(capture.WaveFormat, e.Buffer, sampleBuffer, sampleCount);
+            SamplesCaptured?.Invoke(this, sampleBuffer.AsSpan(0, sampleCount));
         }
         catch (Exception exception)
         {
             CaptureFailed?.Invoke(this, exception);
+        }
+        finally
+        {
+            if (sampleBuffer is not null)
+            {
+                ArrayPool<float>.Shared.Return(sampleBuffer);
+            }
         }
     }
 
@@ -78,27 +94,42 @@ public sealed class WasapiMicrophoneCaptureSession : IMicrophoneCaptureSession
             format.Encoding.ToString());
     }
 
-    private static float[] ConvertToFloatSamples(WaveFormat format, byte[] buffer, int bytesRecorded)
+    private static int GetSampleCount(WaveFormat format, int bytesRecorded)
     {
         if (format.Encoding == WaveFormatEncoding.IeeeFloat && format.BitsPerSample == 32)
         {
-            var sampleCount = bytesRecorded / sizeof(float);
-            var samples = new float[sampleCount];
-            Buffer.BlockCopy(buffer, 0, samples, 0, sampleCount * sizeof(float));
-            return samples;
+            return bytesRecorded / sizeof(float);
         }
 
         if (format.BitsPerSample == 16)
         {
-            var sampleCount = bytesRecorded / sizeof(short);
-            var samples = new float[sampleCount];
+            return bytesRecorded / sizeof(short);
+        }
+
+        throw new InvalidOperationException($"Unsupported microphone format: {format.Encoding} {format.BitsPerSample}-bit.");
+    }
+
+    private static void ConvertToFloatSamples(
+        WaveFormat format,
+        byte[] buffer,
+        float[] destination,
+        int sampleCount)
+    {
+        if (format.Encoding == WaveFormatEncoding.IeeeFloat && format.BitsPerSample == 32)
+        {
+            Buffer.BlockCopy(buffer, 0, destination, 0, sampleCount * sizeof(float));
+            return;
+        }
+
+        if (format.BitsPerSample == 16)
+        {
             for (var i = 0; i < sampleCount; i++)
             {
                 var value = BitConverter.ToInt16(buffer, i * sizeof(short));
-                samples[i] = value / 32768f;
+                destination[i] = value / 32768f;
             }
 
-            return samples;
+            return;
         }
 
         throw new InvalidOperationException($"Unsupported microphone format: {format.Encoding} {format.BitsPerSample}-bit.");

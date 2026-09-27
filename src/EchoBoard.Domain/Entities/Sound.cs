@@ -21,6 +21,8 @@ public sealed class Sound
         ".aac"
     };
 
+    private readonly List<SoundCategory> categoryAssignments = [];
+
     private Sound()
     {
         Name = string.Empty;
@@ -41,7 +43,6 @@ public sealed class Sound
         bool stopPreviousSound,
         bool allowOverlap,
         byte[] waveformPeaks,
-        Guid? categoryId,
         int sortOrder,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
@@ -58,7 +59,6 @@ public sealed class Sound
         StopPreviousSound = stopPreviousSound;
         AllowOverlap = allowOverlap;
         WaveformPeaks = waveformPeaks;
-        CategoryId = categoryId;
         SortOrder = sortOrder;
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
@@ -88,7 +88,9 @@ public sealed class Sound
 
     public byte[] WaveformPeaks { get; private set; } = [];
 
-    public Guid? CategoryId { get; private set; }
+    public IReadOnlyCollection<SoundCategory> CategoryAssignments => categoryAssignments;
+
+    public IReadOnlyList<Guid> CategoryIds => categoryAssignments.Select(assignment => assignment.CategoryId).ToArray();
 
     public int SortOrder { get; private set; }
 
@@ -109,7 +111,7 @@ public sealed class Sound
     {
         var utcCreatedAt = ValidateUtc(createdAt, nameof(createdAt));
 
-        return new Sound(
+        var sound = new Sound(
             Guid.NewGuid(),
             ValidateName(name),
             ValidateFilePath(filePath),
@@ -122,10 +124,16 @@ public sealed class Sound
             stopPreviousSound: true,
             allowOverlap: false,
             ValidateWaveformPeaks(waveformPeaks),
-            categoryId,
             ValidateSortOrder(sortOrder),
             utcCreatedAt,
             utcCreatedAt);
+
+        if (categoryId is Guid assignedCategoryId)
+        {
+            sound.categoryAssignments.Add(SoundCategory.Create(sound.Id, assignedCategoryId));
+        }
+
+        return sound;
     }
 
     public void Rename(string name, DateTimeOffset updatedAt)
@@ -134,16 +142,36 @@ public sealed class Sound
         UpdatedAt = ValidateUtc(updatedAt, nameof(updatedAt));
     }
 
-    public void MoveToCategory(Guid categoryId, DateTimeOffset updatedAt)
+    public bool AssignToCategory(Guid categoryId, DateTimeOffset updatedAt)
     {
-        CategoryId = categoryId;
-        UpdatedAt = ValidateUtc(updatedAt, nameof(updatedAt));
+        if (categoryId == Guid.Empty)
+        {
+            throw new ArgumentException("A category id is required.", nameof(categoryId));
+        }
+
+        if (categoryAssignments.Any(assignment => assignment.CategoryId == categoryId))
+        {
+            return false;
+        }
+
+        var validatedUpdatedAt = ValidateUtc(updatedAt, nameof(updatedAt));
+        categoryAssignments.Add(SoundCategory.Create(Id, categoryId));
+        UpdatedAt = validatedUpdatedAt;
+        return true;
     }
 
-    public void ClearCategory(DateTimeOffset updatedAt)
+    public bool RemoveFromCategory(Guid categoryId, DateTimeOffset updatedAt)
     {
-        CategoryId = null;
-        UpdatedAt = ValidateUtc(updatedAt, nameof(updatedAt));
+        var assignment = categoryAssignments.SingleOrDefault(item => item.CategoryId == categoryId);
+        if (assignment is null)
+        {
+            return false;
+        }
+
+        var validatedUpdatedAt = ValidateUtc(updatedAt, nameof(updatedAt));
+        categoryAssignments.Remove(assignment);
+        UpdatedAt = validatedUpdatedAt;
+        return true;
     }
 
     public void ChangeSortOrder(int sortOrder, DateTimeOffset updatedAt)

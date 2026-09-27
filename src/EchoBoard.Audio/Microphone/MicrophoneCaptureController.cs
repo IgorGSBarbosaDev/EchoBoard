@@ -9,6 +9,7 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
     private readonly IMicrophoneCaptureSessionFactory sessionFactory;
     private IMicrophoneCaptureSession? session;
     private MicrophonePcmRingBuffer? source;
+    private double liveLevel;
     private MicrophoneCaptureSnapshot snapshot = MicrophoneCaptureSnapshot.Stopped();
 
     public MicrophoneCaptureController(
@@ -32,6 +33,7 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
         var availableDevices = await devices.ListAsync(cancellationToken);
         if (availableDevices.Count == 0)
         {
+            Volatile.Write(ref liveLevel, 0);
             snapshot = MicrophoneCaptureSnapshot.Unavailable("No microphone available. Connect an input device.", settings);
             return;
         }
@@ -39,6 +41,7 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
         var selected = availableDevices.SingleOrDefault(item => string.Equals(item.Id, settings.SelectedDeviceId, StringComparison.Ordinal));
         if (selected is null && !string.IsNullOrWhiteSpace(settings.SelectedDeviceId))
         {
+            Volatile.Write(ref liveLevel, 0);
             snapshot = MicrophoneCaptureSnapshot.Unavailable($"Previous microphone unavailable: {settings.SelectedDeviceName ?? settings.SelectedDeviceId}", settings);
             return;
         }
@@ -49,6 +52,7 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
             SelectedDeviceId = selected.Id,
             SelectedDeviceName = selected.Name
         };
+        Volatile.Write(ref liveLevel, 0);
         snapshot = MicrophoneCaptureSnapshot.Stopped(selected, restored);
     }
 
@@ -72,10 +76,15 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
 
     public Task SetMutedAsync(bool isMuted, CancellationToken cancellationToken)
     {
+        if (isMuted)
+        {
+            Volatile.Write(ref liveLevel, 0);
+        }
+
         snapshot = snapshot with
         {
             IsMuted = isMuted,
-            Level = isMuted ? 0 : snapshot.Level,
+            Level = isMuted ? 0 : Volatile.Read(ref liveLevel),
             StatusMessage = isMuted ? "Muted" : StatusFor(snapshot.State)
         };
         return Task.CompletedTask;
@@ -85,6 +94,7 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
     {
         if (string.IsNullOrWhiteSpace(snapshot.SelectedDeviceId) || string.IsNullOrWhiteSpace(snapshot.SelectedDeviceName))
         {
+            Volatile.Write(ref liveLevel, 0);
             snapshot = snapshot with
             {
                 State = MicrophoneCaptureState.Unavailable,
@@ -95,6 +105,7 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
         }
 
         await StopSessionAsync(cancellationToken);
+        Volatile.Write(ref liveLevel, 0);
         var selectedDevice = new AudioInputDeviceDto(snapshot.SelectedDeviceId, snapshot.SelectedDeviceName, IsDefault: false, IsAvailable: true);
         snapshot = snapshot with
         {
@@ -151,6 +162,7 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
         {
             source?.Clear();
             source = null;
+            Volatile.Write(ref liveLevel, 0);
             snapshot = snapshot with
             {
                 State = MicrophoneCaptureState.Stopped,
@@ -164,7 +176,8 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
 
     public MicrophoneCaptureSnapshot GetSnapshot()
     {
-        return snapshot;
+        var current = snapshot;
+        return current with { Level = Volatile.Read(ref liveLevel) };
     }
 
     public async ValueTask DisposeAsync()
@@ -172,7 +185,7 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
         await StopSessionAsync(CancellationToken.None);
     }
 
-    private void OnSamplesCaptured(object? sender, MicrophoneSamplesCapturedEventArgs e)
+    private void OnSamplesCaptured(object? sender, ReadOnlySpan<float> samples)
     {
         if (!ReferenceEquals(sender, session))
         {
@@ -185,12 +198,9 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
             return;
         }
 
-        var level = currentSource.WriteProcessed(e.Samples, snapshot.Gain, snapshot.IsMuted);
-        snapshot = snapshot with
-        {
-            Level = snapshot.IsMuted ? 0 : level,
-            StatusMessage = snapshot.IsMuted ? "Muted" : "Capturing"
-        };
+        var currentSnapshot = snapshot;
+        var level = currentSource.WriteProcessed(samples, currentSnapshot.Gain, currentSnapshot.IsMuted);
+        Volatile.Write(ref liveLevel, currentSnapshot.IsMuted ? 0 : level);
     }
 
     private async void OnCaptureFailed(object? sender, Exception exception)
@@ -203,6 +213,7 @@ public sealed class MicrophoneCaptureController : IMicrophoneCaptureController, 
         var failedSession = DetachSession();
         source?.Clear();
         source = null;
+        Volatile.Write(ref liveLevel, 0);
         snapshot = snapshot with
         {
             State = MicrophoneCaptureState.Unavailable,

@@ -68,37 +68,5 @@
             <Color x:Key="EchoBoardOverlayColor">#CC111111</Color>
         </ResourceDictionary>
 
-        <ResourceDictionary x:Key="Light">
-            <Color x:Key="EchoBoardBackgroundPrimaryColor">#F5F7FB</Color>
-            <Color x:Key="EchoBoardBackgroundSurfaceColor">#FFFFFF</Color>
-            <Color x:Key="EchoBoardBackgroundElevatedColor">#F8FAFD</Color>
-            <Color x:Key="EchoBoardSurfaceHoverColor">#F0F4F9</Color>
-            <Color x:Key="EchoBoardCardColor">#FFFFFF</Color>
-            <Color x:Key="EchoBoardCardActiveColor">#E7F0FF</Color>
-            <Color x:Key="EchoBoardBorderColor">#D8E0ED</Color>
-            <Color x:Key="EchoBoardBorderSoftColor">#E7ECF3</Color>
-            <Color x:Key="EchoBoardActionColor">#146EF5</Color>
-            <Color x:Key="EchoBoardActionHoverColor">#0E5CD1</Color>
-            <Color x:Key="EchoBoardActionPressedColor">#0B49A6</Color>
-            <Color x:Key="EchoBoardDisabledColor">#CDD6E4</Color>
-            <Color x:Key="EchoBoardSelectedColor">#E7F0FF</Color>
-            <Color x:Key="EchoBoardFocusColor">#146EF5</Color>
-            <Color x:Key="EchoBoardTextPrimaryColor">#111827</Color>
-            <Color x:Key="EchoBoardTextSecondaryColor">#5B6475</Color>
-            <Color x:Key="EchoBoardTextDisabledColor">#8892A3</Color>
-            <Color x:Key="EchoBoardOnActionColor">#FFFFFF</Color>
-            <Color x:Key="EchoBoardSuccessColor">#168A60</Color>
-            <Color x:Key="EchoBoardWarningColor">#B77900</Color>
-            <Color x:Key="EchoBoardErrorColor">#C53030</Color>
-            <Color x:Key="EchoBoardStatusConnectedSurfaceColor">#ECF8F2</Color>
-            <Color x:Key="EchoBoardStatusConnectedBorderColor">#B8DDCC</Color>
-            <Color x:Key="EchoBoardStatusWarningSurfaceColor">#FFF8E8</Color>
-            <Color x:Key="EchoBoardStatusWarningBorderColor">#E5CC91</Color>
-            <Color x:Key="EchoBoardStatusUnavailableSurfaceColor">#FDF0F0</Color>
-            <Color x:Key="EchoBoardStatusUnavailableBorderColor">#E5BABA</Color>
-            <Color x:Key="EchoBoardStatusNeutralSurfaceColor">#FFFFFF</Color>
-            <Color x:Key="EchoBoardStatusNeutralBorderColor">#D8E0ED</Color>
-            <Color x:Key="EchoBoardOverlayColor">#CCF5F7FB</Color>
-        </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

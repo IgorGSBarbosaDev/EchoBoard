@@ -14,7 +14,7 @@ public interface IMicrophoneCaptureSessionFactory
 
 public interface IMicrophoneCaptureSession : IAsyncDisposable
 {
-    event EventHandler<MicrophoneSamplesCapturedEventArgs>? SamplesCaptured;
+    event MicrophoneSamplesCapturedHandler? SamplesCaptured;
 
     event EventHandler<Exception>? CaptureFailed;
 
@@ -25,12 +25,4 @@ public interface IMicrophoneCaptureSession : IAsyncDisposable
     Task StopAsync(CancellationToken cancellationToken);
 }
 
-public sealed class MicrophoneSamplesCapturedEventArgs : EventArgs
-{
-    public MicrophoneSamplesCapturedEventArgs(float[] samples)
-    {
-        Samples = samples;
-    }
-
-    public float[] Samples { get; }
-}
+public delegate void MicrophoneSamplesCapturedHandler(object? sender, ReadOnlySpan<float> samples);

@@ -8,15 +8,16 @@ namespace EchoBoard.Infrastructure.Persistence.Repositories;
 
 public sealed class EfHotkeyBindingRepository : IHotkeyBindingRepository
 {
-    private readonly EchoBoardDbContext context;
+    private readonly IDbContextFactory<EchoBoardDbContext> contextFactory;
 
-    public EfHotkeyBindingRepository(EchoBoardDbContext context)
+    public EfHotkeyBindingRepository(IDbContextFactory<EchoBoardDbContext> contextFactory)
     {
-        this.context = context;
+        this.contextFactory = contextFactory;
     }
 
     public async Task<IReadOnlyList<HotkeyBinding>> ListAsync(CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.HotkeyBindings
             .AsNoTracking()
             .Where(binding => binding.TargetKind == HotkeyBindingTargetKind.Sound && binding.SoundId != null)
@@ -26,6 +27,7 @@ public sealed class EfHotkeyBindingRepository : IHotkeyBindingRepository
 
     public async Task<HotkeyBinding?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.HotkeyBindings
             .AsNoTracking()
             .SingleOrDefaultAsync(
@@ -35,6 +37,7 @@ public sealed class EfHotkeyBindingRepository : IHotkeyBindingRepository
 
     public async Task<HotkeyBinding?> GetForSoundAsync(Guid soundId, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.HotkeyBindings
             .AsNoTracking()
             .SingleOrDefaultAsync(binding => binding.SoundId == soundId, cancellationToken);
@@ -42,6 +45,7 @@ public sealed class EfHotkeyBindingRepository : IHotkeyBindingRepository
 
     public async Task<bool> CombinationExistsAsync(string normalizedKeyCombination, Guid? excludingBindingId, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.HotkeyBindings
             .AsNoTracking()
             .AnyAsync(
@@ -51,18 +55,21 @@ public sealed class EfHotkeyBindingRepository : IHotkeyBindingRepository
 
     public async Task AddAsync(HotkeyBinding binding, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         context.HotkeyBindings.Add(binding);
-        await SaveChangesAsync(binding.NormalizedKeyCombination, cancellationToken);
+        await SaveChangesAsync(context, binding.NormalizedKeyCombination, cancellationToken);
     }
 
     public async Task UpdateAsync(HotkeyBinding binding, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         context.HotkeyBindings.Update(binding);
-        await SaveChangesAsync(binding.NormalizedKeyCombination, cancellationToken);
+        await SaveChangesAsync(context, binding.NormalizedKeyCombination, cancellationToken);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var binding = await context.HotkeyBindings.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
         if (binding is null)
         {
@@ -73,7 +80,10 @@ public sealed class EfHotkeyBindingRepository : IHotkeyBindingRepository
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task SaveChangesAsync(string normalizedKeyCombination, CancellationToken cancellationToken)
+    private static async Task SaveChangesAsync(
+        EchoBoardDbContext context,
+        string normalizedKeyCombination,
+        CancellationToken cancellationToken)
     {
         try
         {

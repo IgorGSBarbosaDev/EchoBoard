@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EchoBoard.App.Controls;
@@ -33,7 +32,6 @@ public sealed class SoundDetailsViewModel : ObservableObject
     private bool stopPreviousSound = true;
     private bool allowOverlap;
     private bool isFavorite;
-    private SoundLibraryCategoryOptionViewModel? selectedCategory;
     private string hotkeyPrimaryKey = string.Empty;
     private bool hotkeyCtrl = true;
     private bool hotkeyAlt;
@@ -62,7 +60,6 @@ public sealed class SoundDetailsViewModel : ObservableObject
         this.playbackCoordinator = playbackCoordinator;
         this.notifications = notifications;
 
-        Categories = [];
         OpenCommand = new AsyncRelayCommand<Guid>(id => OpenAsync(id, edit: false, CancellationToken.None));
         OpenEditCommand = new AsyncRelayCommand<Guid>(id => OpenAsync(id, edit: true, CancellationToken.None));
         CloseCommand = new RelayCommand(Close);
@@ -74,8 +71,6 @@ public sealed class SoundDetailsViewModel : ObservableObject
     }
 
     public event EventHandler? SoundChanged;
-
-    public ObservableCollection<SoundLibraryCategoryOptionViewModel> Categories { get; }
 
     public IAsyncRelayCommand<Guid> OpenCommand { get; }
     public IAsyncRelayCommand<Guid> OpenEditCommand { get; }
@@ -119,8 +114,7 @@ public sealed class SoundDetailsViewModel : ObservableObject
     public Visibility EditVisibility => IsEditing ? Visibility.Visible : Visibility.Collapsed;
 
     public string Title => selectedSound?.Name ?? "Nenhum som selecionado";
-    public string Metadata => selectedSound is null ? string.Empty : $"{CategoryText} · {FormatText} · {DurationText}";
-    public string CategoryText => selectedSound?.CategoryName ?? "Sem categoria";
+    public string Metadata => selectedSound is null ? string.Empty : $"{FormatText} · {DurationText}";
     public string FormatText => selectedSound?.Extension.TrimStart('.').ToUpperInvariant() ?? string.Empty;
     public string DurationText => selectedSound is null ? string.Empty : FormatDuration(selectedSound.Duration);
     public string FilePath => selectedSound?.FilePath ?? string.Empty;
@@ -140,7 +134,6 @@ public sealed class SoundDetailsViewModel : ObservableObject
     public bool StopPreviousSound { get => stopPreviousSound; set { if (SetProperty(ref stopPreviousSound, value)) OnPropertyChanged(nameof(StopPreviousText)); } }
     public bool AllowOverlap { get => allowOverlap; set { if (SetProperty(ref allowOverlap, value)) OnPropertyChanged(nameof(AllowOverlapText)); } }
     public bool IsFavorite { get => isFavorite; set { if (SetProperty(ref isFavorite, value)) OnPropertyChanged(nameof(FavoriteText)); } }
-    public SoundLibraryCategoryOptionViewModel? SelectedCategory { get => selectedCategory; set => SetProperty(ref selectedCategory, value); }
     public string HotkeyPrimaryKey { get => hotkeyPrimaryKey; set => SetProperty(ref hotkeyPrimaryKey, value); }
     public bool HotkeyCtrl { get => hotkeyCtrl; set => SetProperty(ref hotkeyCtrl, value); }
     public bool HotkeyAlt { get => hotkeyAlt; set => SetProperty(ref hotkeyAlt, value); }
@@ -172,13 +165,6 @@ public sealed class SoundDetailsViewModel : ObservableObject
 
         var bindings = await listHotkeys.ExecuteAsync(cancellationToken);
         selectedHotkey = bindings.SingleOrDefault(binding => binding.SoundId == soundId);
-        Categories.Clear();
-        Categories.Add(SoundLibraryCategoryOptionViewModel.Unassigned);
-        foreach (var category in library.Categories.OrderBy(category => category.SortOrder))
-        {
-            Categories.Add(new SoundLibraryCategoryOptionViewModel(category.Id, category.Name));
-        }
-
         PopulateEditor();
         FeedbackMessage = string.Empty;
         IsEditing = edit;
@@ -247,7 +233,6 @@ public sealed class SoundDetailsViewModel : ObservableObject
                 selectedSound.FileSize,
                 VolumePercent / 100.0,
                 IsFavorite,
-                SelectedCategory?.Id,
                 selectedSound.SortOrder,
                 DateTimeOffset.UtcNow,
                 IsLoopEnabled,
@@ -323,7 +308,6 @@ public sealed class SoundDetailsViewModel : ObservableObject
         StopPreviousSound = selectedSound.StopPreviousSound;
         AllowOverlap = selectedSound.AllowOverlap;
         IsFavorite = selectedSound.IsFavorite;
-        SelectedCategory = Categories.SingleOrDefault(category => category.Id == selectedSound.CategoryId) ?? Categories.FirstOrDefault();
         HotkeyPrimaryKey = selectedHotkey?.PrimaryKey ?? string.Empty;
         HotkeyCtrl = selectedHotkey?.Modifiers.HasFlag(HotkeyModifiers.Control) ?? true;
         HotkeyAlt = selectedHotkey?.Modifiers.HasFlag(HotkeyModifiers.Alt) ?? false;
@@ -345,7 +329,7 @@ public sealed class SoundDetailsViewModel : ObservableObject
     {
         foreach (var property in new[]
         {
-            nameof(HasSelection), nameof(Title), nameof(Metadata), nameof(CategoryText), nameof(FormatText),
+            nameof(HasSelection), nameof(Title), nameof(Metadata), nameof(FormatText),
             nameof(DurationText), nameof(FilePath), nameof(FileSizeText), nameof(AvailabilityText),
             nameof(HotkeyText), nameof(HotkeyStatusText)
         })

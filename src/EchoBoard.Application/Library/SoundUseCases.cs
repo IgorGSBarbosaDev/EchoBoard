@@ -1,4 +1,5 @@
 using EchoBoard.Domain.Entities;
+using EchoBoard.Domain.Exceptions;
 using EchoBoard.Application.Hotkeys;
 
 namespace EchoBoard.Application.Library;
@@ -97,12 +98,10 @@ public sealed class ListSoundsUseCase
 public sealed class UpdateSoundUseCase
 {
     private readonly ISoundLibraryRepository sounds;
-    private readonly ICategoryRepository categories;
 
-    public UpdateSoundUseCase(ISoundLibraryRepository sounds, ICategoryRepository categories)
+    public UpdateSoundUseCase(ISoundLibraryRepository sounds)
     {
         this.sounds = sounds;
-        this.categories = categories;
     }
 
     public async Task<SoundDto> ExecuteAsync(UpdateSoundRequest request, CancellationToken cancellationToken)
@@ -113,11 +112,6 @@ public sealed class UpdateSoundUseCase
         if (sound is null)
         {
             throw new SoundNotFoundException(request.Id);
-        }
-
-        if (request.CategoryId is not null && await categories.GetCategoryAsync(request.CategoryId.Value, cancellationToken) is null)
-        {
-            throw new CategoryNotFoundException(request.CategoryId.Value);
         }
 
         var normalizedPath = PathNormalizer.NormalizeFilePath(request.FilePath);
@@ -137,15 +131,6 @@ public sealed class UpdateSoundUseCase
             sound.SetWaveformPeaks(request.WaveformPeaks, request.UpdatedAt);
         }
         sound.ChangeSortOrder(request.SortOrder, request.UpdatedAt);
-
-        if (request.CategoryId is null)
-        {
-            sound.ClearCategory(request.UpdatedAt);
-        }
-        else
-        {
-            sound.MoveToCategory(request.CategoryId.Value, request.UpdatedAt);
-        }
 
         await sounds.UpdateSoundAsync(sound, cancellationToken);
 
@@ -179,45 +164,71 @@ public sealed class SetSoundFavoriteUseCase
     }
 }
 
-public sealed class AssignSoundCategoryUseCase
+public sealed class SetCategorySoundsUseCase
 {
     private readonly ISoundLibraryRepository sounds;
     private readonly ICategoryRepository categories;
 
-    public AssignSoundCategoryUseCase(ISoundLibraryRepository sounds, ICategoryRepository categories)
+    public SetCategorySoundsUseCase(
+        ISoundLibraryRepository sounds,
+        ICategoryRepository categories)
     {
         this.sounds = sounds;
         this.categories = categories;
     }
 
-    public async Task<SoundDto> ExecuteAsync(AssignSoundCategoryRequest request, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(
+        Guid categoryId,
+        IReadOnlyCollection<Guid> soundIds,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var sound = await sounds.GetSoundAsync(request.Id, cancellationToken);
-        if (sound is null)
+        ArgumentNullException.ThrowIfNull(soundIds);
+        if (await categories.GetCategoryAsync(categoryId, cancellationToken) is null)
         {
-            throw new SoundNotFoundException(request.Id);
+            throw new CategoryNotFoundException(categoryId);
         }
 
-        if (request.CategoryId is null)
+        var uniqueSoundIds = soundIds.ToHashSet();
+        if (uniqueSoundIds.Count != soundIds.Count)
         {
-            sound.ClearCategory(request.UpdatedAt);
+            throw new DomainValidationException("A sound can only appear once in a category.");
         }
-        else
+
+        if (uniqueSoundIds.Contains(Guid.Empty))
         {
-            var category = await categories.GetCategoryAsync(request.CategoryId.Value, cancellationToken);
-            if (category is null)
+            throw new DomainValidationException("A sound id cannot be empty.");
+        }
+
+        var soundsInCategory = await sounds.GetSoundsByCategoryIdAsync(categoryId, cancellationToken);
+        IReadOnlyList<Sound> selectedSounds = uniqueSoundIds.Count == 0
+            ? []
+            : await sounds.GetSoundsByIdsAsync(uniqueSoundIds, cancellationToken);
+        var selectedSoundIds = selectedSounds.Select(sound => sound.Id).ToHashSet();
+        var missingSoundId = uniqueSoundIds.FirstOrDefault(soundId => !selectedSoundIds.Contains(soundId));
+        if (missingSoundId != Guid.Empty)
+        {
+            throw new SoundNotFoundException(missingSoundId);
+        }
+
+        var updatedSounds = new List<Sound>(selectedSounds.Count + soundsInCategory.Count);
+        var updatedAt = DateTimeOffset.UtcNow;
+        foreach (var sound in selectedSounds)
+        {
+            if (sound.AssignToCategory(categoryId, updatedAt))
             {
-                throw new CategoryNotFoundException(request.CategoryId.Value);
+                updatedSounds.Add(sound);
             }
-
-            sound.MoveToCategory(request.CategoryId.Value, request.UpdatedAt);
         }
 
-        await sounds.UpdateSoundAsync(sound, cancellationToken);
+        foreach (var sound in soundsInCategory.Where(sound => !uniqueSoundIds.Contains(sound.Id)))
+        {
+            if (sound.RemoveFromCategory(categoryId, updatedAt))
+            {
+                updatedSounds.Add(sound);
+            }
+        }
 
-        return LibraryMapper.ToDto(sound);
+        await sounds.UpdateSoundsAsync(updatedSounds, cancellationToken);
     }
 }
 

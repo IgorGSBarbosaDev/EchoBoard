@@ -2,14 +2,13 @@
 
 ## Direction
 
-EchoBoard uses a restrained audio-control-panel style. The dark theme builds depth from black and graphite surfaces, neutral actions, and fine borders. The light theme keeps its existing blue actions and selectable accent palettes. Dark status colors are grayscale; labels and icons keep audio states clear in both themes. Use tonal surface layers instead of decorative gradients, heavy blur, or dashboard-style density.
+EchoBoard uses a fixed dark audio-control-panel style. Black and graphite surfaces, neutral actions, and fine borders create depth. Grayscale status colors, labels, and icons keep audio states clear. Use tonal surface layers instead of decorative gradients, heavy blur, or dashboard-style density.
 
 ## Theme Tokens
 
 Theme resources live in `src/EchoBoard.App/Themes/` and are merged from `App.xaml`.
 
-- `Colors.xaml`: theme-aware primitive colors for dark, light, and system-default fallback.
-- `Palettes.xaml`: centralized dark/light accent palettes. Dark palette variants are monochrome; selectable accent colors remain available in the light theme.
+- `Colors.xaml`: primitive colors for the dark theme and its system-default fallback.
 - `Brushes.xaml`: reusable brushes based on color tokens.
 - `Typography.xaml`: shared font sizes for title, section title, body, caption, badge, and controls.
 - `Spacing.xaml`: spacing scale and common padding values.
@@ -18,7 +17,7 @@ Theme resources live in `src/EchoBoard.App/Themes/` and are merged from `App.xam
 
 Use `{ThemeResource ...}` for theme-aware color and brush references. Do not hardcode PRD palette hex values in pages or reusable controls.
 
-The application starts in dark mode and persists the selected theme and accent palette in `AppSettings`. The dark theme applies the same black-and-graphite palette regardless of the saved accent choice; its accent picker is hidden. The saved accent palette remains available when the user switches to light mode. Shared action, hover, pressed, focus, selection, and active-surface brushes keep screens consistent without duplicating colors in views.
+The application always requests the dark theme. Theme and accent-palette preferences are not offered or persisted. Shared action, hover, pressed, focus, selection, and active-surface brushes keep screens consistent without duplicating colors in views.
 
 ## Typography
 
@@ -61,8 +60,8 @@ Prefer these styles before adding custom controls. Add a custom control only whe
 - Keep views focused on layout and bind state/actions through view models.
 - Add tokens before duplicating colors, spacing, or typography values.
 - Keep audio-specific UI direct and scannable: levels, device state, transport state, and warnings should be visible without decorative noise.
-- Keep status identifiable by text and icon in both themes. The light theme may add semantic colors; the dark theme uses grayscale only.
-- Validate both light and dark themes when adding a screen or reusable component.
+- Keep status identifiable by text and icon in the dark theme, using grayscale colors.
+- Validate the dark theme when adding a screen or reusable component.
 
 ## Library, Settings, And Sound Details
 

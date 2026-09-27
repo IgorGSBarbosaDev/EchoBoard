@@ -1,5 +1,6 @@
 using EchoBoard.Application.Library;
 using EchoBoard.Domain.Entities;
+using EchoBoard.Domain.Exceptions;
 using FluentAssertions;
 using Xunit;
 
@@ -33,7 +34,7 @@ public sealed class SoundLibraryUseCaseTests
         var second = CreateSound("C:\\Audio\\second.mp3");
         await sounds.AddSoundAsync(first, CancellationToken.None);
         await sounds.AddSoundAsync(second, CancellationToken.None);
-        var useCase = new UpdateSoundUseCase(sounds, categories);
+        var useCase = new UpdateSoundUseCase(sounds);
 
         var request = new UpdateSoundRequest(
             second.Id,
@@ -44,7 +45,6 @@ public sealed class SoundLibraryUseCaseTests
             2,
             0.8,
             false,
-            null,
             1,
             Now.AddMinutes(1));
 
@@ -230,7 +230,7 @@ public sealed class SoundLibraryUseCaseTests
     }
 
     [Fact]
-    public async Task QuerySoundLibraryReturnsCategoryNamesCountsAndMissingFileState()
+    public async Task QuerySoundLibraryReturnsCategoryMembershipsCountsAndMissingFileState()
     {
         var sounds = new FakeSoundLibraryRepository();
         var categories = new FakeCategoryRepository();
@@ -254,11 +254,11 @@ public sealed class SoundLibraryUseCaseTests
             category.SoundCount == 1);
         result.Sounds.Should().Contain(item =>
             item.Id == intro.Id &&
-            item.CategoryName == "Memes" &&
+            item.CategoryIds.Contains(memes.Id) &&
             !item.IsMissingFile);
         result.Sounds.Should().Contain(item =>
             item.Id == alert.Id &&
-            item.CategoryName == null &&
+            item.CategoryIds.Count == 0 &&
             item.IsMissingFile);
     }
 
@@ -329,22 +329,67 @@ public sealed class SoundLibraryUseCaseTests
     }
 
     [Fact]
-    public async Task AssignSoundCategoryPersistsCategoryChanges()
+    public async Task SetCategorySoundsAddsAndRemovesOnlyThatCategoryMembership()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var category = Category.Create("Memes", 0, Now);
+        var otherCategory = Category.Create("Games", 1, Now);
+        await categories.AddCategoryAsync(category, CancellationToken.None);
+        await categories.AddCategoryAsync(otherCategory, CancellationToken.None);
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, otherCategory.Id, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var useCase = new SetCategorySoundsUseCase(sounds, categories);
+
+        await useCase.ExecuteAsync(category.Id, [sound.Id], CancellationToken.None);
+
+        sound.CategoryIds.Should().BeEquivalentTo([category.Id, otherCategory.Id]);
+
+        await useCase.ExecuteAsync(category.Id, [], CancellationToken.None);
+
+        sound.CategoryIds.Should().ContainSingle().Which.Should().Be(otherCategory.Id);
+    }
+
+    [Fact]
+    public async Task SetCategorySoundsUpdatesAllMembershipsForThatCategory()
     {
         var sounds = new FakeSoundLibraryRepository();
         var categories = new FakeCategoryRepository();
         var category = Category.Create("Memes", 0, Now);
         await categories.AddCategoryAsync(category, CancellationToken.None);
-        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, null, 0, Now);
+        var firstSound = CreateSound("C:\\Audio\\first.mp3");
+        var secondSound = CreateSound("C:\\Audio\\second.mp3");
+        await sounds.AddSoundAsync(firstSound, CancellationToken.None);
+        await sounds.AddSoundAsync(secondSound, CancellationToken.None);
+        var useCase = new SetCategorySoundsUseCase(sounds, categories);
+
+        await useCase.ExecuteAsync(
+            category.Id,
+            [firstSound.Id],
+            CancellationToken.None);
+
+        firstSound.CategoryIds.Should().ContainSingle().Which.Should().Be(category.Id);
+        secondSound.CategoryIds.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SetCategorySoundsRejectsDuplicateSoundIdsBeforeSaving()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var sound = CreateSound("C:\\Audio\\first.mp3");
         await sounds.AddSoundAsync(sound, CancellationToken.None);
-        var useCase = new AssignSoundCategoryUseCase(sounds, categories);
+        var category = Category.Create("Memes", 0, Now);
+        await categories.AddCategoryAsync(category, CancellationToken.None);
+        var useCase = new SetCategorySoundsUseCase(sounds, categories);
 
-        var assigned = await useCase.ExecuteAsync(new AssignSoundCategoryRequest(sound.Id, category.Id, Now.AddMinutes(1)), CancellationToken.None);
-        var unassigned = await useCase.ExecuteAsync(new AssignSoundCategoryRequest(sound.Id, null, Now.AddMinutes(2)), CancellationToken.None);
+        var act = () => useCase.ExecuteAsync(
+            category.Id,
+            [sound.Id, sound.Id],
+            CancellationToken.None);
 
-        assigned.CategoryId.Should().Be(category.Id);
-        unassigned.CategoryId.Should().BeNull();
-        sounds.Items.Single().CategoryId.Should().BeNull();
+        await act.Should().ThrowAsync<DomainValidationException>();
+        sound.UpdatedAt.Should().Be(Now);
     }
 
     [Fact]

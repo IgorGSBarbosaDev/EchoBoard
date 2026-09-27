@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using EchoBoard.Application.Audio;
-using EchoBoard.Application.Appearance;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 
@@ -16,7 +15,7 @@ public static class DependencyInjection
         services.AddTransient<QuerySoundLibraryUseCase>();
         services.AddTransient<UpdateSoundUseCase>();
         services.AddTransient<SetSoundFavoriteUseCase>();
-        services.AddTransient<AssignSoundCategoryUseCase>();
+        services.AddTransient<SetCategorySoundsUseCase>();
         services.AddTransient<DeleteSoundUseCase>();
         services.AddTransient<ImportSoundsUseCase>();
         services.AddTransient<GenerateSoundWaveformUseCase>();
@@ -45,8 +44,6 @@ public static class DependencyInjection
         services.AddTransient<SaveAudioRoutingSettingsUseCase>();
         services.AddTransient<GetAudioRoutingSnapshotUseCase>();
         services.AddTransient<PlaySoundUseCase>();
-        services.AddTransient<LoadAppearanceSettingsUseCase>();
-        services.AddTransient<SaveAppearanceSettingsUseCase>();
         services.AddSingleton<HotkeyRuntimeService>();
         services.AddSingleton<IHotkeyRuntimeService>(services => services.GetRequiredService<HotkeyRuntimeService>());
 

@@ -1,10 +1,8 @@
 using EchoBoard.Application.Interfaces;
-using EchoBoard.Application.Appearance;
 using EchoBoard.Application.Audio;
 using EchoBoard.Application.Hotkeys;
 using EchoBoard.Application.Library;
 using EchoBoard.App.Navigation;
-using EchoBoard.App.Appearance;
 using EchoBoard.App.ViewModels;
 using EchoBoard.App.Views;
 using EchoBoard.Domain.Entities;
@@ -108,29 +106,6 @@ public sealed class ShellNavigationContractTests
     }
 
     [Fact]
-    public async Task MainShellViewModelRestoresAndPersistsAppearance()
-    {
-        var settings = new FakeAppSettingRepository();
-        await settings.UpsertValueAsync(AppearanceSettingKeys.Theme, AppearanceThemes.Light, CancellationToken.None);
-        await settings.UpsertValueAsync(AppearanceSettingKeys.AccentPalette, AppearancePalettes.Violet, CancellationToken.None);
-        var resources = new FakeAppearanceResourceManager();
-        var viewModel = CreateViewModel(settings, resources);
-
-        await viewModel.LoadAsync(TestContext.Current.CancellationToken);
-        viewModel.AccentPalettePickerVisibility.Should().Be(Visibility.Visible);
-        await viewModel.ChangeAccentPaletteCommand.ExecuteAsync(AppearancePalettes.Emerald);
-        await viewModel.ToggleThemeCommand.ExecuteAsync(null);
-
-        viewModel.RequestedTheme.Should().Be(ElementTheme.Dark);
-        viewModel.AccentPalettePickerVisibility.Should().Be(Visibility.Collapsed);
-        viewModel.SelectedAccentPalette.Should().Be(AppearancePalettes.Emerald);
-        resources.LastPalette.Should().Be(AppearancePalettes.Emerald);
-        resources.LastTheme.Should().Be(ElementTheme.Dark);
-        (await settings.GetValueAsync(AppearanceSettingKeys.Theme, CancellationToken.None)).Should().Be(AppearanceThemes.Dark);
-        (await settings.GetValueAsync(AppearanceSettingKeys.AccentPalette, CancellationToken.None)).Should().Be(AppearancePalettes.Emerald);
-    }
-
-    [Fact]
     public void AppHostRegistersShellDependencies()
     {
         using var host = Hosting.AppHost.Create();
@@ -166,13 +141,8 @@ public sealed class ShellNavigationContractTests
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("database unavailable");
     }
 
-    private static MainShellViewModel CreateViewModel(
-        FakeAppSettingRepository? appearanceSettings = null,
-        FakeAppearanceResourceManager? appearanceResources = null)
+    private static MainShellViewModel CreateViewModel()
     {
-        appearanceSettings ??= new FakeAppSettingRepository();
-        appearanceResources ??= new FakeAppearanceResourceManager();
-
         var navigation = new NavigationService();
         var microphone = new FakeMicrophoneCaptureController();
         var soundDetails = CreateSoundDetailsViewModel();
@@ -183,10 +153,7 @@ public sealed class ShellNavigationContractTests
             CreateSettingsViewModel(),
             CreatePlaybackBarViewModel(),
             soundDetails,
-            new GetMicrophoneCaptureSnapshotUseCase(microphone),
-            new LoadAppearanceSettingsUseCase(appearanceSettings),
-            new SaveAppearanceSettingsUseCase(appearanceSettings),
-            appearanceResources);
+            new GetMicrophoneCaptureSnapshotUseCase(microphone));
     }
 
     private static SoundDetailsViewModel CreateSoundDetailsViewModel()
@@ -201,7 +168,7 @@ public sealed class ShellNavigationContractTests
 
         return new SoundDetailsViewModel(
             query,
-            new UpdateSoundUseCase(sounds, categories),
+            new UpdateSoundUseCase(sounds),
             new DeleteSoundUseCase(sounds),
             new ListHotkeyBindingsUseCase(hotkeys, runtime),
             new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
@@ -224,7 +191,7 @@ public sealed class ShellNavigationContractTests
             new UpdateCategoryUseCase(categories),
             new DeleteCategoryUseCase(categories),
             new SetSoundFavoriteUseCase(sounds),
-            new AssignSoundCategoryUseCase(sounds, categories),
+            new SetCategorySoundsUseCase(sounds, categories),
             new ListHotkeyBindingsUseCase(hotkeys, runtime),
             new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
             new RemoveHotkeyBindingUseCase(hotkeys, runtime),
@@ -441,19 +408,6 @@ public sealed class ShellNavigationContractTests
             new QuerySoundLibraryUseCase(sounds, new FakeCategoryRepository(), new FakeSoundFileAvailabilityReader()),
             new GetMicrophoneCaptureSnapshotUseCase(microphone),
             new SetMicrophoneGainUseCase(settings, microphone));
-    }
-
-    private sealed class FakeAppearanceResourceManager : IAppearanceResourceManager
-    {
-        public string? LastPalette { get; private set; }
-
-        public ElementTheme LastTheme { get; private set; }
-
-        public void Apply(string palette, ElementTheme theme)
-        {
-            LastPalette = palette;
-            LastTheme = theme;
-        }
     }
 
     private sealed class FakeMicrophoneCaptureController : IMicrophoneCaptureController

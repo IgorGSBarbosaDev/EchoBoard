@@ -3,7 +3,6 @@ name: EchoBoard
 description: Mesa de mixagem operacional para sons, voz e roteamento local no Windows.
 colors:
   primary: "#D3D3D3"
-  primary-light: "#146EF5"
   primary-hover: "#F0F0F0"
   primary-pressed: "#AFAFAF"
   neutral-bg: "#111111"
@@ -21,20 +20,6 @@ colors:
   success: "#D0D0D0"
   warning: "#A6A6A6"
   error: "#EAEAEA"
-  light-bg: "#F5F7FB"
-  light-surface: "#FFFFFF"
-  light-elevated: "#F8FAFD"
-  light-border: "#D8E0ED"
-  light-border-soft: "#E7ECF3"
-  light-text-primary: "#111827"
-  light-text-secondary: "#5B6475"
-  light-success: "#168A60"
-  light-warning: "#B77900"
-  light-error: "#C53030"
-  light-accent-cyan: "#087E8B"
-  light-accent-violet: "#6D4DE3"
-  light-accent-emerald: "#168A60"
-  light-accent-rose: "#C93663"
 typography:
   display:
     fontFamily: "Segoe UI, sans-serif"
@@ -127,7 +112,7 @@ components:
 
 EchoBoard é uma interface de controle de áudio, não um painel administrativo genérico. O sistema visual organiza entradas, efeitos, níveis, dispositivos e reprodução como uma mesa de mixagem compacta: cada superfície deve ajudar o usuário a localizar estado e agir rapidamente, sem competir com o áudio ou com a chamada em andamento.
 
-A atmosfera é precisa, limpa, discreta e orientada à operação rápida. O tema escuro usa preto e grafite em camadas tonais, bordas finas e texto claro; ações, seleção e estados também permanecem em tons neutros. O tema claro preserva a paleta azul e os acentos selecionáveis existentes. Ícones e rótulos mantêm a leitura dos estados de áudio nos dois temas.
+A atmosfera é precisa, limpa, discreta e orientada à operação rápida. O tema escuro usa preto e grafite em camadas tonais, bordas finas e texto claro; ações, seleção e estados também permanecem em tons neutros. Ícones e rótulos mantêm a leitura dos estados de áudio.
 
 **Key Characteristics:**
 
@@ -135,25 +120,17 @@ A atmosfera é precisa, limpa, discreta e orientada à operação rápida. O tem
 - Superfícies tonais planas com bordas discretas.
 - Tons claros de cinza reservados para comandos, seleção e progresso no tema escuro.
 - Densidade compacta, tipografia Segoe UI e hierarquia curta.
-- Tema escuro inicial monocromático; paletas de acento selecionáveis no tema claro.
+- Tema escuro monocromático como único tema disponível.
 
 ## Colors
 
-A paleta é temática. No tema escuro, superfícies, ações, foco e estados usam uma escala de preto e cinza. O tema claro conserva a paleta azul e as alternativas de acento Blue, Cyan, Violet, Emerald e Rose.
+A paleta usa uma escala de preto e cinza em superfícies, ações, foco e estados.
 
 ### Primary
 
 - **Cinza de ação** (`{colors.primary}`): comandos primários, seleção ativa, foco visual, progresso e indicadores de reprodução no tema escuro.
-- **Azul de ação para tema claro** (`{colors.primary-light}`): variante preservada quando o tema claro está ativo.
 - **Cinza de resposta** (`{colors.primary-hover}`): estado de passagem do ponteiro sobre ações escuras.
 - **Cinza pressionado** (`{colors.primary-pressed}`): confirmação tátil de comandos acionados no tema escuro.
-
-### Secondary
-
-- **Ciano de sinal** (`{colors.light-accent-cyan}`): alternativa de acento disponível no tema claro.
-- **Violeta de sinal** (`{colors.light-accent-violet}`): alternativa de acento disponível no tema claro.
-- **Esmeralda de sinal** (`{colors.light-accent-emerald}`): alternativa de acento disponível no tema claro.
-- **Rosa de sinal** (`{colors.light-accent-rose}`): alternativa de acento disponível no tema claro.
 
 ### Neutral
 
@@ -168,13 +145,12 @@ A paleta é temática. No tema escuro, superfícies, ações, foco e estados usa
 - **Texto primário** (`{colors.text-primary}`): títulos, valores e informação operacional principal.
 - **Texto secundário** (`{colors.text-secondary}`): captions, metadados, rótulos e orientação auxiliar.
 - **Texto desabilitado** (`{colors.text-disabled}`): estados indisponíveis e informações sem ação.
-- **Base clara** (`{colors.light-bg}`), **superfície clara** (`{colors.light-surface}`) e **elevação clara** (`{colors.light-elevated}`): equivalentes do tema claro.
 
 ### Named Rules
 
 **The Signal Over Decoration Rule.** Cor deve indicar ação, seleção ou estado do áudio; não deve virar textura ou preenchimento ornamental.
 
-**The Neutral Dark State Rule.** O tema escuro distingue sucesso, atenção e erro por rótulo, ícone e intensidade de cinza; o tema claro preserva as cores semânticas atuais.
+**The Neutral Dark State Rule.** O tema escuro distingue sucesso, atenção e erro por rótulo, ícone e intensidade de cinza.
 
 ## Typography
 
@@ -270,7 +246,7 @@ O medidor usa rótulo, valor textual e uma barra horizontal de 12px. O preenchim
 ### Do:
 
 - **Do** usar os recursos `ThemeResource` e estilos compartilhados antes de criar valores locais.
-- **Do** manter temas claro e escuro semanticamente equivalentes e validar os dois.
+- **Do** manter legibilidade, contraste e estados de foco consistentes no tema escuro.
 - **Do** usar ícones vetoriais nativos e AutomationProperties para comandos de áudio.
 - **Do** manter níveis, dispositivos, transporte, hotkeys e avisos visíveis sem ruído decorativo.
 - **Do** usar bordas de 1px, superfícies tonais e a escala de espaçamento existente.

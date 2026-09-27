@@ -1,6 +1,5 @@
 using EchoBoard.App.Controls;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using System.Windows.Input;
 
 namespace EchoBoard.App.ViewModels;
@@ -21,8 +20,6 @@ public sealed class SoundCardPreviewModel : CommunityToolkit.Mvvm.ComponentModel
         string Subtitle,
         string DurationText,
         string HotkeyText,
-        string CategoryLabel,
-        Brush? CategoryBrush,
         bool IsSelected = false,
         bool IsPlaying = false,
         bool IsPaused = false,
@@ -46,8 +43,6 @@ public sealed class SoundCardPreviewModel : CommunityToolkit.Mvvm.ComponentModel
         this.Subtitle = Subtitle;
         durationText = DurationText;
         this.HotkeyText = HotkeyText;
-        this.CategoryLabel = CategoryLabel;
-        this.CategoryBrush = CategoryBrush;
         isSelected = IsSelected;
         isPlaying = IsPlaying;
         isPaused = IsPaused;
@@ -72,8 +67,6 @@ public sealed class SoundCardPreviewModel : CommunityToolkit.Mvvm.ComponentModel
     public string Subtitle { get; }
     public string DurationText { get => durationText; set => SetProperty(ref durationText, value); }
     public string HotkeyText { get; }
-    public string CategoryLabel { get; }
-    public Brush? CategoryBrush { get; }
     public bool IsSelected { get => isSelected; set => SetProperty(ref isSelected, value); }
     public bool IsPlaying
     {
@@ -136,7 +129,6 @@ public sealed record CategoryPreviewModel(
     string Name,
     string CountText,
     Symbol Icon,
-    Brush? IndicatorBrush,
     bool IsSelected = false,
     bool IsEnabled = true,
     Guid? Id = null,

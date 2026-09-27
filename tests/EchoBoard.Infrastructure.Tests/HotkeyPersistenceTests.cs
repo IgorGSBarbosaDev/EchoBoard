@@ -19,8 +19,8 @@ public sealed class HotkeyPersistenceTests
     public async Task RepositoryPersistsAndReadsHotkeyBindings()
     {
         await using var database = await TestDatabase.CreateAsync();
-        var repository = new EfHotkeyBindingRepository(database.Context);
-        var sounds = new EfSoundLibraryRepository(database.Context);
+        var repository = new EfHotkeyBindingRepository(database.ContextFactory);
+        var sounds = new EfSoundLibraryRepository(database.ContextFactory);
         var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, null, 0, Now);
         await sounds.AddSoundAsync(sound, CancellationToken.None);
         var binding = HotkeyBinding.CreateForSound(
@@ -44,8 +44,8 @@ public sealed class HotkeyPersistenceTests
     public async Task HotkeyCombinationUniqueConstraintIsCaseInsensitive()
     {
         await using var database = await TestDatabase.CreateAsync();
-        var repository = new EfHotkeyBindingRepository(database.Context);
-        var sounds = new EfSoundLibraryRepository(database.Context);
+        var repository = new EfHotkeyBindingRepository(database.ContextFactory);
+        var sounds = new EfSoundLibraryRepository(database.ContextFactory);
         var firstSound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, null, 0, Now);
         var secondSound = Sound.Create("Alert", "C:\\Audio\\alert.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, null, 1, Now);
         await sounds.AddSoundAsync(firstSound, CancellationToken.None);
@@ -83,15 +83,18 @@ public sealed class HotkeyPersistenceTests
 
     private sealed class TestDatabase : IAsyncDisposable
     {
-        private TestDatabase(string path, EchoBoardDbContext context)
+        private TestDatabase(string path, EchoBoardDbContext context, IDbContextFactory<EchoBoardDbContext> contextFactory)
         {
             Path = path;
             Context = context;
+            ContextFactory = contextFactory;
         }
 
         public string Path { get; }
 
         public EchoBoardDbContext Context { get; }
+
+        public IDbContextFactory<EchoBoardDbContext> ContextFactory { get; }
 
         public static async Task<TestDatabase> CreateAsync()
         {
@@ -102,7 +105,7 @@ public sealed class HotkeyPersistenceTests
             var context = new EchoBoardDbContext(options);
             await context.Database.MigrateAsync();
 
-            return new TestDatabase(databasePath, context);
+            return new TestDatabase(databasePath, context, new TestEchoBoardDbContextFactory(options));
         }
 
         public async ValueTask DisposeAsync()

@@ -2,6 +2,7 @@ using EchoBoard.App.ViewModels;
 using EchoBoard.App.Dialogs;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Serilog;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 
@@ -76,6 +77,31 @@ public sealed partial class LibraryPage : Page
         await ViewModel.ImportFilePathsAsync(paths, CancellationToken.None);
     }
 
+    private async void OnManageCategoriesClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        try
+        {
+            ViewModel.PrepareCategoryManagement();
+            var dialog = new CategoryManagementDialog
+            {
+                XamlRoot = XamlRoot,
+                DataContext = ViewModel
+            };
+
+            await dialog.ShowAsync();
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "The category manager could not be opened.");
+            ViewModel.ReportCategoryDialogFailure("Could not open the category manager.");
+        }
+    }
+
     private async void OnCreateCategoryClicked(object sender, RoutedEventArgs e)
     {
         if (ViewModel is null)
@@ -83,39 +109,21 @@ public sealed partial class LibraryPage : Page
             return;
         }
 
-        await ViewModel.CreateCategoryAsync(CreateCategoryNameTextBox.Text, CancellationToken.None);
-        CreateCategoryNameTextBox.Text = string.Empty;
-    }
-
-    private async void OnRenameCategoryClicked(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel is null)
+        try
         {
-            return;
+            ViewModel.PrepareCategoryEditor(categoryId: null);
+            var dialog = new CategoryEditorDialog
+            {
+                XamlRoot = XamlRoot,
+                DataContext = ViewModel
+            };
+
+            await dialog.ShowAsync();
         }
-
-        await ViewModel.RenameSelectedCategoryAsync(RenameCategoryNameTextBox.Text, CancellationToken.None);
-        RenameCategoryNameTextBox.Text = string.Empty;
-    }
-
-    private async void OnDeleteCategoryClicked(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel is null)
+        catch (Exception exception)
         {
-            return;
+            Log.Error(exception, "The category creation dialog could not be opened.");
+            ViewModel.ReportCategoryDialogFailure("Could not open category creation.");
         }
-
-        await ViewModel.DeleteSelectedCategoryAsync(CancellationToken.None);
-    }
-
-    private async void OnAssignSelectedCategoryClicked(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel?.SelectedSoundId is not Guid soundId)
-        {
-            return;
-        }
-
-        var selectedCategory = AssignCategoryComboBox.SelectedItem as SoundLibraryCategoryOptionViewModel;
-        await ViewModel.AssignSoundCategoryAsync(soundId, selectedCategory?.Id, CancellationToken.None);
     }
 }

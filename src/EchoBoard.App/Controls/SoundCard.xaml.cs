@@ -33,18 +33,6 @@ public sealed partial class SoundCard : UserControl
         typeof(SoundCard),
         new PropertyMetadata(string.Empty, OnDisplayPropertyChanged));
 
-    public static readonly DependencyProperty CategoryLabelProperty = DependencyProperty.Register(
-        nameof(CategoryLabel),
-        typeof(string),
-        typeof(SoundCard),
-        new PropertyMetadata(string.Empty, OnDisplayPropertyChanged));
-
-    public static readonly DependencyProperty CategoryBrushProperty = DependencyProperty.Register(
-        nameof(CategoryBrush),
-        typeof(Brush),
-        typeof(SoundCard),
-        new PropertyMetadata(null, OnDisplayPropertyChanged));
-
     public static readonly DependencyProperty IsSelectedProperty = DependencyProperty.Register(
         nameof(IsSelected),
         typeof(bool),
@@ -156,18 +144,6 @@ public sealed partial class SoundCard : UserControl
     {
         get => (string)GetValue(HotkeyTextProperty);
         set => SetValue(HotkeyTextProperty, value);
-    }
-
-    public string CategoryLabel
-    {
-        get => (string)GetValue(CategoryLabelProperty);
-        set => SetValue(CategoryLabelProperty, value);
-    }
-
-    public Brush? CategoryBrush
-    {
-        get => (Brush?)GetValue(CategoryBrushProperty);
-        set => SetValue(CategoryBrushProperty, value);
     }
 
     public bool IsSelected
@@ -292,9 +268,7 @@ public sealed partial class SoundCard : UserControl
         ? Visibility.Collapsed
         : Visibility.Visible;
 
-    public string AccessibleLabel => $"{Title} {CategoryLabel} {DurationText} {StatusText}".Trim();
-
-    public Brush DisplayCategoryBrush => CategoryBrush ?? (Brush)Microsoft.UI.Xaml.Application.Current.Resources["EchoBoardActionBrush"];
+    public string AccessibleLabel => $"{Title} {DurationText} {StatusText}".Trim();
 
     private static void OnDisplayPropertyChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs args)
     {

@@ -31,8 +31,18 @@
                 </Grid.ColumnDefinitions>
 
                 <Border Style="{StaticResource EchoBoardPanelStyle}">
-                    <StackPanel Spacing="{StaticResource EchoBoardSpace16}">
-                        <TextBlock Text="Categories" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
+                    <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
+                        <Grid>
+                            <TextBlock Text="Categories" Style="{StaticResource EchoBoardSectionTitleTextStyle}" VerticalAlignment="Center" />
+                            <Button
+                                HorizontalAlignment="Right"
+                                Style="{StaticResource EchoBoardCardActionButtonStyle}"
+                                Click="OnManageCategoriesClicked"
+                                ToolTipService.ToolTip="Manage categories"
+                                AutomationProperties.Name="Manage categories">
+                                <FontIcon Glyph="&#xE70F;" />
+                            </Button>
+                        </Grid>
                         <ItemsControl ItemsSource="{Binding Categories}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -41,7 +51,6 @@
                                         CategoryName="{Binding Name}"
                                         CountText="{Binding CountText}"
                                         Icon="{Binding Icon}"
-                                        IndicatorBrush="{Binding IndicatorBrush}"
                                         IsSelected="{Binding IsSelected}"
                                         IsEnabled="{Binding IsEnabled}"
                                         Command="{Binding SelectCommand}"
@@ -50,48 +59,11 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                            <TextBlock Text="Create category" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                            <TextBox
-                                x:Name="CreateCategoryNameTextBox"
-                                Header="Name"
-                                PlaceholderText="Memes" />
-                            <Button
-                                Content="Create"
-                                Click="OnCreateCategoryClicked"
-                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                        </StackPanel>
-
-                        <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                            <TextBlock Text="Selected category" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                            <TextBox
-                                x:Name="RenameCategoryNameTextBox"
-                                Header="New name"
-                                PlaceholderText="Rename selected category" />
-                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}">
-                                <Button
-                                    Content="Rename"
-                                    Click="OnRenameCategoryClicked"
-                                    Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                                <Button
-                                    Content="Delete"
-                                    Click="OnDeleteCategoryClicked"
-                                    Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                            </StackPanel>
-                        </StackPanel>
-
-                        <StackPanel Spacing="{StaticResource EchoBoardSpace8}">
-                            <TextBlock Text="Selected sound" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
-                            <ComboBox
-                                x:Name="AssignCategoryComboBox"
-                                Header="Assign category"
-                                DisplayMemberPath="Name"
-                                ItemsSource="{Binding AssignableCategories}" />
-                            <Button
-                                Content="Apply category"
-                                Click="OnAssignSelectedCategoryClicked"
-                                Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
-                        </StackPanel>
+                        <Button
+                            Content="Create category"
+                            Click="OnCreateCategoryClicked"
+                            HorizontalAlignment="Stretch"
+                            Style="{StaticResource EchoBoardPrimaryButtonStyle}" />
 
                         <StackPanel
                             Spacing="{StaticResource EchoBoardSpace8}"
@@ -145,10 +117,6 @@
                                 IsEnabled="{Binding IsImportEnabled}"
                                 Style="{StaticResource EchoBoardSecondaryButtonStyle}" />
                         </Grid>
-
-                        <CheckBox
-                            Content="Favorites only"
-                            IsChecked="{Binding IsFavoritesOnly, Mode=TwoWay}" />
 
                         <controls:ToastNotification
                             IsCompact="True"
@@ -207,8 +175,6 @@
                                         Subtitle="{Binding Subtitle}"
                                         DurationText="{Binding DurationText}"
                                         HotkeyText="{Binding HotkeyText}"
-                                        CategoryLabel="{Binding CategoryLabel}"
-                                        CategoryBrush="{Binding CategoryBrush}"
                                         IsSelected="{Binding IsSelected}"
                                         IsPlaying="{Binding IsPlaying}"
                                         IsPaused="{Binding IsPaused}"

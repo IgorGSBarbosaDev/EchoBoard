@@ -19,7 +19,7 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(settings);
 
         services.AddSingleton(settings);
-        services.AddDbContext<EchoBoardDbContext>(options => options.UseSqlite(settings.DatabaseConnectionString));
+        services.AddDbContextFactory<EchoBoardDbContext>(options => options.UseSqlite(settings.DatabaseConnectionString));
         services.AddScoped<ISoundLibraryRepository, EfSoundLibraryRepository>();
         services.AddScoped<ICategoryRepository, EfCategoryRepository>();
         services.AddScoped<IHotkeyBindingRepository, EfHotkeyBindingRepository>();

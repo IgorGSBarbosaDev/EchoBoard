@@ -82,9 +82,7 @@
                 <Rectangle Height="1" Fill="{ThemeResource EchoBoardBorderSoftBrush}" />
 
                 <StackPanel Spacing="9">
-                    <TextBlock Text="ORGANIZAÇÃO" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" FontSize="10" FontWeight="SemiBold" CharacterSpacing="80" />
-                    <Grid><TextBlock Text="Categoria" Style="{StaticResource EchoBoardCaptionTextStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding CategoryText}" Visibility="{Binding ReadOnlyVisibility}" /></Grid>
-                    <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" DisplayMemberPath="Name" Visibility="{Binding EditVisibility}" HorizontalAlignment="Stretch" />
+                    <TextBlock Text="PREFERÊNCIAS" Foreground="{ThemeResource EchoBoardTextSecondaryBrush}" FontSize="10" FontWeight="SemiBold" CharacterSpacing="80" />
                     <Grid><TextBlock Text="Favorito" Style="{StaticResource EchoBoardCaptionTextStyle}" /><TextBlock HorizontalAlignment="Right" Text="{Binding FavoriteText}" Visibility="{Binding ReadOnlyVisibility}" /><ToggleSwitch HorizontalAlignment="Right" IsOn="{Binding IsFavorite, Mode=TwoWay}" Visibility="{Binding EditVisibility}" /></Grid>
                 </StackPanel>
 

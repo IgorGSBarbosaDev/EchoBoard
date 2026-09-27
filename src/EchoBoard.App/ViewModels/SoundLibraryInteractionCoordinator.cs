@@ -47,13 +47,10 @@ public sealed class SoundLibraryInteractionCoordinator
                 return;
             }
 
-            var updated = await scope.ServiceProvider
+            await scope.ServiceProvider
                 .GetRequiredService<SetSoundFavoriteUseCase>()
                 .ExecuteAsync(new SetSoundFavoriteRequest(soundId, !sound.IsFavorite, DateTimeOffset.UtcNow), cancellationToken);
-            notifications.Show(
-                ToastNotificationKind.Success,
-                updated.IsFavorite ? "Adicionado aos favoritos" : "Removido dos favoritos",
-                string.Empty);
+            notifications.Dismiss();
             LibraryChanged?.Invoke(this, new SoundLibraryChange(soundId, SoundLibraryChangeKind.Favorite));
         }
         catch (Exception exception)

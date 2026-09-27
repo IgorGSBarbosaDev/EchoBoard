@@ -84,20 +84,6 @@
         <Setter Property="BorderThickness" Value="1" />
     </Style>
 
-    <Style x:Key="EchoBoardTopbarSearchTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource EchoBoardSearchTextBoxStyle}">
-        <Setter Property="MinHeight" Value="42" />
-        <Setter Property="Padding" Value="40,9,14,9" />
-        <Setter Property="Background" Value="{ThemeResource EchoBoardBackgroundElevatedBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource EchoBoardBorderSoftBrush}" />
-    </Style>
-
-    <Style x:Key="EchoBoardPaletteButtonStyle" TargetType="Button" BasedOn="{StaticResource EchoBoardSecondaryButtonStyle}">
-        <Setter Property="Height" Value="40" />
-        <Setter Property="MinWidth" Value="96" />
-        <Setter Property="Padding" Value="12,8" />
-        <Setter Property="Background" Value="{ThemeResource EchoBoardBackgroundElevatedBrush}" />
-    </Style>
-
     <Style x:Key="EchoBoardTopbarStatusStyle" TargetType="Border">
         <Setter Property="Height" Value="44" />
         <Setter Property="MinWidth" Value="112" />
