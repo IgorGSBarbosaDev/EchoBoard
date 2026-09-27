@@ -11,7 +11,7 @@ public sealed record SoundDto(
     long FileSize,
     double Volume,
     bool IsFavorite,
-    Guid? CategoryId,
+    IReadOnlyList<Guid> CategoryIds,
     int SortOrder,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
@@ -40,9 +40,7 @@ public sealed record SoundLibraryItemDto(
     long FileSize,
     double Volume,
     bool IsFavorite,
-    Guid? CategoryId,
-    string? CategoryName,
-    int? CategorySortOrder,
+    IReadOnlyList<Guid> CategoryIds,
     int SortOrder,
     bool IsMissingFile,
     DateTimeOffset CreatedAt,
@@ -86,7 +84,6 @@ public sealed record UpdateSoundRequest(
     long FileSize,
     double Volume,
     bool IsFavorite,
-    Guid? CategoryId,
     int SortOrder,
     DateTimeOffset UpdatedAt,
     bool IsLoopEnabled = false,
@@ -95,8 +92,6 @@ public sealed record UpdateSoundRequest(
     byte[]? WaveformPeaks = null);
 
 public sealed record SetSoundFavoriteRequest(Guid Id, bool IsFavorite, DateTimeOffset UpdatedAt);
-
-public sealed record AssignSoundCategoryRequest(Guid Id, Guid? CategoryId, DateTimeOffset UpdatedAt);
 
 public sealed record CreateCategoryRequest(string Name, int SortOrder, DateTimeOffset CreatedAt);
 
@@ -141,6 +136,27 @@ public interface ISoundLibraryRepository
 {
     Task<IReadOnlyList<Sound>> ListSoundsAsync(CancellationToken cancellationToken);
 
+    async Task<IReadOnlyList<Sound>> GetSoundsByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var idSet = ids.ToHashSet();
+        var allSounds = await ListSoundsAsync(cancellationToken);
+        return allSounds.Where(sound => idSet.Contains(sound.Id)).ToArray();
+    }
+
+    async Task<IReadOnlyList<Sound>> GetSoundsByCategoryIdAsync(Guid categoryId, CancellationToken cancellationToken)
+    {
+        var allSounds = await ListSoundsAsync(cancellationToken);
+        return allSounds.Where(sound => sound.CategoryIds.Contains(categoryId)).ToArray();
+    }
+
     Task<Sound?> GetSoundAsync(Guid id, CancellationToken cancellationToken);
 
     Task<bool> SoundFilePathExistsAsync(string filePath, Guid? excludingSoundId, CancellationToken cancellationToken);
@@ -148,6 +164,15 @@ public interface ISoundLibraryRepository
     Task AddSoundAsync(Sound sound, CancellationToken cancellationToken);
 
     Task UpdateSoundAsync(Sound sound, CancellationToken cancellationToken);
+
+    async Task UpdateSoundsAsync(IReadOnlyList<Sound> sounds, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(sounds);
+        foreach (var sound in sounds)
+        {
+            await UpdateSoundAsync(sound, cancellationToken);
+        }
+    }
 
     Task DeleteSoundAsync(Guid id, CancellationToken cancellationToken);
 }

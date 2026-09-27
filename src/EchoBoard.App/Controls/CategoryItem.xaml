@@ -4,9 +4,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     AutomationProperties.Name="{x:Bind AccessibleLabel, Mode=OneTime}">
     <Button
-        Command="{x:Bind Command, Mode=OneTime}"
-        CommandParameter="{x:Bind CommandParameter, Mode=OneTime}"
-        IsEnabled="{x:Bind IsEnabled, Mode=OneTime}"
+        Command="{x:Bind Command, Mode=OneWay}"
+        CommandParameter="{x:Bind CommandParameter, Mode=OneWay}"
+        IsEnabled="{x:Bind IsEnabled, Mode=OneWay}"
         HorizontalAlignment="Stretch"
         HorizontalContentAlignment="Stretch"
         Background="{x:Bind ItemBackground, Mode=OneTime}"

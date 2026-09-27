@@ -6,15 +6,16 @@ namespace EchoBoard.Infrastructure.Persistence.Repositories;
 
 public sealed class EfAppSettingRepository : IAppSettingRepository
 {
-    private readonly EchoBoardDbContext context;
+    private readonly IDbContextFactory<EchoBoardDbContext> contextFactory;
 
-    public EfAppSettingRepository(EchoBoardDbContext context)
+    public EfAppSettingRepository(IDbContextFactory<EchoBoardDbContext> contextFactory)
     {
-        this.context = context;
+        this.contextFactory = contextFactory;
     }
 
     public async Task<string?> GetValueAsync(string key, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var setting = await context.AppSettings
             .AsNoTracking()
             .SingleOrDefaultAsync(item => item.Key == key, cancellationToken);
@@ -24,6 +25,7 @@ public sealed class EfAppSettingRepository : IAppSettingRepository
 
     public async Task UpsertValueAsync(string key, string value, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var setting = await context.AppSettings.SingleOrDefaultAsync(item => item.Key == key, cancellationToken);
         if (setting is null)
         {

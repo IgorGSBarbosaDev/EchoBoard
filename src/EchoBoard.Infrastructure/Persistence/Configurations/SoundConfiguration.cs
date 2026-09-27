@@ -70,17 +70,19 @@ public sealed class SoundConfiguration : IEntityTypeConfiguration<Sound>
                 value => new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Utc)))
             .IsRequired();
 
-        builder.HasOne<Category>()
-            .WithMany()
-            .HasForeignKey(sound => sound.CategoryId)
-            .OnDelete(DeleteBehavior.SetNull);
+        builder.HasMany(sound => sound.CategoryAssignments)
+            .WithOne()
+            .HasForeignKey(assignment => assignment.SoundId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(sound => sound.CategoryAssignments)
+            .HasField("categoryAssignments")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Ignore(sound => sound.CategoryIds);
 
         builder.HasIndex(sound => sound.FilePath)
             .IsUnique();
-
-        builder.HasIndex(sound => sound.CategoryId);
-
-        builder.HasIndex(sound => new { sound.CategoryId, sound.SortOrder });
 
         builder.HasIndex(sound => sound.IsFavorite);
     }

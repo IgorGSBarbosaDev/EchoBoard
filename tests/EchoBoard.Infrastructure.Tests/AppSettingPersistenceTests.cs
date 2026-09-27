@@ -15,7 +15,7 @@ public sealed class AppSettingPersistenceTests
     public async Task RepositoryUpsertsAndReadsSettingValue()
     {
         await using var database = await TestDatabase.CreateAsync();
-        var repository = new EfAppSettingRepository(database.Context);
+        var repository = new EfAppSettingRepository(database.ContextFactory);
 
         await repository.UpsertValueAsync(MicrophoneSettingKeys.SelectedDeviceId, "mic-1", CancellationToken.None);
         await repository.UpsertValueAsync(MicrophoneSettingKeys.SelectedDeviceId, "mic-2", CancellationToken.None);
@@ -30,7 +30,7 @@ public sealed class AppSettingPersistenceTests
     public async Task RepositoryReturnsNullForMissingSetting()
     {
         await using var database = await TestDatabase.CreateAsync();
-        var repository = new EfAppSettingRepository(database.Context);
+        var repository = new EfAppSettingRepository(database.ContextFactory);
 
         var value = await repository.GetValueAsync("missing", CancellationToken.None);
 
@@ -59,15 +59,18 @@ public sealed class AppSettingPersistenceTests
 
     private sealed class TestDatabase : IAsyncDisposable
     {
-        private TestDatabase(string path, EchoBoardDbContext context)
+        private TestDatabase(string path, EchoBoardDbContext context, IDbContextFactory<EchoBoardDbContext> contextFactory)
         {
             Path = path;
             Context = context;
+            ContextFactory = contextFactory;
         }
 
         public string Path { get; }
 
         public EchoBoardDbContext Context { get; }
+
+        public IDbContextFactory<EchoBoardDbContext> ContextFactory { get; }
 
         public static async Task<TestDatabase> CreateAsync()
         {
@@ -78,7 +81,7 @@ public sealed class AppSettingPersistenceTests
             var context = new EchoBoardDbContext(options);
             await context.Database.MigrateAsync();
 
-            return new TestDatabase(databasePath, context);
+            return new TestDatabase(databasePath, context, new TestEchoBoardDbContextFactory(options));
         }
 
         public async ValueTask DisposeAsync()

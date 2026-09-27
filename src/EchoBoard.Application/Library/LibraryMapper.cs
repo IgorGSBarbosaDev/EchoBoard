@@ -15,7 +15,7 @@ internal static class LibraryMapper
             sound.FileSize,
             sound.Volume,
             sound.IsFavorite,
-            sound.CategoryId,
+            sound.CategoryIds,
             sound.SortOrder,
             sound.CreatedAt,
             sound.UpdatedAt,

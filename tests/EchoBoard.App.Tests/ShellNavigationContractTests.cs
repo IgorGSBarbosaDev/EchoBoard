@@ -168,7 +168,7 @@ public sealed class ShellNavigationContractTests
 
         return new SoundDetailsViewModel(
             query,
-            new UpdateSoundUseCase(sounds, categories),
+            new UpdateSoundUseCase(sounds),
             new DeleteSoundUseCase(sounds),
             new ListHotkeyBindingsUseCase(hotkeys, runtime),
             new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
@@ -191,7 +191,7 @@ public sealed class ShellNavigationContractTests
             new UpdateCategoryUseCase(categories),
             new DeleteCategoryUseCase(categories),
             new SetSoundFavoriteUseCase(sounds),
-            new AssignSoundCategoryUseCase(sounds, categories),
+            new SetCategorySoundsUseCase(sounds, categories),
             new ListHotkeyBindingsUseCase(hotkeys, runtime),
             new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
             new RemoveHotkeyBindingUseCase(hotkeys, runtime),

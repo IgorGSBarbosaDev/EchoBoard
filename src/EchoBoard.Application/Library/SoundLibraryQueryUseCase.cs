@@ -34,19 +34,19 @@ public sealed class QuerySoundLibraryUseCase
             : allSounds;
 
         var categoryCounts = countSource
-            .Where(sound => sound.CategoryId is not null)
-            .GroupBy(sound => sound.CategoryId!.Value)
+            .SelectMany(sound => sound.CategoryIds.Distinct())
+            .GroupBy(categoryId => categoryId)
             .ToDictionary(group => group.Key, group => group.Count());
-        var uncategorizedCount = countSource.Count(sound => sound.CategoryId is null);
+        var uncategorizedCount = countSource.Count(sound => sound.CategoryIds.Count == 0);
 
         var filtered = countSource.AsEnumerable();
         if (filter.CategoryId is not null)
         {
-            filtered = filtered.Where(sound => sound.CategoryId == filter.CategoryId);
+            filtered = filtered.Where(sound => sound.CategoryIds.Contains(filter.CategoryId.Value));
         }
         else if (filter.IncludeUncategorizedOnly)
         {
-            filtered = filtered.Where(sound => sound.CategoryId is null);
+            filtered = filtered.Where(sound => sound.CategoryIds.Count == 0);
         }
 
         var searchText = filter.SearchText?.Trim();
@@ -62,8 +62,6 @@ public sealed class QuerySoundLibraryUseCase
             cancellationToken.ThrowIfCancellationRequested();
 
             var fileExists = await fileAvailability.ExistsAsync(sound.FilePath, cancellationToken);
-            categoryById.TryGetValue(sound.CategoryId ?? Guid.Empty, out var category);
-
             items.Add(new SoundLibraryItemDto(
                 sound.Id,
                 sound.Name,
@@ -73,9 +71,7 @@ public sealed class QuerySoundLibraryUseCase
                 sound.FileSize,
                 sound.Volume,
                 sound.IsFavorite,
-                sound.CategoryId,
-                category?.Name,
-                category?.SortOrder,
+                sound.CategoryIds,
                 sound.SortOrder,
                 IsMissingFile: !fileExists,
                 sound.CreatedAt,

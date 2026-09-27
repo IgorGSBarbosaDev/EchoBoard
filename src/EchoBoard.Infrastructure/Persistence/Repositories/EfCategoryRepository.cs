@@ -7,15 +7,16 @@ namespace EchoBoard.Infrastructure.Persistence.Repositories;
 
 public sealed class EfCategoryRepository : ICategoryRepository
 {
-    private readonly EchoBoardDbContext context;
+    private readonly IDbContextFactory<EchoBoardDbContext> contextFactory;
 
-    public EfCategoryRepository(EchoBoardDbContext context)
+    public EfCategoryRepository(IDbContextFactory<EchoBoardDbContext> contextFactory)
     {
-        this.context = context;
+        this.contextFactory = contextFactory;
     }
 
     public async Task<IReadOnlyList<Category>> ListCategoriesAsync(CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.Categories
             .AsNoTracking()
             .OrderBy(category => category.SortOrder)
@@ -25,6 +26,7 @@ public sealed class EfCategoryRepository : ICategoryRepository
 
     public async Task<Category?> GetCategoryAsync(Guid id, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.Categories
             .AsNoTracking()
             .SingleOrDefaultAsync(category => category.Id == id, cancellationToken);
@@ -32,6 +34,7 @@ public sealed class EfCategoryRepository : ICategoryRepository
 
     public async Task<bool> CategoryNameExistsAsync(string name, Guid? excludingCategoryId, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var trimmedName = name.Trim();
 
         return await context.Categories
@@ -43,18 +46,21 @@ public sealed class EfCategoryRepository : ICategoryRepository
 
     public async Task AddCategoryAsync(Category category, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         context.Categories.Add(category);
-        await SaveChangesAsync(category.Name, cancellationToken);
+        await SaveChangesAsync(context, category.Name, cancellationToken);
     }
 
     public async Task UpdateCategoryAsync(Category category, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         context.Categories.Update(category);
-        await SaveChangesAsync(category.Name, cancellationToken);
+        await SaveChangesAsync(context, category.Name, cancellationToken);
     }
 
     public async Task DeleteCategoryAsync(Guid id, CancellationToken cancellationToken)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var category = await context.Categories.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
         if (category is null)
         {
@@ -65,7 +71,10 @@ public sealed class EfCategoryRepository : ICategoryRepository
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task SaveChangesAsync(string categoryName, CancellationToken cancellationToken)
+    private static async Task SaveChangesAsync(
+        EchoBoardDbContext context,
+        string categoryName,
+        CancellationToken cancellationToken)
     {
         try
         {

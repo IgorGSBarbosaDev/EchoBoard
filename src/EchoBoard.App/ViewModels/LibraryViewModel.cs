@@ -20,7 +20,7 @@ public sealed partial class LibraryViewModel : ObservableObject
     private readonly UpdateCategoryUseCase updateCategory;
     private readonly DeleteCategoryUseCase deleteCategory;
     private readonly SetSoundFavoriteUseCase setSoundFavorite;
-    private readonly AssignSoundCategoryUseCase assignSoundCategory;
+    private readonly SetCategorySoundsUseCase setCategorySounds;
     private readonly ListHotkeyBindingsUseCase listHotkeys;
     private readonly AssignSoundHotkeyUseCase assignSoundHotkey;
     private readonly RemoveHotkeyBindingUseCase removeHotkeyBinding;
@@ -31,6 +31,8 @@ public sealed partial class LibraryViewModel : ObservableObject
     private readonly PlaybackCoordinator? playbackCoordinator;
     private readonly TransientNotificationService? notifications;
     private readonly SoundLibraryInteractionCoordinator? libraryInteractions;
+    private readonly ListSoundsUseCase? listSounds;
+    private readonly ListCategoriesUseCase? listCategories;
     private readonly Dictionary<Guid, HotkeyBindingDto> hotkeyBySoundId = [];
     private readonly Dictionary<Guid, SoundLibraryItemDto> soundById = [];
     private bool isBusy;
@@ -61,7 +63,6 @@ public sealed partial class LibraryViewModel : ObservableObject
     private bool isCategoryDeletionSaving;
     private string? categoryDeletionError;
     private Guid? categoryDeletionTargetId;
-    private CategoryDestinationViewModel? selectedCategoryDeletionDestination;
 
     public LibraryViewModel(
         QuerySoundLibraryUseCase queryLibrary,
@@ -70,7 +71,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         UpdateCategoryUseCase updateCategory,
         DeleteCategoryUseCase deleteCategory,
         SetSoundFavoriteUseCase setSoundFavorite,
-        AssignSoundCategoryUseCase assignSoundCategory,
+        SetCategorySoundsUseCase setCategorySounds,
         ListHotkeyBindingsUseCase listHotkeys,
         AssignSoundHotkeyUseCase assignSoundHotkey,
         RemoveHotkeyBindingUseCase removeHotkeyBinding,
@@ -80,7 +81,9 @@ public sealed partial class LibraryViewModel : ObservableObject
         SoundDetailsViewModel? details = null,
         PlaybackCoordinator? playbackCoordinator = null,
         TransientNotificationService? notifications = null,
-        SoundLibraryInteractionCoordinator? libraryInteractions = null)
+        SoundLibraryInteractionCoordinator? libraryInteractions = null,
+        ListSoundsUseCase? listSounds = null,
+        ListCategoriesUseCase? listCategories = null)
     {
         this.queryLibrary = queryLibrary;
         this.importSounds = importSounds;
@@ -88,7 +91,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         this.updateCategory = updateCategory;
         this.deleteCategory = deleteCategory;
         this.setSoundFavorite = setSoundFavorite;
-        this.assignSoundCategory = assignSoundCategory;
+        this.setCategorySounds = setCategorySounds;
         this.listHotkeys = listHotkeys;
         this.assignSoundHotkey = assignSoundHotkey;
         this.removeHotkeyBinding = removeHotkeyBinding;
@@ -99,13 +102,14 @@ public sealed partial class LibraryViewModel : ObservableObject
         this.playbackCoordinator = playbackCoordinator;
         this.notifications = notifications;
         this.libraryInteractions = libraryInteractions;
+        this.listSounds = listSounds;
+        this.listCategories = listCategories;
 
         Categories = [];
         ManagedCategories = [];
         Sounds = [];
         ImportFeedbackItems = [];
         CategoryEditorSounds = [];
-        CategoryDeletionDestinations = [];
         DismissImportNotificationCommand = new RelayCommand(DismissImportNotification);
         DismissPlaybackFeedbackCommand = new RelayCommand(() => PlaybackToast = null);
         ClearFiltersCommand = new AsyncRelayCommand(ct => ClearFiltersAsync(ct));
@@ -113,10 +117,9 @@ public sealed partial class LibraryViewModel : ObservableObject
         SelectSoundCommand = new RelayCommand<Guid>(SelectSound);
         ActivateSoundCommand = new AsyncRelayCommand<Guid>(ActivateSoundAsync);
         PreviewCategorySoundCommand = new AsyncRelayCommand<Guid>(PreviewCategorySoundAsync);
-        CreateManagedCategoryCommand = new AsyncRelayCommand(ct => BeginCategoryEditorAsync(null, ct));
         EditManagedCategoryCommand = new AsyncRelayCommand<Guid>((id, ct) => BeginCategoryEditorAsync(id, ct));
         RequestCategoryDeletionCommand = new RelayCommand<Guid>(PrepareCategoryDeletion);
-        ConfirmCategoryDeletionCommand = new AsyncRelayCommand(ct => DeleteManagedCategoryAsync(SelectedCategoryDeletionDestination?.Id, ct));
+        ConfirmCategoryDeletionCommand = new AsyncRelayCommand(ct => DeleteManagedCategoryAsync(ct));
         CancelCategoryDeletionCommand = new RelayCommand(CancelCategoryDeletion);
         SaveSoundHotkeyCommand = new AsyncRelayCommand(ct => SaveSelectedSoundHotkeyAsync(ct));
         RemoveSoundHotkeyCommand = new AsyncRelayCommand(ct => RemoveSelectedSoundHotkeyAsync(ct));
@@ -190,8 +193,6 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     public ObservableCollection<CategorySoundSelectionViewModel> CategoryEditorSounds { get; }
 
-    public ObservableCollection<CategoryDestinationViewModel> CategoryDeletionDestinations { get; }
-
     public Guid? SelectedCategoryId => selectedCategoryId;
 
     public bool IsCategoryManagementLoading
@@ -204,13 +205,9 @@ public sealed partial class LibraryViewModel : ObservableObject
                 OnPropertyChanged(nameof(CategoryManagementLoadingVisibility));
                 OnPropertyChanged(nameof(CategoryManagementItemsVisibility));
                 OnPropertyChanged(nameof(CategoryManagementEmptyVisibility));
-                OnPropertyChanged(nameof(CategoryManagementActionsEnabled));
             }
         }
     }
-
-    public bool CategoryManagementActionsEnabled =>
-        !IsCategoryManagementLoading && !IsCategoryEditorSaving && !IsCategoryDeletionSaving;
 
     public Visibility CategoryManagementLoadingVisibility =>
         IsCategoryManagementLoading ? Visibility.Visible : Visibility.Collapsed;
@@ -354,7 +351,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         !string.IsNullOrWhiteSpace(CategoryEditorName);
 
     public string CategoryDeletionDescription =>
-        $"Choose where the sounds in {CategoryDeletionTargetName} should go.";
+        "Only the category and its links are removed. The audio stays in your library and in any other categories.";
 
     public string? CategoryDeletionError
     {
@@ -379,20 +376,7 @@ public sealed partial class LibraryViewModel : ObservableObject
     public Visibility CategoryDeletionSavingVisibility =>
         IsCategoryDeletionSaving ? Visibility.Visible : Visibility.Collapsed;
 
-    public bool CategoryDeletionSaveEnabled =>
-        categoryDeletionTargetId is not null && !IsCategoryDeletionSaving && SelectedCategoryDeletionDestination is not null;
-
-    public CategoryDestinationViewModel? SelectedCategoryDeletionDestination
-    {
-        get => selectedCategoryDeletionDestination;
-        set
-        {
-            if (SetProperty(ref selectedCategoryDeletionDestination, value))
-            {
-                OnPropertyChanged(nameof(CategoryDeletionSaveEnabled));
-            }
-        }
-    }
+    public bool CategoryDeletionSaveEnabled => categoryDeletionTargetId is not null && !IsCategoryDeletionSaving;
 
     public ToastPreviewModel? ImportToast
     {
@@ -566,8 +550,6 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     public IAsyncRelayCommand<Guid> PreviewCategorySoundCommand { get; }
 
-    public IAsyncRelayCommand CreateManagedCategoryCommand { get; }
-
     public IAsyncRelayCommand<Guid> EditManagedCategoryCommand { get; }
 
     public IRelayCommand<Guid> RequestCategoryDeletionCommand { get; }
@@ -605,10 +587,19 @@ public sealed partial class LibraryViewModel : ObservableObject
 
         try
         {
-            var result = await queryLibrary.ExecuteAsync(SoundLibraryFilter.All, cancellationToken);
-            UpdateManagedCategories(result.Categories);
+            if (listSounds is not null && listCategories is not null)
+            {
+                var categories = await listCategories.ExecuteAsync(cancellationToken);
+                var sounds = await listSounds.ExecuteAsync(cancellationToken);
+                UpdateManagedCategories(categories, sounds);
+            }
+            else
+            {
+                var result = await queryLibrary.ExecuteAsync(SoundLibraryFilter.All, cancellationToken);
+                UpdateManagedCategories(result.Categories);
+            }
         }
-        catch (Exception exception) when (exception is InvalidOperationException or IOException or ArgumentException)
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             CategoryManagementError = $"Could not load categories. {exception.Message}";
         }
@@ -674,6 +665,14 @@ public sealed partial class LibraryViewModel : ObservableObject
         NotifyImportFeedbackChanged();
     }
 
+    public void ReportCategoryDialogFailure(string title)
+    {
+        notifications?.Show(
+            ToastNotificationKind.Error,
+            title,
+            "The error was recorded in the application log.");
+    }
+
     public void PrepareCategoryEditor(Guid? categoryId)
     {
         IsCategoryEditorActive = true;
@@ -709,15 +708,22 @@ public sealed partial class LibraryViewModel : ObservableObject
 
         try
         {
-            var result = await queryLibrary.ExecuteAsync(SoundLibraryFilter.All, cancellationToken);
+            var editorSounds = listSounds is null
+                ? (await queryLibrary.ExecuteAsync(SoundLibraryFilter.All, cancellationToken)).Sounds
+                    .Select(sound => (sound.Id, sound.Name, sound.FilePath, sound.CategoryIds, sound.IsMissingFile))
+                    .ToArray()
+                : (await listSounds.ExecuteAsync(cancellationToken))
+                    .Select(sound => (sound.Id, sound.Name, sound.FilePath, sound.CategoryIds, IsMissingFile: false))
+                    .ToArray();
+
             CategoryEditorSounds.Clear();
-            foreach (var sound in result.Sounds.OrderBy(sound => sound.Name, StringComparer.CurrentCultureIgnoreCase))
+            foreach (var sound in editorSounds.OrderBy(sound => sound.Name, StringComparer.CurrentCultureIgnoreCase))
             {
                 playbackCoordinator?.TrackSound(sound.Id, sound.FilePath);
                 CategoryEditorSounds.Add(new CategorySoundSelectionViewModel(
                     sound.Id,
                     sound.Name,
-                    sound.CategoryId,
+                    sound.CategoryIds,
                     categoryEditorId,
                     sound.IsMissingFile,
                     PreviewCategorySoundCommand));
@@ -726,7 +732,7 @@ public sealed partial class LibraryViewModel : ObservableObject
             OnPropertyChanged(nameof(CategoryEditorListVisibility));
             OnPropertyChanged(nameof(CategoryEditorEmptyVisibility));
         }
-        catch (Exception exception) when (exception is InvalidOperationException or IOException or ArgumentException)
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             categoryEditorLoadFailed = true;
             CategoryEditorError = $"Could not load the sound library. {exception.Message}";
@@ -756,7 +762,6 @@ public sealed partial class LibraryViewModel : ObservableObject
         OnPropertyChanged(nameof(CategoryEditorSavingVisibility));
         OnPropertyChanged(nameof(CategoryEditorSaveEnabled));
         OnPropertyChanged(nameof(CategoryManagementPrimaryButtonEnabled));
-        OnPropertyChanged(nameof(CategoryManagementActionsEnabled));
         CategoryEditorError = null;
         var wasCreating = categoryEditorId is null;
 
@@ -780,24 +785,15 @@ public sealed partial class LibraryViewModel : ObservableObject
                     cancellationToken);
             }
 
-            var destinationCategoryId = categoryEditorId!.Value;
+            var selectedSoundIds = CategoryEditorSounds
+                .Where(sound => sound.IsSelected)
+                .Select(sound => sound.Id)
+                .ToArray();
+            await setCategorySounds.ExecuteAsync(categoryEditorId!.Value, selectedSoundIds, cancellationToken);
+
             foreach (var sound in CategoryEditorSounds)
             {
-                var nextCategoryId = sound.IsSelected
-                    ? destinationCategoryId
-                    : sound.OriginalCategoryId == destinationCategoryId
-                        ? null
-                        : sound.OriginalCategoryId;
-
-                if (sound.OriginalCategoryId == nextCategoryId)
-                {
-                    continue;
-                }
-
-                await assignSoundCategory.ExecuteAsync(
-                    new AssignSoundCategoryRequest(sound.Id, nextCategoryId, DateTimeOffset.UtcNow),
-                    cancellationToken);
-                sound.MarkPersistedCategory(nextCategoryId);
+                sound.MarkPersistedSelection();
             }
 
             ImportToast = new ToastPreviewModel(
@@ -807,7 +803,7 @@ public sealed partial class LibraryViewModel : ObservableObject
             await RefreshAsync(cancellationToken);
             return true;
         }
-        catch (Exception exception) when (IsCategoryOperationException(exception))
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             CategoryEditorError = exception.Message;
             return false;
@@ -819,7 +815,6 @@ public sealed partial class LibraryViewModel : ObservableObject
             OnPropertyChanged(nameof(CategoryEditorSavingVisibility));
             OnPropertyChanged(nameof(CategoryEditorSaveEnabled));
             OnPropertyChanged(nameof(CategoryManagementPrimaryButtonEnabled));
-            OnPropertyChanged(nameof(CategoryManagementActionsEnabled));
         }
     }
 
@@ -827,14 +822,6 @@ public sealed partial class LibraryViewModel : ObservableObject
     {
         categoryDeletionTargetId = categoryId;
         isCategoryDeletionConfirmationVisible = true;
-        CategoryDeletionDestinations.Clear();
-        CategoryDeletionDestinations.Add(new CategoryDestinationViewModel(null, "No category"));
-        foreach (var category in ManagedCategories.Where(category => category.Id != categoryId))
-        {
-            CategoryDeletionDestinations.Add(new CategoryDestinationViewModel(category.Id, category.Name));
-        }
-
-        SelectedCategoryDeletionDestination = CategoryDeletionDestinations.FirstOrDefault();
         CategoryDeletionError = null;
         OnPropertyChanged(nameof(CategoryDeletionDescription));
         OnPropertyChanged(nameof(CategoryDeletionSaveEnabled));
@@ -854,7 +841,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         OnPropertyChanged(nameof(CategoryDeletionCancelEnabled));
     }
 
-    public async Task<bool> DeleteManagedCategoryAsync(Guid? destinationCategoryId, CancellationToken cancellationToken)
+    public async Task<bool> DeleteManagedCategoryAsync(CancellationToken cancellationToken)
     {
         if (categoryDeletionTargetId is not Guid categoryId || isCategoryDeletionSaving)
         {
@@ -862,33 +849,16 @@ public sealed partial class LibraryViewModel : ObservableObject
             return false;
         }
 
-        if (destinationCategoryId == categoryId)
-        {
-            CategoryDeletionError = "Choose a different destination.";
-            return false;
-        }
-
         isCategoryDeletionSaving = true;
         OnPropertyChanged(nameof(IsCategoryDeletionSaving));
         OnPropertyChanged(nameof(CategoryDeletionSavingVisibility));
         OnPropertyChanged(nameof(CategoryManagementItemsVisibility));
-        OnPropertyChanged(nameof(CategoryManagementActionsEnabled));
         OnPropertyChanged(nameof(CategoryDeletionSaveEnabled));
         OnPropertyChanged(nameof(CategoryDeletionCancelEnabled));
         CategoryDeletionError = null;
-        var destinationName = CategoryDeletionDestinations
-            .SingleOrDefault(destination => destination.Id == destinationCategoryId)?.Name ?? "No category";
 
         try
         {
-            var allSounds = await queryLibrary.ExecuteAsync(SoundLibraryFilter.All, cancellationToken);
-            foreach (var sound in allSounds.Sounds.Where(sound => sound.CategoryId == categoryId))
-            {
-                await assignSoundCategory.ExecuteAsync(
-                    new AssignSoundCategoryRequest(sound.Id, destinationCategoryId, DateTimeOffset.UtcNow),
-                    cancellationToken);
-            }
-
             await deleteCategory.ExecuteAsync(categoryId, cancellationToken);
             if (selectedCategoryId == categoryId)
             {
@@ -901,16 +871,14 @@ public sealed partial class LibraryViewModel : ObservableObject
             ImportToast = new ToastPreviewModel(
                 ToastNotificationKind.Success,
                 "Category deleted",
-                destinationCategoryId is null
-                    ? "Its sounds were moved to no category."
-                    : $"Its sounds were moved to {destinationName}.");
+                "Its audio remains in the library and in any other categories.");
             isCategoryDeletionConfirmationVisible = false;
             categoryDeletionTargetId = null;
             OnPropertyChanged(nameof(CategoryDeletionConfirmationVisibility));
             await RefreshAsync(cancellationToken);
             return true;
         }
-        catch (Exception exception) when (IsCategoryOperationException(exception))
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             CategoryDeletionError = exception.Message;
             return false;
@@ -921,7 +889,6 @@ public sealed partial class LibraryViewModel : ObservableObject
             OnPropertyChanged(nameof(IsCategoryDeletionSaving));
             OnPropertyChanged(nameof(CategoryDeletionSavingVisibility));
             OnPropertyChanged(nameof(CategoryManagementItemsVisibility));
-            OnPropertyChanged(nameof(CategoryManagementActionsEnabled));
             OnPropertyChanged(nameof(CategoryDeletionSaveEnabled));
             OnPropertyChanged(nameof(CategoryDeletionCancelEnabled));
         }
@@ -936,20 +903,8 @@ public sealed partial class LibraryViewModel : ObservableObject
         }
 
         await setSoundFavorite.ExecuteAsync(new SetSoundFavoriteRequest(soundId, !sound.IsFavorite, DateTimeOffset.UtcNow), cancellationToken);
-        if (notifications is not null)
-        {
-            notifications.Show(
-                ToastNotificationKind.Success,
-                !sound.IsFavorite ? "Adicionado aos favoritos" : "Removido dos favoritos",
-                sound.Title);
-        }
-        else
-        {
-            ImportToast = new ToastPreviewModel(
-                ToastNotificationKind.Success,
-                !sound.IsFavorite ? "Added to favorites" : "Removed from favorites",
-                sound.Title);
-        }
+        notifications?.Dismiss();
+        ImportToast = null;
         await RefreshAsync(cancellationToken);
     }
 
@@ -1252,8 +1207,6 @@ public sealed partial class LibraryViewModel : ObservableObject
                 BuildSoundSubtitle(sound),
                 FormatDuration(sound.Duration),
                 hotkeyBySoundId.TryGetValue(sound.Id, out var binding) ? binding.NormalizedKeyCombination : "No hotkey",
-                sound.CategoryName ?? "No category",
-                null,
                 IsSelected: sound.Id == SelectedSoundId,
                 IsFavorite: sound.IsFavorite,
                 IsEnabled: true,
@@ -1381,6 +1334,31 @@ public sealed partial class LibraryViewModel : ObservableObject
         OnPropertyChanged(nameof(CategoryDeletionTargetName));
     }
 
+    private void UpdateManagedCategories(
+        IReadOnlyList<CategoryDto> categories,
+        IReadOnlyList<SoundDto> sounds)
+    {
+        var countsByCategoryId = sounds
+            .SelectMany(sound => sound.CategoryIds.Distinct())
+            .GroupBy(categoryId => categoryId)
+            .ToDictionary(group => group.Key, group => group.Count());
+
+        ManagedCategories.Clear();
+        foreach (var category in categories.OrderBy(category => category.SortOrder))
+        {
+            ManagedCategories.Add(new ManagedCategoryViewModel(
+                category.Id,
+                category.Name,
+                FormatCount(countsByCategoryId.GetValueOrDefault(category.Id)),
+                EditManagedCategoryCommand,
+                RequestCategoryDeletionCommand));
+        }
+
+        OnPropertyChanged(nameof(CategoryManagementItemsVisibility));
+        OnPropertyChanged(nameof(CategoryManagementEmptyVisibility));
+        OnPropertyChanged(nameof(CategoryDeletionTargetName));
+    }
+
     private int GetCategorySortOrder(Guid categoryId)
     {
         var index = Categories
@@ -1409,15 +1387,6 @@ public sealed partial class LibraryViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedCategoryId));
         OnPropertyChanged(nameof(CategoryDeletionTargetName));
     }
-
-    private static bool IsCategoryOperationException(Exception exception) =>
-        exception is DuplicateCategoryNameException
-            or DomainValidationException
-            or CategoryNotFoundException
-            or SoundNotFoundException
-            or InvalidOperationException
-            or IOException
-            or ArgumentException;
 
     private async Task RefreshHotkeysAsync(CancellationToken cancellationToken)
     {
@@ -1576,6 +1545,5 @@ public sealed record SoundLibraryCategoryOptionViewModel(Guid? Id, string Name)
     public static SoundLibraryCategoryOptionViewModel Unassigned { get; } = new(null, "Unassigned");
 }
 
-public sealed record CategoryDestinationViewModel(Guid? Id, string Name);
 
 public sealed record ImportFeedbackItemViewModel(string FileName, string Status, string Message);

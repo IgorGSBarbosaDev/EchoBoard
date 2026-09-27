@@ -3,7 +3,6 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Manage categories"
-    MaxWidth="860"
     PrimaryButtonText="{Binding CategoryManagementPrimaryButtonText}"
     IsPrimaryButtonEnabled="{Binding CategoryManagementPrimaryButtonEnabled}"
     CloseButtonText="Cancel"
@@ -14,23 +13,10 @@
     PrimaryButtonClick="OnPrimaryButtonClick">
     <Grid MaxWidth="760" MinWidth="400">
         <StackPanel Spacing="{StaticResource EchoBoardSpace16}" Visibility="{Binding CategoryManagementListVisibility}">
-            <Grid ColumnSpacing="{StaticResource EchoBoardSpace12}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock
-                    Text="Choose a category to edit, or create a new one."
-                    Style="{StaticResource EchoBoardBodyTextStyle}"
-                    VerticalAlignment="Center"
-                    TextWrapping="Wrap" />
-                <Button
-                    Grid.Column="1"
-                    Content="Create category"
-                    Command="{Binding CreateManagedCategoryCommand}"
-                    IsEnabled="{Binding CategoryManagementActionsEnabled}"
-                    Style="{StaticResource EchoBoardPrimaryButtonStyle}" />
-            </Grid>
+            <TextBlock
+                Text="Choose an existing category to edit or delete."
+                Style="{StaticResource EchoBoardBodyTextStyle}"
+                TextWrapping="Wrap" />
 
             <ProgressRing
                 IsActive="{Binding IsCategoryManagementLoading}"
@@ -103,7 +89,7 @@
 
             <Border
                 Style="{StaticResource EchoBoardCardStyle}"
-                Padding="{StaticResource EchoBoardSpace16}"
+                Padding="16"
                 Visibility="{Binding CategoryDeletionConfirmationVisibility}">
                 <StackPanel Spacing="{StaticResource EchoBoardSpace12}">
                     <TextBlock Text="Delete category?" Style="{StaticResource EchoBoardSectionTitleTextStyle}" />
@@ -111,11 +97,6 @@
                         Text="{Binding CategoryDeletionDescription}"
                         Style="{StaticResource EchoBoardBodyTextStyle}"
                         TextWrapping="Wrap" />
-                    <ComboBox
-                        Header="Move its sounds to"
-                        ItemsSource="{Binding CategoryDeletionDestinations}"
-                        SelectedItem="{Binding SelectedCategoryDeletionDestination, Mode=TwoWay}"
-                        DisplayMemberPath="Name" />
                     <TextBlock
                         Text="{Binding CategoryDeletionError}"
                         Foreground="{ThemeResource EchoBoardErrorBrush}"
@@ -128,7 +109,7 @@
                         Visibility="{Binding CategoryDeletionSavingVisibility}" />
                     <StackPanel Orientation="Horizontal" Spacing="{StaticResource EchoBoardSpace8}">
                         <Button
-                            Content="Move sounds and delete"
+                            Content="Delete category"
                             Command="{Binding ConfirmCategoryDeletionCommand}"
                             IsEnabled="{Binding CategoryDeletionSaveEnabled}"
                             Style="{StaticResource EchoBoardDangerButtonStyle}" />

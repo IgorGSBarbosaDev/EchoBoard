@@ -157,7 +157,7 @@ public sealed class MicrophoneCaptureControllerTests
             Format = format;
         }
 
-        public event EventHandler<MicrophoneSamplesCapturedEventArgs>? SamplesCaptured;
+        public event MicrophoneSamplesCapturedHandler? SamplesCaptured;
 
         public event EventHandler<Exception>? CaptureFailed;
 
@@ -177,7 +177,7 @@ public sealed class MicrophoneCaptureControllerTests
 
         public void PushSamples(float[] samples)
         {
-            SamplesCaptured?.Invoke(this, new MicrophoneSamplesCapturedEventArgs(samples));
+            SamplesCaptured?.Invoke(this, samples);
         }
 
         public void Fail(Exception exception)

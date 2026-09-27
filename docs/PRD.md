@@ -129,13 +129,13 @@ Os itens abaixo não podem atrasar a primeira versão utilizável:
 | LIB-02 | Arrastar e soltar | Permitir arrastar arquivos compatíveis para a janela do aplicativo. | MVP |
 | LIB-03 | Validar importação | Recusar extensões não suportadas, arquivos ilegíveis e duplicidades por caminho. | MVP |
 | LIB-04 | Metadados do som | Salvar nome, caminho, formato, duração, tamanho, data de criação e data de alteração. | MVP |
-| LIB-05 | Categorias | Abrir um painel central para criar, selecionar, renomear e excluir categorias. Ao excluir categoria, solicitar destino para os sons vinculados. | MVP |
-| LIB-06 | Organização | Exibir os sons em uma lista rolável, com nome, seleção e prévia reproduzível, para adicionar ou remover sons de uma categoria. Cada som pertence a no máximo uma categoria. | MVP |
+| LIB-05 | Categorias | Manter “Create category” na Biblioteca para abrir o fluxo de criação com seleção e prévia de sons. O lápis abre o painel central para editar ou excluir categorias existentes. Excluir uma categoria remove apenas seus vínculos, preservando os áudios e os vínculos com outras categorias. | MVP |
+| LIB-06 | Organização | Exibir os sons em uma lista rolável, com nome, seleção e prévia reproduzível, para adicionar ou remover sons de uma categoria. Um mesmo áudio pode pertencer a várias categorias. | MVP |
 | LIB-07 | Busca | Filtrar sons por nome enquanto o usuário digita. | MVP |
 | LIB-08 | Favoritos | Marcar/desmarcar sons como favoritos e abrir o filtro Favorites na navegação lateral da Biblioteca. | MVP |
 | LIB-10 | Renomear | Alterar apenas o nome exibido no EchoBoard, sem renomear o arquivo original. | MVP |
 | LIB-11 | Remover da biblioteca | Remover referência do EchoBoard sem apagar o arquivo do disco. | MVP |
-| LIB-12 | Informações visuais | Exibir categoria, nome, formato, duração, usos, waveform real, hotkey, favorito e estado de reprodução no card. | MVP |
+| LIB-12 | Informações visuais | Exibir nome, formato, duração, usos, waveform real, hotkey, favorito e estado de reprodução no card; não mostrar a categoria do áudio no card. | MVP |
 | LIB-13 | Cor/ícone do som | Permitir cor de destaque por som; ícones personalizados entram depois do MVP. | MVP |
 | LIB-14 | Tags | Adicionar tags reutilizáveis para filtros avançados. | Fase 2 |
 | LIB-15 | Playlists | Criar listas ordenadas de sons. | Fase 2 |
@@ -290,7 +290,7 @@ Princípios:
 
 ### 9.3 Layout principal
 
-Ao iniciar, a Biblioteca ocupa a área de conteúdo e lista todos os áudios cadastrados. A busca, as categorias e Favorites refinam essa mesma lista; áudios sem categoria continuam em All sounds e não aparecem como uma categoria lateral separada. Um botão de lápis na seção de categorias abre um painel central para criar, editar, excluir e organizar sons. Settings reúne a seleção de dispositivos, o roteamento e os diagnósticos de áudio em uma única tela. Favoritos não têm página própria, e reproduções recentes permanecem no histórico interno, sem tela dedicada.
+Ao iniciar, a Biblioteca ocupa a área de conteúdo e lista todos os áudios cadastrados. A busca, as categorias e Favorites refinam essa mesma lista; áudios sem categoria continuam em All sounds e não aparecem como uma categoria lateral separada. “Create category” abre o editor modal para criar uma categoria e selecionar/pré-visualizar áudios. O botão de lápis abre um painel central dedicado à edição e exclusão de categorias existentes, incluindo a organização dos áudios. Settings reúne a seleção de dispositivos, o roteamento e os diagnósticos de áudio em uma única tela. Favoritos não têm página própria, e reproduções recentes permanecem no histórico interno, sem tela dedicada.
 
 Os detalhes do som são exibidos em uma drawer compartilhada sobre o conteúdo. Fechada, ela permanece `Collapsed` e não reserva largura. O corpo do card reproduz o áudio; favorito e menu de detalhes/edição são ações independentes.
 
@@ -504,7 +504,7 @@ Sound
 - StopPreviousSound
 - AllowOverlap
 - WaveformPeaks (32 picos normalizados)
-- CategoryId
+- CategoryAssignments (SoundId + CategoryId; um áudio pode pertencer a várias categorias)
 - SortOrder
 - CreatedAt
 - UpdatedAt

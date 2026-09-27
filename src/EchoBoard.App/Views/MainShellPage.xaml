@@ -81,7 +81,6 @@
             BorderThickness="0,0,0,1"
             ColumnSpacing="{StaticResource EchoBoardSpace20}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="204" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
@@ -111,27 +110,8 @@
                 </StackPanel>
             </StackPanel>
 
-            <Grid
-                Grid.Column="1"
-                MaxWidth="520"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Center">
-                <TextBox
-                    AutomationProperties.Name="Search sounds placeholder"
-                    IsTabStop="True"
-                    PlaceholderText="{Binding SearchPlaceholder}"
-                    Style="{StaticResource EchoBoardTopbarSearchTextBoxStyle}" />
-                <SymbolIcon
-                    Margin="14,0,0,0"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    IsHitTestVisible="False"
-                    Foreground="{ThemeResource EchoBoardTextSecondaryBrush}"
-                    Symbol="Find" />
-            </Grid>
-
             <StackPanel
-                Grid.Column="2"
+                Grid.Column="1"
                 VerticalAlignment="Center"
                 Orientation="Horizontal"
                 Spacing="{StaticResource EchoBoardSpace8}">

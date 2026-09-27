@@ -6,20 +6,20 @@ namespace EchoBoard.App.ViewModels;
 public sealed class CategorySoundSelectionViewModel : ObservableObject
 {
     private bool isSelected;
-    private Guid? originalCategoryId;
+    private bool wasSelected;
 
     public CategorySoundSelectionViewModel(
         Guid id,
         string name,
-        Guid? originalCategoryId,
+        IReadOnlyCollection<Guid> originalCategoryIds,
         Guid? editorCategoryId,
         bool isMissingFile,
         ICommand previewCommand)
     {
         Id = id;
         Name = name;
-        this.originalCategoryId = originalCategoryId;
-        isSelected = originalCategoryId == editorCategoryId;
+        wasSelected = editorCategoryId is Guid categoryId && originalCategoryIds.Contains(categoryId);
+        isSelected = wasSelected;
         IsMissingFile = isMissingFile;
         PreviewCommand = previewCommand;
     }
@@ -52,10 +52,10 @@ public sealed class CategorySoundSelectionViewModel : ObservableObject
         }
     }
 
-    public Guid? OriginalCategoryId => originalCategoryId;
+    public bool WasSelected => wasSelected;
 
-    public void MarkPersistedCategory(Guid? categoryId)
+    public void MarkPersistedSelection()
     {
-        originalCategoryId = categoryId;
+        wasSelected = IsSelected;
     }
 }

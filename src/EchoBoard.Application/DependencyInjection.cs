@@ -15,7 +15,7 @@ public static class DependencyInjection
         services.AddTransient<QuerySoundLibraryUseCase>();
         services.AddTransient<UpdateSoundUseCase>();
         services.AddTransient<SetSoundFavoriteUseCase>();
-        services.AddTransient<AssignSoundCategoryUseCase>();
+        services.AddTransient<SetCategorySoundsUseCase>();
         services.AddTransient<DeleteSoundUseCase>();
         services.AddTransient<ImportSoundsUseCase>();
         services.AddTransient<GenerateSoundWaveformUseCase>();

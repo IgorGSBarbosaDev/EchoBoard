@@ -62,8 +62,6 @@ public sealed partial class MainShellViewModel : ObservableObject
 
     public string Title => "EchoBoard";
 
-    public string SearchPlaceholder => "Search sounds";
-
     public string MicrophoneStatusLabel
     {
         get => microphoneStatusLabel;

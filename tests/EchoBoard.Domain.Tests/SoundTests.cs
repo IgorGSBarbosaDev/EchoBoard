@@ -108,14 +108,14 @@ public sealed class SoundTests
         var updatedAt = CreatedAt.AddMinutes(5);
 
         sound.Rename("Renamed", updatedAt);
-        sound.MoveToCategory(categoryId, updatedAt);
+        sound.AssignToCategory(categoryId, updatedAt).Should().BeTrue();
         sound.ChangeSortOrder(10, updatedAt);
         sound.ChangeVolume(0.5, updatedAt);
         sound.SetFavorite(true, updatedAt);
         sound.UpdateFileMetadata(".wav", TimeSpan.FromSeconds(8), 9876, updatedAt);
 
         sound.Name.Should().Be("Renamed");
-        sound.CategoryId.Should().Be(categoryId);
+        sound.CategoryIds.Should().ContainSingle().Which.Should().Be(categoryId);
         sound.SortOrder.Should().Be(10);
         sound.Volume.Should().Be(0.5);
         sound.IsFavorite.Should().BeTrue();

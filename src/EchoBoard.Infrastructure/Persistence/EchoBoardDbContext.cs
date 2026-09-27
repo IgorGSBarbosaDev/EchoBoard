@@ -12,6 +12,8 @@ public sealed class EchoBoardDbContext : DbContext
 
     public DbSet<Sound> Sounds => Set<Sound>();
 
+    public DbSet<SoundCategory> SoundCategories => Set<SoundCategory>();
+
     public DbSet<Category> Categories => Set<Category>();
 
     public DbSet<HotkeyBinding> HotkeyBindings => Set<HotkeyBinding>();

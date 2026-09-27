@@ -59,6 +59,12 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
+                        <Button
+                            Content="Create category"
+                            Click="OnCreateCategoryClicked"
+                            HorizontalAlignment="Stretch"
+                            Style="{StaticResource EchoBoardPrimaryButtonStyle}" />
+
                         <StackPanel
                             Spacing="{StaticResource EchoBoardSpace8}"
                             Visibility="{Binding SoundHotkeyEditorVisibility}">
@@ -169,8 +175,6 @@
                                         Subtitle="{Binding Subtitle}"
                                         DurationText="{Binding DurationText}"
                                         HotkeyText="{Binding HotkeyText}"
-                                        CategoryLabel="{Binding CategoryLabel}"
-                                        CategoryBrush="{Binding CategoryBrush}"
                                         IsSelected="{Binding IsSelected}"
                                         IsPlaying="{Binding IsPlaying}"
                                         IsPaused="{Binding IsPaused}"

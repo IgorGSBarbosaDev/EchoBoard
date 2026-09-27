@@ -68,7 +68,7 @@ public sealed class PlaybackBarViewModel : ObservableObject
         ?? (currentFilePath is null ? "Nenhum som em reprodução" : Path.GetFileNameWithoutExtension(currentFilePath));
 
     public string Metadata => currentSound is not null
-        ? $"{currentSound.CategoryName ?? "Sem categoria"} · {currentSound.Extension.TrimStart('.').ToUpperInvariant()}"
+        ? currentSound.Extension.TrimStart('.').ToUpperInvariant()
         : currentFilePath is null
             ? "Selecione um card ou use uma hotkey"
             : Path.GetExtension(currentFilePath).TrimStart('.').ToUpperInvariant();

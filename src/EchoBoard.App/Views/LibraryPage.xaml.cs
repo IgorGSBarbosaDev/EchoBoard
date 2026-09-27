@@ -2,6 +2,7 @@ using EchoBoard.App.ViewModels;
 using EchoBoard.App.Dialogs;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Serilog;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 
@@ -83,13 +84,46 @@ public sealed partial class LibraryPage : Page
             return;
         }
 
-        ViewModel.PrepareCategoryManagement();
-        var dialog = new CategoryManagementDialog
+        try
         {
-            XamlRoot = XamlRoot,
-            DataContext = ViewModel
-        };
+            ViewModel.PrepareCategoryManagement();
+            var dialog = new CategoryManagementDialog
+            {
+                XamlRoot = XamlRoot,
+                DataContext = ViewModel
+            };
 
-        await dialog.ShowAsync();
+            await dialog.ShowAsync();
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "The category manager could not be opened.");
+            ViewModel.ReportCategoryDialogFailure("Could not open the category manager.");
+        }
+    }
+
+    private async void OnCreateCategoryClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        try
+        {
+            ViewModel.PrepareCategoryEditor(categoryId: null);
+            var dialog = new CategoryEditorDialog
+            {
+                XamlRoot = XamlRoot,
+                DataContext = ViewModel
+            };
+
+            await dialog.ShowAsync();
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "The category creation dialog could not be opened.");
+            ViewModel.ReportCategoryDialogFailure("Could not open category creation.");
+        }
     }
 }

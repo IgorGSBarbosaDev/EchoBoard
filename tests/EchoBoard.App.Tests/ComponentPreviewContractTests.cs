@@ -62,9 +62,41 @@ public sealed class ComponentPreviewContractTests
         viewModel.Sounds.Should().ContainSingle(sound =>
             sound.Title == "Intro" &&
             sound.DurationText == "0:03" &&
-            sound.CategoryLabel == "Memes" &&
             sound.HotkeyText == "No hotkey" &&
             !sound.IsMissingFile);
+    }
+
+    [Fact]
+    public async Task SelectingCategoryFiltersLibraryToItsSoundMemberships()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var memes = Category.Create("Memes", 0, Now);
+        var games = Category.Create("Games", 1, Now);
+        await categories.AddCategoryAsync(memes, CancellationToken.None);
+        await categories.AddCategoryAsync(games, CancellationToken.None);
+
+        var sharedSound = Sound.Create("Shared", "C:\\Audio\\shared.mp3", ".mp3", TimeSpan.FromSeconds(2), 1, memes.Id, 0, Now);
+        sharedSound.AssignToCategory(games.Id, Now.AddMinutes(1));
+        var memesSound = Sound.Create("Meme", "C:\\Audio\\meme.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, memes.Id, 1, Now);
+        var gamesSound = Sound.Create("Game", "C:\\Audio\\game.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, games.Id, 2, Now);
+        var uncategorizedSound = Sound.Create("Loose", "C:\\Audio\\loose.mp3", ".mp3", TimeSpan.FromSeconds(1), 1, null, 3, Now);
+        await sounds.AddSoundAsync(sharedSound, CancellationToken.None);
+        await sounds.AddSoundAsync(memesSound, CancellationToken.None);
+        await sounds.AddSoundAsync(gamesSound, CancellationToken.None);
+        await sounds.AddSoundAsync(uncategorizedSound, CancellationToken.None);
+        var viewModel = CreateLibraryViewModel(
+            sounds,
+            categories: categories,
+            files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
+
+        await viewModel.LoadAsync(CancellationToken.None);
+        await viewModel.SelectCategoryCommand.ExecuteAsync(
+            viewModel.Categories.Single(category => category.Id == memes.Id));
+
+        viewModel.SelectedCategoryId.Should().Be(memes.Id);
+        viewModel.Sounds.Select(sound => sound.Id).Should().BeEquivalentTo([sharedSound.Id, memesSound.Id]);
+        viewModel.Categories.Should().ContainSingle(category => category.Id == memes.Id && category.IsSelected);
     }
 
     [Fact]
@@ -96,7 +128,7 @@ public sealed class ComponentPreviewContractTests
     }
 
     [Fact]
-    public async Task CategoryEditorCreatesCategoryAndMovesSelectedSounds()
+    public async Task CategoryEditorCreatesCategoryAndAddsSelectedSoundsWithoutRemovingOtherMemberships()
     {
         var sounds = new FakeSoundLibraryRepository();
         var categories = new FakeCategoryRepository();
@@ -116,7 +148,8 @@ public sealed class ComponentPreviewContractTests
 
         saved.Should().BeTrue();
         var createdCategory = categories.Items.Single(category => category.Name == "New category");
-        sound.CategoryId.Should().Be(createdCategory.Id);
+        sound.CategoryIds.Should().Contain(sourceCategory.Id);
+        sound.CategoryIds.Should().Contain(createdCategory.Id);
         viewModel.Categories.Should().Contain(category => category.Name == "New category" && category.CountText == "1");
     }
 
@@ -169,12 +202,12 @@ public sealed class ComponentPreviewContractTests
 
         saved.Should().BeTrue();
         editedCategory.Name.Should().Be("Renamed");
-        existingSound.CategoryId.Should().BeNull();
-        movedSound.CategoryId.Should().Be(editedCategory.Id);
+        existingSound.CategoryIds.Should().BeEmpty();
+        movedSound.CategoryIds.Should().BeEquivalentTo([otherCategory.Id, editedCategory.Id]);
     }
 
     [Fact]
-    public async Task DeletingCategoryMovesItsSoundsToChosenDestination()
+    public async Task DeletingCategoryKeepsSoundsAndTheirOtherMemberships()
     {
         var sounds = new FakeSoundLibraryRepository();
         var categories = new FakeCategoryRepository();
@@ -183,6 +216,7 @@ public sealed class ComponentPreviewContractTests
         await categories.AddCategoryAsync(sourceCategory, CancellationToken.None);
         await categories.AddCategoryAsync(destinationCategory, CancellationToken.None);
         var sound = Sound.Create("Intro", "C:\\Audio\\intro.wav", ".wav", TimeSpan.FromSeconds(1), 1, sourceCategory.Id, 0, Now);
+        sound.AssignToCategory(destinationCategory.Id, Now.AddMinutes(1));
         await sounds.AddSoundAsync(sound, CancellationToken.None);
         var viewModel = CreateLibraryViewModel(sounds, categories: categories, files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
         await viewModel.LoadAsync(CancellationToken.None);
@@ -191,10 +225,11 @@ public sealed class ComponentPreviewContractTests
         await viewModel.LoadCategoryManagementAsync(CancellationToken.None);
         viewModel.PrepareCategoryDeletion(sourceCategory.Id);
 
-        var deleted = await viewModel.DeleteManagedCategoryAsync(destinationCategory.Id, CancellationToken.None);
+        var deleted = await viewModel.DeleteManagedCategoryAsync(CancellationToken.None);
 
         deleted.Should().BeTrue();
-        sound.CategoryId.Should().Be(destinationCategory.Id);
+        sounds.Items.Should().ContainSingle(item => item.Id == sound.Id);
+        sound.CategoryIds.Should().Contain(destinationCategory.Id);
         viewModel.Categories.Should().NotContain(category => category.Id == sourceCategory.Id);
         viewModel.Categories.Should().Contain(category => category.Id == destinationCategory.Id && category.CountText == "1");
         viewModel.Categories.Should().Contain(category => category.Id == destinationCategory.Id && category.IsSelected);
@@ -249,13 +284,58 @@ public sealed class ComponentPreviewContractTests
         var sounds = new FakeSoundLibraryRepository();
         var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, null, 0, Now);
         await sounds.AddSoundAsync(sound, CancellationToken.None);
-        var viewModel = CreateLibraryViewModel(sounds, files: new FakeSoundFileAvailabilityReader(DefaultExists: true));
+        using var notifications = new TransientNotificationService();
+        notifications.Show(ToastNotificationKind.Success, "Previous message", string.Empty);
+        var viewModel = CreateLibraryViewModel(
+            sounds,
+            files: new FakeSoundFileAvailabilityReader(DefaultExists: true),
+            notifications: notifications);
         await viewModel.LoadAsync(CancellationToken.None);
 
         await viewModel.ToggleFavoriteAsync(sound.Id, CancellationToken.None);
 
         sounds.Items.Single().IsFavorite.Should().BeTrue();
         viewModel.Sounds.Should().ContainSingle(item => item.IsFavorite);
+        notifications.Current.Should().BeNull();
+        viewModel.ImportToast.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task FavoriteInteractionDoesNotShowSuccessToastWhenAddingOrRemoving()
+    {
+        var sounds = new FakeSoundLibraryRepository();
+        var categories = new FakeCategoryRepository();
+        var sound = Sound.Create("Intro", "C:\\Audio\\intro.mp3", ".mp3", TimeSpan.FromSeconds(3), 123, null, 0, Now);
+        await sounds.AddSoundAsync(sound, CancellationToken.None);
+        var files = new FakeSoundFileAvailabilityReader(DefaultExists: true);
+        var services = new ServiceCollection();
+        services.AddScoped(_ => new QuerySoundLibraryUseCase(sounds, categories, files));
+        services.AddScoped(_ => new SetSoundFavoriteUseCase(sounds));
+        using var serviceProvider = services.BuildServiceProvider();
+        var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
+        using var notifications = new TransientNotificationService();
+        var playback = new PlaybackCoordinator(
+            scopeFactory,
+            new FakeSoundPlaybackEngine(),
+            notifications,
+            NullLogger<PlaybackCoordinator>.Instance);
+        var coordinator = new SoundLibraryInteractionCoordinator(
+            scopeFactory,
+            playback,
+            notifications,
+            NullLogger<SoundLibraryInteractionCoordinator>.Instance);
+
+        notifications.Show(ToastNotificationKind.Success, "Previous message", string.Empty);
+        await coordinator.ToggleFavoriteCommand.ExecuteAsync(sound.Id);
+
+        sounds.Items.Single().IsFavorite.Should().BeTrue();
+        notifications.Current.Should().BeNull();
+
+        notifications.Show(ToastNotificationKind.Success, "Previous message", string.Empty);
+        await coordinator.ToggleFavoriteCommand.ExecuteAsync(sound.Id);
+
+        sounds.Items.Single().IsFavorite.Should().BeFalse();
+        notifications.Current.Should().BeNull();
     }
 
     [Fact]
@@ -573,7 +653,8 @@ public sealed class ComponentPreviewContractTests
         FakeCategoryRepository? categories = null,
         FakeHotkeyBindingRepository? hotkeys = null,
         FakeSoundFileAvailabilityReader? files = null,
-        FakeSoundPlaybackEngine? playback = null)
+        FakeSoundPlaybackEngine? playback = null,
+        TransientNotificationService? notifications = null)
     {
         sounds ??= new FakeSoundLibraryRepository();
         metadata ??= new FakeAudioFileMetadataReader();
@@ -590,12 +671,15 @@ public sealed class ComponentPreviewContractTests
             new UpdateCategoryUseCase(categories),
             new DeleteCategoryUseCase(categories),
             new SetSoundFavoriteUseCase(sounds),
-            new AssignSoundCategoryUseCase(sounds, categories),
+            new SetCategorySoundsUseCase(sounds, categories),
             new ListHotkeyBindingsUseCase(hotkeys, runtime),
             new AssignSoundHotkeyUseCase(hotkeys, sounds, runtime),
             new RemoveHotkeyBindingUseCase(hotkeys, runtime),
             new SetHotkeyBindingEnabledUseCase(hotkeys, runtime),
-            playback);
+            playback,
+            notifications: notifications,
+            listSounds: new ListSoundsUseCase(sounds),
+            listCategories: new ListCategoriesUseCase(categories));
     }
 
     private static SettingsViewModel CreateSettingsViewModel(FakeHotkeyBindingRepository? hotkeys = null)
